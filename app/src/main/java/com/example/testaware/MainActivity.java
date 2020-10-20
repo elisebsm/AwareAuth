@@ -90,20 +90,24 @@ public class MainActivity extends AppCompatActivity{
         subscribe();
 
     }
+    //testing by having subscriber subcribing to published service "receive_message_service" and sending message to
+    //the publisher
 
-
-
+    //make a service discoverable py callin publish()
     private void publish (){
+        //specify name of service and optional match filters
         PublishConfig config = new PublishConfig.Builder()
                 .setServiceName("Receive_Message_Service")
                 .build();
 
+        //specify actions when events occur, such when the subscriber receives a message
         mAwaresession.publish(config, new DiscoverySessionCallback() {
             @Override
             public void onPublishStarted(PublishDiscoverySession session) {
                 Log.i(LOG, "publish started");
 
             }
+
             @RequiresApi(api = Build.VERSION_CODES.Q)
             @Override
             public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
@@ -115,6 +119,7 @@ public class MainActivity extends AppCompatActivity{
                 }
                 int port = ss.getLocalPort();
 
+                //use session (discovery session) and peerhandle obtained from message from subscriber
                 NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(mainSession, peerHandle)
                         .setPskPassphrase("somePassword")
                         .setPort(port)
@@ -123,6 +128,7 @@ public class MainActivity extends AppCompatActivity{
                         .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
                         .setNetworkSpecifier(networkSpecifier)
                         .build();
+                //use connectivityManager to request wifi aware network on the publisher
                 ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
                     @Override
                     public void onAvailable(Network network) {
@@ -149,25 +155,29 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-
+    //subsribe() method is used to subscribe to a service
     private void subscribe(){
+        //specify name of the service to subscribe to
         SubscribeConfig config = new SubscribeConfig.Builder()
                 .setServiceName("Receive_Message_Service")
                 .build();
-
+        //DiscoverySessionCallback is specified when events occur, for example when a publisher is discovered
+        //can also use this method to communicate with publisher
         mAwaresession.subscribe(config, new DiscoverySessionCallback() {
+            //Need discoverySession in order to send message
             @Override
             public void onSubscribeStarted(SubscribeDiscoverySession session) {
                 mainSession = session;
 
             }
-
+            //called when matching publishers come into wifi range
             @Override
             public void onServiceDiscovered(PeerHandle peerHandle,
                                             byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
                 String message = "Hei!";
                 byte[] messageByte = Base64.encode(message.getBytes(), Base64.DEFAULT);
                 mainSession.sendMessage(peerHandle, 1, messageByte);
+                //request wifi aware network on subscriber, same as with publisher, just without specifying port.
 
             }
         }, null);
