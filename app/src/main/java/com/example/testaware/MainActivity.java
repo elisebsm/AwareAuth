@@ -31,7 +31,9 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.net.Inet6Address;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.List;
 
 
@@ -178,6 +180,45 @@ public class MainActivity extends AppCompatActivity{
                 byte[] messageByte = Base64.encode(message.getBytes(), Base64.DEFAULT);
                 mainSession.sendMessage(peerHandle, 1, messageByte);
                 //request wifi aware network on subscriber, same as with publisher, just without specifying port.
+
+                //TODO: find out if peerHandle here is identifier for subscriber or publisher
+                //use session (discovery session) and peerhandle obtained from message from subscriber
+                NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(mainSession, peerHandle)
+                        .setPskPassphrase("somePassword")
+                        .build();
+                NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
+                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
+                        .setNetworkSpecifier(networkSpecifier)
+                        .build();
+                //use connectivityManager to request wifi aware network on the publisher
+                ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+                    //creates network object. Can open socket to communicate with server socket on the publisher
+                    //need to know server sockets IP address and port. Get thsese from network capabilities object provided in
+                    //networkcapabilitiesChanged() callback
+                    @Override
+                    public void onAvailable(Network network) {
+                        WifiAwareNetworkInfo peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
+                        Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
+                        int peerPort = peerAwareInfo.getPort();
+
+                        Socket socket = network.getSocketFactory().createSocket(peerIpv6, peerPort);
+
+                    }
+
+                    @Override
+                    public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
+
+                    }
+
+                    @Override
+                    public void onLost(Network network) {
+
+                    }
+                };
+
+                ConnectivityManager connectivityManager = new ConnectivityManager();
+
+                ConnectivityManager connMgr.requestNetwork(myNetworkRequest, callback);
 
             }
         }, null);
