@@ -19,6 +19,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.net.wifi.aware.AttachCallback;
+import android.net.wifi.aware.DiscoverySession;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
 import android.net.wifi.aware.PeerHandle;
@@ -111,6 +112,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE = 88;
     private static final int MY_PERMISSION_FINE_LOCATION_CODE = 99;
     //-------------------------------------------------------------------------------------------------------------------------
+
+    private boolean isPublisher = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -143,6 +146,21 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 publish();
                 Log.i(LOG, "Publish button pressed");
+                isPublisher = true;
+            }
+        });
+
+        Button connectBtn = findViewById(R.id.btnConnectPub);
+        connectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    try {
+                        requestWiFiConnectionPublisher(peerHandle, publishDiscoverySession);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -236,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
                 setMacAddress(mac);
             }
         }, null);
+
 
 
     }
@@ -338,130 +357,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-private void networkRequester(){
-    //ServerSocket ss = null;
-
-    NetworkRequest networkRequest = new NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
-            .setNetworkSpecifier(networkSpecifier)
-            .build();
-    connectivityManager.requestNetwork(networkRequest, new ConnectivityManager.NetworkCallback(){
-        @Override
-        public void onAvailable(Network network) {
-            Log.i(LOG, "subscribe available");
-
-        }
-
-        @Override
-        public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
-
-            Log.i(LOG, "capbabilities changed");
-
-        }
-
-        @Override
-        public void onLost(Network network) {
-
-        }
-
-        //-------------------------------------------------------------------------------------------- +++++
-        @Override
-        public void onLinkPropertiesChanged(Network network, LinkProperties linkProperties) {
-            super.onLinkPropertiesChanged(network, linkProperties);
-            //TODO: create socketServer on different thread to transfer files
-            Toast.makeText(MainActivity.this, "onLinkPropertiesChanged", Toast.LENGTH_LONG).show();
-            Log.d("myTag", "entering linkPropertiesChanged ");
-            try {
-                NetworkInterface awareNetworkInterface = NetworkInterface.getByName(linkProperties.getInterfaceName());
-
-                Enumeration<InetAddress> Addresses = awareNetworkInterface.getInetAddresses();
-                while (Addresses.hasMoreElements()) {
-                    InetAddress addr = Addresses.nextElement();
-                    if (addr instanceof Inet6Address) {
-                        Log.d("myTag", "netinterface ipv6 address: " + addr.toString());
-                        if (((Inet6Address) addr).isLinkLocalAddress()) {
-                            ipv6 = Inet6Address.getByAddress("WifiAware",addr.getAddress(),awareNetworkInterface);
-                            myIP = addr.getAddress();
-                            if (publishDiscoverySession != null && peerHandle != null) {
-                                publishDiscoverySession.sendMessage(peerHandle, IP_ADDRESS_MESSAGE, myIP);
-                            } else if(subscribeDiscoverySession != null && peerHandle != null){
-                                subscribeDiscoverySession.sendMessage(peerHandle,IP_ADDRESS_MESSAGE, myIP);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            catch (SocketException e) {
-                Log.d("myTag", "socket exception " + e.toString());
-            }
-            catch (Exception e) {
-                //EXCEPTION!!! java.lang.NullPointerException: Attempt to invoke virtual method 'java.util.Enumeration java.net.NetworkInterface.getInetAddresses()' on a null object reference
-                Log.d("myTag", "EXCEPTION!!! " + e.toString());
-            }
-            startServer(0,3,ipv6);
-            // should be done in a separate thread
-        /*
-        startServer
-        ServerSocket ss = new ServerSocket(0, 5, ipv6);
-        int port = ss.getLocalPort();    */
-            //TODO: need to send this port via messages to other device to finish client conn info
-
-            // should be done in a separate thread
-            // obtain server IPv6 and port number out-of-band
-            //TODO: Retrieve address:port IPv6 before this client thread can be created
-        /*
-        Socket cs = network.getSocketFactory().createSocket(serverIpv6, serverPort);  */
-        }
-        //-------------------------------------------------------------------------------------------- -----
-    });
-
-}
-
-    @TargetApi(26)
-    public void startServer(final int port, final int backlog, final InetAddress bindAddr) {
-        Runnable serverTask = new Runnable() {
-            @Override
-            public void run() {
-                try{
-                    Log.d("serverThread", "thread running");
-                    serverSocket = new ServerSocket(port, backlog, bindAddr);
-                    //ServerSocket serverSocket = new ServerSocket();
-                    while (true) {
-                        portOnSystem = portToBytes(serverSocket.getLocalPort());
-                        if (publishDiscoverySession != null && peerHandle != null) {
-                            publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, portOnSystem);
-                        } else if (subscribeDiscoverySession != null && peerHandle != null)  {
-                            subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, portOnSystem);
-                        }
-                        Log.d("serverThread", "server waiting to accept on " + serverSocket.toString());
-                        Socket clientSocket = serverSocket.accept();
-                        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
-                        DataInputStream in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
-                        byte[] buffer = new byte[4096];
-                        int read;
-                        int totalRead = 0;
-                        FileOutputStream fos = new FileOutputStream("/sdcard/Download/newfile");
-                        Log.d("serverThread", "Socket being written to begin... ");
-                        while ((read = in.read(buffer)) > 0) {
-                            fos.write(buffer,0,read);
-                            totalRead += read;
-                            if (totalRead%(4096*2500)==0) {//every 10MB update status
-                                Log.d("clientThread", "total bytes retrieved:" + totalRead);
-                            }
-                        }
-                        Log.d("serverThread", "finished file transfer: " + totalRead);
-
-                    }
-                } catch (IOException e) {
-                    Log.d("serverThread", "socket exception " + e.toString());
-                }
-            }
-        };
-        Thread serverThread = new Thread(serverTask);
-        serverThread.start();
-
-    }
 
     //testing by having subscriber subcribing to published service "receive_message_service" and sending message to
     //the publisher
@@ -661,6 +556,54 @@ private void networkRequester(){
         data[1] = (byte) ((port >> 8) & 0xFF);
         return data;
     }
+
+
+    private int port;
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private void requestWiFiConnectionPublisher(PeerHandle peerHandle, DiscoverySession discoverySession) throws IOException {
+
+        if (isPublisher){
+            //starting serverSocket on publisher device
+            ServerSocket serverSocket = new ServerSocket(0);
+            port = serverSocket.getLocalPort();
+
+            NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(discoverySession, peerHandle)
+                    .setPskPassphrase("somePassword")
+                    .setPort(port)
+                    .build();
+
+        } else{
+            NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(discoverySession, peerHandle)
+                    .setPskPassphrase("somePassword")
+                    .build();
+        }
+
+        connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+
+
+        NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
+                .setNetworkSpecifier(networkSpecifier)
+                .build();
+        ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+
+            }
+
+            @Override
+            public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
+
+            }
+
+            @Override
+            public void onLost(Network network) {
+
+            }
+        };
+        connectivityManager.requestNetwork(myNetworkRequest, callback);
+    }
+
 
 
     //private WifiAwareSession mAwaresession;
