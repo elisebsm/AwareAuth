@@ -113,6 +113,11 @@ public class MainActivity extends AppCompatActivity {
     private NetworkCapabilities networkCapabilities;
     private Network network;
 
+    private WifiAwareNetworkInfo peerAwareInfo;
+
+    private Inet6Address peerIpv6 ;
+    private int peerPort;
+
 
     // Hentet fra:https://github.com/anagramrice/NAN/blob/master/app/src/main/java/net/mobilewebprint/nan/MainActivity.java
     private static final int MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE = 88;
@@ -202,6 +207,15 @@ public class MainActivity extends AppCompatActivity {
         });                                                                                   /* ----- */
         //------------------------------------------------------------------------------------------------------
 
+        Button buttonSendLongMessage = findViewById(R.id.btnSendLongMessage);
+        buttonSendLongMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    clientSendMessage(peerIpv6, peerPort);
+                }
+            }
+        });
 
 
         // Hentet fra:https://github.com/anagramrice/NAN/blob/master/app/src/main/java/net/mobilewebprint/nan/MainActivity.java
@@ -256,25 +270,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         this.registerReceiver(myReceiver, filter);
-
-        /*//Obtain a session, by calling attach(). Joins or forms a WifI aware cluster.
-        wifiAwareManager.attach(new AttachCallback() {
-            @Override
-            public void onAttached(WifiAwareSession session) {
-                super.onAttached(session);
-                Log.i(LOG, "ON Attached!");
-                wifiAwareSession = session;
-                //TODO: close session
-            }
-            //TODO: make onattachfailed
-        }, new IdentityChangedListener() {
-            @Override
-            public void onIdentityChanged(byte[] mac) {
-                super.onIdentityChanged(mac);
-                setMacAddress(mac);
-            }
-        }, null);*/
-
 
         attachToSession();
     }
@@ -575,14 +570,16 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(LOG, "onCapabilitiesChanged");
                 networkCapabilities = networkCapabilities_;
                 network = network_;
-                openSocket();
+                peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
+                peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
+                peerPort = peerAwareInfo.getPort();
+                startServer();
             }
 
             @Override
             public void onLost(Network network_) {
                 Toast.makeText(context, "onLost", Toast.LENGTH_LONG).show();
                 Log.d(LOG, "onLost");
-
             }
         });
     }
@@ -617,22 +614,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 //initialize socket and input stream
-                ServerSocket server = null;
+                ServerSocket server;
                 Socket socket = null;
                 DataInputStream in = null;
                 //start server and wait for conn
 
                 try {
-                    server = new ServerSocket(0);   //TODOO: set port correctly
+                    server = new ServerSocket(0);
+                    int port = server.getLocalPort();
+                    //TODOO: set port correctly
                     while (true) {
-                        Log.d("serverThread", "Server started, Waiting for client");
+                        Log.d(LOG, "Server started, Waiting for client");
                         socket = server.accept();
-                        Log.d("serverThread", "Client accepted");
+                        Log.d(LOG, "Client accepted");
                         in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 
                         String str = (String) in.readUTF();
-                        Log.d("serverThread", "Reading message from client");
-                        EditText editText = (EditText) findViewById(R.id.eTOtherMac);
+                        Log.d(LOG, "Reading message from client");
+                        EditText editText = (EditText) findViewById(R.id.textViewSendLongMessage);
                         editText.setText(str);
                     }
                 } catch (IOException e) {
@@ -648,13 +647,13 @@ public class MainActivity extends AppCompatActivity {
                     }
 
             */
-                try {
+                /*try {
                     socket.close();
                     in.close();
-                    Log.d("serverThread", "Closing conn");
+                    Log.d(LOG, "Closing conn");
                 } catch (IOException e) {
                     e.printStackTrace();
-                }
+                }*/
             }
         };
 
@@ -664,7 +663,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     //only sends messages
-    private void clientSendMessage(final Inet6Address ipv6Address){
+    private void clientSendMessage(final Inet6Address ipv6Address, final int port){
         Runnable serverTask = new Runnable(){  //new thread for each client server conn
             @Override
             public void run() {
@@ -675,9 +674,9 @@ public class MainActivity extends AppCompatActivity {
                 try {
 
                     while (true) {
-                        socket = new Socket(ipv6Address, 0);   //just testing with port 0
+                                socket = new Socket(ipv6Address, port);   //just testing with port 0
                         String msg= "messageToBeSent: ";
-                        EditText editText = (EditText)findViewById(R.id.eTOtherMac);
+                        EditText editText = (EditText)findViewById(R.id.textViewSendLongMessage);
                         msg += editText.getText().toString();
                         out= new DataOutputStream(socket.getOutputStream());
                         out.writeUTF(msg);
@@ -696,14 +695,14 @@ public class MainActivity extends AppCompatActivity {
                     }
 
             */
-                try {
+                /*try {
                     socket.close();
                     //in.close();
                     out.close();
-                    Log.d("serverThread", "Closing conn");
+                    Log.d(LOG, "Closing conn");
                 } catch (IOException e) {
                     e.printStackTrace();
-                }
+                }*/
             }
         };
         Thread serverThread = new Thread(serverTask);
