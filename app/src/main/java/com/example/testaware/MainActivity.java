@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private SubscribeDiscoverySession mainSession;
     private WifiAwareManager wifiAwareManager;
     private WifiAwareSession wifiAwareSession;
-    private String serviceName = "Elise";
+    private String serviceName = "Kirsten";
     private Context context;
     private static final String[] LOCATION_PERMS={
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -558,7 +558,7 @@ public class MainActivity extends AppCompatActivity {
                 network = network_;
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
-                peerPort = peerAwareInfo.getPort();
+                peerPort = peerAwareInfo.getPort();   //port is set in startServer, so no point in setting it before startServer is run
                 startServer();
             }
 
@@ -586,7 +586,7 @@ public class MainActivity extends AppCompatActivity {
         //-------------------------------------------------------------------------------------------- -----
         WifiAwareNetworkInfo peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
         Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
-        int peerPort = peerAwareInfo.getPort();
+        //int peerPort = peerAwareInfo.getPort();
         try {
             Socket socket = network.getSocketFactory().createSocket(peerIpv6, portToUse);
             socket.getPort();
@@ -602,22 +602,27 @@ public class MainActivity extends AppCompatActivity {
                 //initialize socket and input stream
                 ServerSocket server;
                 Socket socket = null;
-                DataInputStream in = null;
+                DataInputStream inputStream = null;
                 //start server and wait for conn
-
                 try {
-                    server = new ServerSocket(5555);
+                    server = new ServerSocket(0);
                     int port = server.getLocalPort();
-
                     Log.d(LOG, String.valueOf(port));
+
                     //TODOO: set port correctly
                     while (true) {
+                        portOnSystem = portToBytes(port);   //get port set by server, and send it to the client (publisher or subscriber)
+                        if (publishDiscoverySession != null && peerHandle != null) { //client can either publisher or subscriber
+                            publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, portOnSystem);
+                        } else if (subscribeDiscoverySession != null && peerHandle != null)  {
+                            subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, portOnSystem);
+                        }
                         Log.d(LOG, "Server started, Waiting for client");
                         socket = server.accept();
                         Log.d(LOG, "Client accepted");
-                        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+                        inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 
-                        strMessageFromClient = (String) in.readUTF();
+                        strMessageFromClient = (String) inputStream.readUTF();
                         Log.d(LOG, "Reading message from client");
                         editTextLongMessage= (EditText) findViewById(R.id.textViewSendLongMessage);
 
@@ -634,13 +639,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             /*
-                while(true){
-                    byte[] sysPort= portToBytes(server.getLocalPort());
-                    if (publishDiscoverySession != null && peerHandle != null) {
-                        publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, sysPort);
-                    } else if (subscribeDiscoverySession != null && peerHandle != null)  {
-                        subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, sysPort);
-                    }
+
 
             */
                 /*try {
@@ -667,17 +666,16 @@ public class MainActivity extends AppCompatActivity {
                 //initialize socket and input stream
                 Socket socket = null;
                 //DataInputStream in = null;   //dont need it yet
-                DataOutputStream out= null;
+                DataOutputStream outputStream= null;
                 try {
-                   // while (true) {
-                        socket = new Socket(ipv6Address, 5555);   //just testing with port 0
-                        String msg= "messageToBeSent: ";
+
+                        socket = new Socket(ipv6Address, port);   //just testing with port 0
+                        String msg= "";
                         editTextLongMessage = (EditText)findViewById(R.id.textViewSendLongMessage);
                         msg += editTextLongMessage.getText().toString();
-                        out= new DataOutputStream(socket.getOutputStream());
-                        out.writeUTF(msg);
-                        out.flush();
-                    //}
+                        outputStream= new DataOutputStream(socket.getOutputStream());
+                        outputStream.writeUTF(msg);
+                        outputStream.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
