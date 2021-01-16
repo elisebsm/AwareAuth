@@ -6,20 +6,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
-import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.net.wifi.aware.AttachCallback;
-import android.net.wifi.aware.DiscoverySession;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
 import android.net.wifi.aware.PeerHandle;
@@ -33,8 +30,6 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
-import android.telephony.TelephonyScanManager;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -115,11 +110,14 @@ public class MainActivity extends AppCompatActivity {
 
     private ServerSocket              serverSocket;
     private final int                 MESSAGE                        = 7;
+    private NetworkCapabilities networkCapabilities;
+    private Network network;
 
 
     // Hentet fra:https://github.com/anagramrice/NAN/blob/master/app/src/main/java/net/mobilewebprint/nan/MainActivity.java
     private static final int MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE = 88;
     private static final int MY_PERMISSION_FINE_LOCATION_CODE = 99;
+    private static final int MY_PERMISSION_NETWORK_STATE_CODE = 77;
     //-------------------------------------------------------------------------------------------------------------------------
 
     private boolean isPublisher = false;
@@ -165,7 +163,20 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     try {
-                        requestWiFiConnectionPublisher(peerHandle, publishDiscoverySession);
+                        requestWiFiConnection();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        Button connectBtnSub = findViewById(R.id.btnConnectSub);
+        connectBtnSub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    try {
+                        requestWiFiConnection();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -228,8 +239,8 @@ public class MainActivity extends AppCompatActivity {
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
 
         // Messages for whether or not device has WiFi Aware
-        final Toast awareSupported = Toast.makeText(this, "Wi-Fi Aware Supported", LENGTH_LONG);
-        final Toast awareUnsupported = Toast.makeText(this, "Wi-Fi Aware Unsupported. Do you have  Wi-Fi or Location OFF? ", LENGTH_LONG);
+        final Toast awareSupported = Toast.makeText(this, "Wi-Fi Aware Supported", Toast.LENGTH_LONG);
+        final Toast awareUnsupported = Toast.makeText(this, "Wi-Fi Aware Unsupported. Do you have  Wi-Fi or Location OFF? ", Toast.LENGTH_LONG);
         IntentFilter filter =
                 new IntentFilter(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
         BroadcastReceiver myReceiver = new BroadcastReceiver() {
@@ -246,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
         };
         this.registerReceiver(myReceiver, filter);
 
-        //Obtain a session, by calling attach(). Joins or forms a WifI aware cluster.
+        /*//Obtain a session, by calling attach(). Joins or forms a WifI aware cluster.
         wifiAwareManager.attach(new AttachCallback() {
             @Override
             public void onAttached(WifiAwareSession session) {
@@ -262,10 +273,10 @@ public class MainActivity extends AppCompatActivity {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
             }
-        }, null);
+        }, null);*/
 
 
-
+        attachToSession();
     }
 
     private void attachToSession(){
@@ -359,12 +370,21 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             //-------------------------------------------------------------------------------------------- -----
-            // Other permissions could go down here
 
+            case MY_PERMISSION_NETWORK_STATE_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(LOG, "Network state permission granted");
+                    return;
+
+                } else {
+                    Log.i(LOG, "Network state permission not granted");
+                }
+            }
+            // Other permissions could go down here
         }
     }
-
-
 
 
     //testing by having subscriber subcribing to published service "receive_message_service" and sending message to
@@ -395,20 +415,18 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("received", "will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
-                    Toast.makeText(MainActivity.this, "mac received", LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
-                    Toast.makeText(MainActivity.this, "ip received", LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "ip received", Toast.LENGTH_LONG).show();
                 } else if (message.length > 16) {
                     setMessage(message);
-                    Toast.makeText(MainActivity.this, "message received", LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
                 }
                 peerHandle = peerHandle_;
             }
         }, null);
     }
-
-
 
 
     //subsribe method is used to subscribe to a service
@@ -425,16 +443,11 @@ public class MainActivity extends AppCompatActivity {
             public void onSubscribeStarted(SubscribeDiscoverySession session) {
                 super.onSubscribeStarted(session);
                 subscribeDiscoverySession = session;
-
                 Log.i(LOG, "subscribe started");
 
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
                     Log.d("nanSUBSCRIBE", "onServiceStarted send mac");
-                    //Button responderButton = (Button)findViewById(R.id.responderButton);
-                    //Button initiatorButton = (Button)findViewById(R.id.initiatorButton);
-                    //initiatorButton.setEnabled(true);
-                    //responderButton.setEnabled(false);
                 }
             }
             //called when matching publishers come into wifi range
@@ -444,75 +457,27 @@ public class MainActivity extends AppCompatActivity {
                 super.onServiceDiscovered(peerHandle, serviceSpecificInfo, matchFilter);
                 //String message = "Hei!";
                 peerHandle=peerHandle_;
-
-
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
                 }
-               /* //TODO: hva skjer her?
-               // byte[] messageByte = Base64.encode(message.getBytes(), Base64.DEFAULT);
-                //mainSession.sendMessage(peerHandle, 1, messageByte);
-                //request wifi aware network on subscriber, same as with publisher, just without specifying port.
-
-                //TODO: find out if peerHandle here is identifier for subscriber or publisher
-                //use session (discovery session) and peerhandle obtained from message from subscriber
-                NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
-                        .setPskPassphrase("somePassword")
-                        .build();
-                NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
-                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
-                        .setNetworkSpecifier(networkSpecifier)
-                        .build();
-                //use connectivityManager to request wifi aware network on the publisher
-                ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
-                    //creates network object. Can open socket to communicate with server socket on the publisher
-                    //need to know server sockets IP address and port. Get thsese from network capabilities object provided in
-                    //networkcapabilitiesChanged() callback
-                    @Override
-                    public void onAvailable(Network network) {
-
-                    }
-
-                    @Override
-                    public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
-                        WifiAwareNetworkInfo peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
-                        Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
-                        int peerPort = peerAwareInfo.getPort();
-
-                        try {
-                            Socket socket = network.getSocketFactory().createSocket(peerIpv6, peerPort);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-
-                    @Override
-                    public void onLost(Network network) {
-
-                    }
-                };*/
-
-
-
             }
             @Override
             public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                 super.onMessageReceived(peerHandle, message);
                 Log.d("nanSUBSCRIBE", "received message");
-                Toast.makeText(MainActivity.this, "received", LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "received", Toast.LENGTH_LONG).show();
                 if(message.length == 2) {
                     portToUse = byteToPortInt(message);
                     Log.d("received", "will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
-                    Toast.makeText(MainActivity.this, "mac received", LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
-                    Toast.makeText(MainActivity.this, "ip received", LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "ip received", Toast.LENGTH_LONG).show();
                 } else if (message.length > 16) {
                     setMessage(message);
-                    Toast.makeText(MainActivity.this, "message received", LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
                 }
             }
         }, null);
@@ -569,51 +534,83 @@ public class MainActivity extends AppCompatActivity {
 
     private int port;
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private void requestWiFiConnectionPublisher(PeerHandle peerHandle, DiscoverySession discoverySession) throws IOException {
+    private void requestWiFiConnection() throws IOException {
 
         if (isPublisher){
+            Log.d(LOG, "publisher, making network specifier");
             //starting serverSocket on publisher device
-            ServerSocket serverSocket = new ServerSocket(0);
-            port = serverSocket.getLocalPort();
+            //ServerSocket serverSocket = new ServerSocket(0);
+            //port = serverSocket.getLocalPort();
 
-            NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(discoverySession, peerHandle)
+            networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
                     .setPskPassphrase("somePassword")
-                    .setPort(port)
+                    //.setPort(port)
                     .build();
 
         } else{
-            NetworkSpecifier networkSpecifier = new WifiAwareNetworkSpecifier.Builder(discoverySession, peerHandle)
+            networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
                     .setPskPassphrase("somePassword")
                     .build();
+            Toast.makeText(context, "subscriber in request", Toast.LENGTH_LONG).show();
         }
-
+        Toast.makeText(context, "subscriber in request", Toast.LENGTH_LONG).show();
         connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-
 
         NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
                 .setNetworkSpecifier(networkSpecifier)
                 .build();
-        ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
-            @Override
-            public void onAvailable(Network network) {
+        Toast.makeText(context, "networkrequest build", Toast.LENGTH_LONG).show();
 
+        connectivityManager.requestNetwork(myNetworkRequest, new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network_) {
+                Toast.makeText(context, "onAvaliable", Toast.LENGTH_LONG).show();
+                Log.d(LOG, "onAvaliable");
             }
 
             @Override
-            public void onCapabilitiesChanged(Network network, NetworkCapabilities networkCapabilities) {
-
+            public void onCapabilitiesChanged(Network network_, NetworkCapabilities networkCapabilities_) {
+                Toast.makeText(context, "onCapabilitiesChanged", Toast.LENGTH_LONG).show();
+                Log.d(LOG, "onCapabilitiesChanged");
+                networkCapabilities = networkCapabilities_;
+                network = network_;
+                openSocket();
             }
 
             @Override
-            public void onLost(Network network) {
+            public void onLost(Network network_) {
+                Toast.makeText(context, "onLost", Toast.LENGTH_LONG).show();
+                Log.d(LOG, "onLost");
 
             }
-        };
-        connectivityManager.requestNetwork(myNetworkRequest, callback);
+        });
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private void openSocket(){
+        Log.d(LOG, "openSocket");
+        //-------------------------------------------------------------------------------------------- +++++
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
+            // And if we're on SDK M or later...
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // Ask again, nicely, for the permissions.
+                String[] permissionsWeNeed = new String[]{ Manifest.permission.ACCESS_NETWORK_STATE };
+                requestPermissions(permissionsWeNeed, MY_PERMISSION_NETWORK_STATE_CODE);
+            }
+        }
+        //-------------------------------------------------------------------------------------------- -----
+        WifiAwareNetworkInfo peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
+        Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
+        int peerPort = peerAwareInfo.getPort();
+        try {
+            Socket socket = network.getSocketFactory().createSocket(peerIpv6, peerPort);
+            socket.getPort();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     //only receives messages
     public void startServer(){
         Runnable serverTask = new Runnable(){  //new thread for each client server conn
