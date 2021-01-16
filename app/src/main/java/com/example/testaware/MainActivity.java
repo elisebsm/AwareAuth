@@ -45,10 +45,17 @@ import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -58,6 +65,8 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.List;
+
+import static android.widget.Toast.LENGTH_LONG;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -219,8 +228,8 @@ public class MainActivity extends AppCompatActivity {
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
 
         // Messages for whether or not device has WiFi Aware
-        final Toast awareSupported = Toast.makeText(this, "Wi-Fi Aware Supported", Toast.LENGTH_LONG);
-        final Toast awareUnsupported = Toast.makeText(this, "Wi-Fi Aware Unsupported. Do you have  Wi-Fi or Location OFF? ", Toast.LENGTH_LONG);
+        final Toast awareSupported = Toast.makeText(this, "Wi-Fi Aware Supported", LENGTH_LONG);
+        final Toast awareUnsupported = Toast.makeText(this, "Wi-Fi Aware Unsupported. Do you have  Wi-Fi or Location OFF? ", LENGTH_LONG);
         IntentFilter filter =
                 new IntentFilter(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
         BroadcastReceiver myReceiver = new BroadcastReceiver() {
@@ -386,13 +395,13 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("received", "will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
-                    Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "mac received", LENGTH_LONG).show();
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
-                    Toast.makeText(MainActivity.this, "ip received", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "ip received", LENGTH_LONG).show();
                 } else if (message.length > 16) {
                     setMessage(message);
-                    Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "message received", LENGTH_LONG).show();
                 }
                 peerHandle = peerHandle_;
             }
@@ -491,19 +500,19 @@ public class MainActivity extends AppCompatActivity {
             public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                 super.onMessageReceived(peerHandle, message);
                 Log.d("nanSUBSCRIBE", "received message");
-                Toast.makeText(MainActivity.this, "received", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "received", LENGTH_LONG).show();
                 if(message.length == 2) {
                     portToUse = byteToPortInt(message);
                     Log.d("received", "will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
-                    Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "mac received", LENGTH_LONG).show();
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
-                    Toast.makeText(MainActivity.this, "ip received", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "ip received", LENGTH_LONG).show();
                 } else if (message.length > 16) {
                     setMessage(message);
-                    Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "message received", LENGTH_LONG).show();
                 }
             }
         }, null);
@@ -604,6 +613,105 @@ public class MainActivity extends AppCompatActivity {
         connectivityManager.requestNetwork(myNetworkRequest, callback);
     }
 
+
+    //only receives messages
+    public void startServer(){
+        Runnable serverTask = new Runnable(){  //new thread for each client server conn
+            @Override
+            public void run() {
+                //initialize socket and input stream
+                ServerSocket server = null;
+                Socket socket = null;
+                DataInputStream in = null;
+                //start server and wait for conn
+
+                try {
+                    server = new ServerSocket(0);   //TODOO: set port correctly
+                    while (true) {
+                        Log.d("serverThread", "Server started, Waiting for client");
+                        socket = server.accept();
+                        Log.d("serverThread", "Client accepted");
+                        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+
+                        String str = (String) in.readUTF();
+                        Log.d("serverThread", "Reading message from client");
+                        EditText editText = (EditText) findViewById(R.id.eTOtherMac);
+                        editText.setText(str);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            /*
+                while(true){
+                    byte[] sysPort= portToBytes(server.getLocalPort());
+                    if (publishDiscoverySession != null && peerHandle != null) {
+                        publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, sysPort);
+                    } else if (subscribeDiscoverySession != null && peerHandle != null)  {
+                        subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, sysPort);
+                    }
+
+            */
+                try {
+                    socket.close();
+                    in.close();
+                    Log.d("serverThread", "Closing conn");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        Thread serverThread = new Thread(serverTask);
+        serverThread.start();
+    }
+
+
+    //only sends messages
+    private void clientSendMessage(final Inet6Address ipv6Address){
+        Runnable serverTask = new Runnable(){  //new thread for each client server conn
+            @Override
+            public void run() {
+                //initialize socket and input stream
+                Socket socket = null;
+                //DataInputStream in = null;   //dont need it yet
+                DataOutputStream out= null;
+                try {
+
+                    while (true) {
+                        socket = new Socket(ipv6Address, 0);   //just testing with port 0
+                        String msg= "messageToBeSent: ";
+                        EditText editText = (EditText)findViewById(R.id.eTOtherMac);
+                        msg += editText.getText().toString();
+                        out= new DataOutputStream(socket.getOutputStream());
+                        out.writeUTF(msg);
+                        out.flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            /*
+                while(true){
+                    byte[] sysPort= portToBytes(server.getLocalPort());
+                    if (publishDiscoverySession != null && peerHandle != null) {
+                        publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, sysPort);
+                    } else if (subscribeDiscoverySession != null && peerHandle != null)  {
+                        subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, sysPort);
+                    }
+
+            */
+                try {
+                    socket.close();
+                    //in.close();
+                    out.close();
+                    Log.d("serverThread", "Closing conn");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Thread serverThread = new Thread(serverTask);
+        serverThread.start();
+    }
 
 
     //private WifiAwareSession mAwaresession;
