@@ -33,35 +33,19 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.List;
-
-import static android.widget.Toast.LENGTH_LONG;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -99,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private PeerHandle peerHandle;
     private byte[] myMac;
 
+
     private final int MAC_ADDRESS_MESSAGE = 11;
     private BroadcastReceiver         broadcastReceiver;
     private ConnectivityManager       connectivityManager;
@@ -119,6 +104,11 @@ public class MainActivity extends AppCompatActivity {
     private int peerPort;
 
     private EditText editTextLongMessage;
+
+    private List<PeerHandle> peerHandleList = new ArrayList<PeerHandle>();
+    private List<String> otherMacList = new ArrayList<String>();
+    private String macAddress;
+
 
     // Hentet fra:https://github.com/anagramrice/NAN/blob/master/app/src/main/java/net/mobilewebprint/nan/MainActivity.java
     private static final int MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE = 88;
@@ -403,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(LOG, "will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
-                    Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
                     Toast.makeText(MainActivity.this, "ip received", Toast.LENGTH_LONG).show();
@@ -412,6 +402,19 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
                 }
                 peerHandle = peerHandle_;
+                if (!otherMacList.contains(macAddress)){
+                    otherMacList.add(macAddress);
+                    Log.d(LOG, "mac list"+ otherMacList);
+
+                    peerHandleList.add(peerHandle);
+                    int numOfSubscribers = peerHandleList.size();   //number of subscribers
+                    Toast.makeText(MainActivity.this, "Subscribers: "+ numOfSubscribers, Toast.LENGTH_LONG).show();
+
+                }
+
+
+
+
             }
         }, null);
     }
@@ -490,7 +493,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setOtherMacAddress(byte[] mac) {
         otherMac = mac;
-        String macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
         EditText editText = findViewById(R.id.eTOtherMac);
         editText.setText(macAddress);
     }
