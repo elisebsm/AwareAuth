@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private SubscribeDiscoverySession mainSession;
     private WifiAwareManager wifiAwareManager;
     private WifiAwareSession wifiAwareSession;
-    private String serviceName = "Receive-Message-Service";
+    private String serviceName = "Elise";
     private Context context;
     private static final String[] LOCATION_PERMS={
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -118,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
     private Inet6Address peerIpv6 ;
     private int peerPort;
 
+    private EditText editTextLongMessage;
 
     // Hentet fra:https://github.com/anagramrice/NAN/blob/master/app/src/main/java/net/mobilewebprint/nan/MainActivity.java
     private static final int MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE = 88;
@@ -212,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    clientSendMessage(peerIpv6, peerPort);
+                    clientSendMessage(peerIpv6, portToUse);
                 }
             }
         });
@@ -235,17 +236,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        // Messages for whether or not device has WiFi Aware
-        //Toast hasAware = Toast.makeText(this, "WiFi Aware is available", Toast.LENGTH_LONG);
-        //Toast noAware = Toast.makeText(this, "WiFi Aware is not available", Toast.LENGTH_LONG);
         supportsAware = this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
         if(supportsAware){
-            //hasAware.show();
             Log.i(LOG, "The device supports Wi-Fi Aware");
-
-            //attachToSession();
         } else {
-            //noAware.show();
             Log.i(LOG, "The device DOES NOT supports Wi-Fi Aware");
         }
 
@@ -263,7 +257,6 @@ public class MainActivity extends AppCompatActivity {
                 // discard current sessions
                 if (wifiAwareManager.isAvailable()) {
                     awareSupported.show();
-                    //attachToSession();
                 } else {
                     awareUnsupported.show();
                 }
@@ -407,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
                 super.onMessageReceived(peerHandle, message);
                 if(message.length == 2) {
                     portToUse = byteToPortInt(message);
-                    Log.d("received", "will use port number "+ portToUse);
+                    Log.d(LOG, "will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
                     Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
@@ -442,7 +435,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
-                    Log.d("nanSUBSCRIBE", "onServiceStarted send mac");
+                    Log.d(LOG, " subscribe, onServiceStarted send mac");
                 }
             }
             //called when matching publishers come into wifi range
@@ -459,11 +452,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                 super.onMessageReceived(peerHandle, message);
-                Log.d("nanSUBSCRIBE", "received message");
+                Log.d(LOG, "subscribe, received message");
                 Toast.makeText(MainActivity.this, "received", Toast.LENGTH_LONG).show();
                 if(message.length == 2) {
                     portToUse = byteToPortInt(message);
-                    Log.d("received", "will use port number "+ portToUse);
+                    Log.d(LOG, "subscribe, will use port number "+ portToUse);
                 } else if (message.length == 6){
                     setOtherMacAddress(message);
                     Toast.makeText(MainActivity.this, "mac received", Toast.LENGTH_LONG).show();
@@ -510,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
             //EditText editText = (EditText) findViewById(R.id.IPv6text);
             //editText.setText(ipAddr);
         } catch (UnknownHostException e) {
-            Log.d("myTag", "socket exception " + e.toString());
+            Log.d(LOG, "socket exception " + e.toString());
         }
     }
 
@@ -532,11 +525,6 @@ public class MainActivity extends AppCompatActivity {
     private void requestWiFiConnection() throws IOException {
 
         if (isPublisher){
-            Log.d(LOG, "publisher, making network specifier");
-            //starting serverSocket on publisher device
-            //ServerSocket serverSocket = new ServerSocket(0);
-            //port = serverSocket.getLocalPort();
-
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
                     .setPskPassphrase("somePassword")
                     //.setPort(port)
@@ -546,9 +534,7 @@ public class MainActivity extends AppCompatActivity {
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
                     .setPskPassphrase("somePassword")
                     .build();
-            Toast.makeText(context, "subscriber in request", Toast.LENGTH_LONG).show();
         }
-        Toast.makeText(context, "subscriber in request", Toast.LENGTH_LONG).show();
         connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 
         NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
@@ -602,7 +588,7 @@ public class MainActivity extends AppCompatActivity {
         Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
         int peerPort = peerAwareInfo.getPort();
         try {
-            Socket socket = network.getSocketFactory().createSocket(peerIpv6, peerPort);
+            Socket socket = network.getSocketFactory().createSocket(peerIpv6, portToUse);
             socket.getPort();
         } catch (IOException e) {
             e.printStackTrace();
@@ -620,8 +606,10 @@ public class MainActivity extends AppCompatActivity {
                 //start server and wait for conn
 
                 try {
-                    server = new ServerSocket(0);
+                    server = new ServerSocket(5555);
                     int port = server.getLocalPort();
+
+                    Log.d(LOG, String.valueOf(port));
                     //TODOO: set port correctly
                     while (true) {
                         Log.d(LOG, "Server started, Waiting for client");
@@ -629,10 +617,18 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(LOG, "Client accepted");
                         in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 
-                        String str = (String) in.readUTF();
+                        strMessageFromClient = (String) in.readUTF();
                         Log.d(LOG, "Reading message from client");
-                        EditText editText = (EditText) findViewById(R.id.textViewSendLongMessage);
-                        editText.setText(str);
+                        editTextLongMessage= (EditText) findViewById(R.id.textViewSendLongMessage);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                editTextLongMessage.setText(strMessageFromClient);
+                            }
+                        });
+
+                        
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -661,6 +657,7 @@ public class MainActivity extends AppCompatActivity {
         serverThread.start();
     }
 
+    private String strMessageFromClient;
 
     //only sends messages
     private void clientSendMessage(final Inet6Address ipv6Address, final int port){
@@ -672,16 +669,15 @@ public class MainActivity extends AppCompatActivity {
                 //DataInputStream in = null;   //dont need it yet
                 DataOutputStream out= null;
                 try {
-
-                    while (true) {
-                                socket = new Socket(ipv6Address, port);   //just testing with port 0
+                   // while (true) {
+                        socket = new Socket(ipv6Address, 5555);   //just testing with port 0
                         String msg= "messageToBeSent: ";
-                        EditText editText = (EditText)findViewById(R.id.textViewSendLongMessage);
-                        msg += editText.getText().toString();
+                        editTextLongMessage = (EditText)findViewById(R.id.textViewSendLongMessage);
+                        msg += editTextLongMessage.getText().toString();
                         out= new DataOutputStream(socket.getOutputStream());
                         out.writeUTF(msg);
                         out.flush();
-                    }
+                    //}
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -708,75 +704,4 @@ public class MainActivity extends AppCompatActivity {
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
     }
-
-
-    //private WifiAwareSession mAwaresession;
-    /*public void onAttached(final WifiAwareSession session) {
-        Log.d(LOG, "Attach operation completed and can now start discovery sessions");
-        final byte[] messageSend = new byte[1];
-        messageSend[0] = 104;
-        mAwaresession = session;
-        // Start Subscribe Session
-        SubscribeConfig config = new SubscribeConfig.Builder()
-                .setServiceName("Receive_Message_Service")
-                .build();
-
-        mAwaresession.subscribe(config, new DiscoverySessionCallback() {
-
-            SubscribeDiscoverySession mainSession;
-
-            @Override
-            public void onSubscribeStarted(SubscribeDiscoverySession session) {
-                Log.d("Method Called", "onSubscribeStarted");
-                mainSession = session;
-            }
-            @Override
-            public void onServiceDiscovered(PeerHandle peerHandle, byte[] serviceSpecificInfo,
-                                            List<byte[]> matchFilter) {
-                Log.d("Method Called", "onServiceDiscovered");
-                mainSession.sendMessage(peerHandle, 1, messageSend);
-            }
-            @Override
-            public void onMessageReceived(PeerHandle peerHandle, byte[] messageFromPub) {
-                Log.d("Method Called", "onMessageReceived");
-                Log.d("Messaged Received is", new String(messageFromPub));
-                //messageReceived = messageFromPub;
-            }}, null);
-        };*/
-
-
-
-
-   /* An application must use {@link #attach(AttachCallback, Handler)} to initialize a
- *     Aware cluster - before making any other Aware operation. Aware cluster membership is a
- *     device-wide operation - the API guarantees that the device is in a cluster or joins a
- *     Aware cluster (or starts one if none can be found). Information about attach success (or
- *     failure) are returned in callbacks of {@link AttachCallback}. Proceed with Aware
- *     discovery or connection setup only after receiving confirmation that Aware attach
- *     succeeded - {@link AttachCallback#onAttached(WifiAwareSession)}. When an
- *     application is finished using Aware it <b>must</b> use the
- *     {@link WifiAwareSession#close()} API to indicate to the Aware service that the device
- *     may detach from the Aware cluster. The device will actually disable Aware once the last
- *     application detaches.
- *
- *
- *  An application <b>must</b> call {@link WifiAwareSession#close()} when done with the
-    * Wi-Fi Aware object.
-    * <p>
-    * Note: a Aware cluster is a shared resource - if the device is already attached to a cluster
-    * then this function will simply indicate success immediately using the same {@code
-    * attachCallback}.
-    *
-    * * @param handler The Handler on whose thread to execute the callbacks of the {@code
-    * attachCallback} object. If a null is provided then the application's main thread will be
-    *                used.
-*/
-
-   /*TODO: create toast which indicates if you have joined or formed a cluster depending on attach success/failure (AttachCallback)*/
-/*
-    public void attach(AttachCallback attachCallback, Handler handler) {
-        attach(attachCallback, handler);
-        attachCallback.toString()
-    }*/
-
 }
