@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private SubscribeDiscoverySession mainSession;
     private WifiAwareManager wifiAwareManager;
     private WifiAwareSession wifiAwareSession;
-    private String serviceName = "Kirsten";
+    private String serviceName = "Elise";
     private Context context;
     private static final String[] LOCATION_PERMS={
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -139,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 subscribe();
                 Log.i(LOG, "Subscribe button pressed");
+                findViewById(R.id.btnConnectSub).setVisibility(View.VISIBLE);
             }
         });
 
@@ -150,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
                 publish();
                 Log.i(LOG, "Publish button pressed");
                 isPublisher = true;
+                findViewById(R.id.btnConnectPub).setVisibility(View.VISIBLE);
             }
         });
 
@@ -532,6 +534,7 @@ public class MainActivity extends AppCompatActivity {
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
                     .setPskPassphrase("somePassword")
                     //.setPort(port)
+                    //.setTransportProtocol(6)
                     .build();
 
         } else{

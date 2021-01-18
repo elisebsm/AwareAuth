@@ -117,7 +117,8 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@+id/eTMsg"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.846" />
+        app:layout_constraintVertical_bias="0.846"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnConnectSub"
@@ -129,7 +130,8 @@
         app:layout_constraintHorizontal_bias="0.972"
         app:layout_constraintStart_toEndOf="@+id/eTMsg"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.748" />
+        app:layout_constraintVertical_bias="0.748"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btnSendLongMessage"
