@@ -32,9 +32,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
+
+import com.example.testaware.adapters.ChatsListAdapter;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -46,6 +52,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -123,14 +130,33 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         context = this;
 
-        wifiAwareManager = null;
+        /*wifiAwareManager = null;
         wifiAwareSession = null;
         connectivityManager = null;
         networkSpecifier = null;
         publishDiscoverySession = null;
         subscribeDiscoverySession = null;
-        peerHandle = null;
+        peerHandle = null;*/
 
+        //TODO: make array of contacts/Chats, check that current user is not added to the list
+        ArrayList<Chat> testArrayOfChats = new ArrayList<Chat>();
+        ChatsListAdapter chatListAdapter = new ChatsListAdapter(this, testArrayOfChats);
+        Chat chatElise = new Chat("Elise");
+        Chat chatKirsten = new Chat("Kirsten");
+
+        testArrayOfChats.add(chatElise);
+        testArrayOfChats.add(chatKirsten);
+
+        //ArrayAdapter<String> chatListAdapter = new ArrayAdapter<String>(this, R.layout.chat_list_elements, testArray);
+
+        ListView listViewChats = findViewById(R.id.listViewChats);
+        listViewChats.setAdapter(chatListAdapter);
+        listViewChats.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                openChat();
+            }
+        });
 
         //Button calling the subscribe function
         Button subscribeBtn = findViewById(R.id.btnSubscribe);
@@ -601,6 +627,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     //only receives messages
     public void startServer(){
         Runnable serverTask = new Runnable(){  //new thread for each client server conn
@@ -708,5 +735,12 @@ public class MainActivity extends AppCompatActivity {
         };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
+    }
+
+
+    private void openChat(){
+        Intent intentChat = new Intent(this, ChatActivity.class);
+        startActivity(intentChat);
+
     }
 }
