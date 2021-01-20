@@ -1,8 +1,8 @@
 package com.example.testaware;
 
-public class Chat {
+public class ChatListItem {
     private String username;
-    public Chat(String username){
+    public ChatListItem(String username){
         this.username = username;
     }
 

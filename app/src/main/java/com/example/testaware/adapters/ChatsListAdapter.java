@@ -7,16 +7,16 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.example.testaware.Chat;
+import com.example.testaware.ChatListItem;
 import com.example.testaware.R;
 
 import java.util.ArrayList;
 
 
-public class ChatsListAdapter extends ArrayAdapter<Chat> {
-    private ArrayList<Chat> chats;
+public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
+    private ArrayList<ChatListItem> chats;
     Context context;
-    public ChatsListAdapter(Context context, ArrayList<Chat> chats) {
+    public ChatsListAdapter(Context context, ArrayList<ChatListItem> chats) {
         super(context, R.layout.chat_list_elements, chats);
         this.chats = chats;
         this.context = context;
@@ -26,12 +26,12 @@ public class ChatsListAdapter extends ArrayAdapter<Chat> {
     public class ViewHolder{
         TextView name;
     }*/
-
+//TODO: change to recyclerview
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // Get the data item for this position
-        Chat chat = getItem(position);
+        ChatListItem chat = getItem(position);
         // Check if an existing view is being reused, otherwise inflate the view
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.chat_list_elements, parent, false);
@@ -49,7 +49,5 @@ public class ChatsListAdapter extends ArrayAdapter<Chat> {
         // Return the completed view to render on screen
         return convertView;
     }
-
-
 
 }

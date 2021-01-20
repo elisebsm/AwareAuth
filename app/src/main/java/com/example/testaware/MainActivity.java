@@ -33,11 +33,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
 import com.example.testaware.adapters.ChatsListAdapter;
@@ -52,7 +50,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -139,13 +136,12 @@ public class MainActivity extends AppCompatActivity {
         peerHandle = null;*/
 
         //TODO: make array of contacts/Chats, check that current user is not added to the list
-        ArrayList<Chat> testArrayOfChats = new ArrayList<Chat>();
+        ArrayList<ChatListItem> testArrayOfChats = new ArrayList<ChatListItem>();
         ChatsListAdapter chatListAdapter = new ChatsListAdapter(this, testArrayOfChats);
-        Chat chatElise = new Chat("Elise");
-        Chat chatKirsten = new Chat("Kirsten");
+        ChatListItem chatElise = new ChatListItem("Elise");
 
         testArrayOfChats.add(chatElise);
-        testArrayOfChats.add(chatKirsten);
+
 
         //ArrayAdapter<String> chatListAdapter = new ArrayAdapter<String>(this, R.layout.chat_list_elements, testArray);
 
@@ -231,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    clientSendMessage(peerIpv6, portToUse);
+                    //clientSendMessage(peerIpv6, portToUse);
                 }
             }
         });
@@ -295,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                 wifiAwareSession = session;
                 //TODO: close session
             }
-            //TODO: make onattachfailed
+             //TODO: make onattachfailed
         }, new IdentityChangedListener() {
             @Override
             public void onIdentityChanged(byte[] mac) {
@@ -592,7 +588,7 @@ public class MainActivity extends AppCompatActivity {
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
                 peerPort = peerAwareInfo.getPort();   //port is set in startServer, so no point in setting it before startServer is run
-                startServer();
+                //startServer();
             }
 
             @Override
@@ -629,7 +625,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //only receives messages
-    public void startServer(){
+    private void startServer(){
         Runnable serverTask = new Runnable(){  //new thread for each client server conn
             @Override
             public void run() {
@@ -639,8 +635,9 @@ public class MainActivity extends AppCompatActivity {
                 DataInputStream inputStream = null;
                 //start server and wait for conn
                 try {
-                    server = new ServerSocket(0);
-                    int port = server.getLocalPort();
+                    server = new ServerSocket(40699);
+                    int port = 40699;
+                            // server.getLocalPort();
                     Log.d(LOG, String.valueOf(port));
 
                     //TODOO: set port correctly
@@ -667,7 +664,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
 
-                        
+
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -703,8 +700,9 @@ public class MainActivity extends AppCompatActivity {
                 DataOutputStream outputStream= null;
                 try {
 
-                        socket = new Socket(ipv6Address, port);   //just testing with port 0
+                        socket = new Socket(ipv6Address, 40699);   //just testing with port 40699
                         String msg= "";
+                    Log.d(LOG, "IPv6 Address for client:"+ ipv6Address);
                         editTextLongMessage = (EditText)findViewById(R.id.textViewSendLongMessage);
                         msg += editTextLongMessage.getText().toString();
                         outputStream= new DataOutputStream(socket.getOutputStream());
@@ -738,8 +736,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void openChat(){
+    private void openChat(){   //send port and ipv6 address here
         Intent intentChat = new Intent(this, ChatActivity.class);
+        intentChat.putExtra("IPV6_Address", peerIpv6);
+        intentChat.putExtra("Client_port", 40699);
         startActivity(intentChat);
 
     }
