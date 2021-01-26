@@ -1,58 +1,69 @@
 package com.example.testaware.adapters;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.testaware.MessageListItem;
 import com.example.testaware.R;
+import com.example.testaware.User;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Enumeration;
 
-public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.ViewHolder> {
+public class MessageListAdapter extends RecyclerView.Adapter{
     private ArrayList<MessageListItem> mMessageListItemList;    //list of messages beeing sent
     Context context;
+
 
     private static final int VIEW_TYPE_MESSAGE_SENT = 1;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
 
 
+    public MessageListAdapter(Context context, ArrayList<MessageListItem> messageListItemList) {
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        private final TextView textView;
+        mMessageListItemList = messageListItemList;
+        context = context;
 
+    }
 
-        public ViewHolder(View view) {
-            super(view);
-            // Define click listener for the ViewHolder's View
-
-            textView = (TextView) view.findViewById(R.id.textViewVMyChatBubble);
-        }
-
-        public TextView getTextView() {
-            return textView;
-        }
+    @Override
+    public int getItemCount() {
+        return mMessageListItemList.size();
     }
 
 
-     public MessageListAdapter(Context context, ArrayList<MessageListItem> messageListItemList) {
+    // Determines the appropriate ViewType according to the sender of the message.
+    @Override
+    public int getItemViewType(int position) {
+        MessageListItem message = (MessageListItem) mMessageListItemList.get(position);
 
-         mMessageListItemList = messageListItemList;
-         context = context;
-     }
+        if (message.getIpv6Address().equals("ipv6_other_user")) {  // for testing. use ip address later. somethig like :userMessage.getIpv6Address().equals(getLocalIpV6()
+            // If the current user is the sender of the message
+            return VIEW_TYPE_MESSAGE_RECEIVED;
+        } else {
+            // If some other user sent the message
+            return VIEW_TYPE_MESSAGE_SENT;
 
 
+
+        }
+
+    }
 
 
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
-/*
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view;
+
         if (viewType == VIEW_TYPE_MESSAGE_SENT) {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.my_message, parent, false);
@@ -62,22 +73,14 @@ public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.
                     .inflate(R.layout.other_message, parent, false);
             return new ReceivedMessageHolder(view);
         }
-         return null;
-*/
-        View view = LayoutInflater.from(viewGroup.getContext())
-                .inflate(R.layout.my_message, viewGroup, false);
-
-        return new ViewHolder(view);
+        return null;
 
     }
-
-
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         MessageListItem messageListItem = (MessageListItem) mMessageListItemList.get(position);
-        String message = messageListItem.getMessage();
-       // ((SentMessageHolder) holder).bind(messageListItem);
-        /*
+        //String message = messageListItem.getMessage();
+
         switch (holder.getItemViewType()) {
             case VIEW_TYPE_MESSAGE_SENT:
                 ((SentMessageHolder) holder).bind(messageListItem);
@@ -86,36 +89,10 @@ public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.
                 ((ReceivedMessageHolder) holder).bind(messageListItem);
         }
 
-         */
 
-        // Get element from your dataset at this position and replace the
-        // contents of the view with that element
-
-        viewHolder.getTextView().setText(message);
 
     }
 
-    @Override
-    public int getItemCount() {
-        return 0;
-    }
-
-    /*
-
-    // Determines the appropriate ViewType according to the sender of the message.
-    @Override
-    public int getItemViewType(int position) {
-        MessageListItem message = (MessageListItem) mMessageListItemList.get(position);
-
-        if (true) {  // if sender is this user, //TODO: change to actually chech who sender is
-            // If the current user is the sender of the message
-            return VIEW_TYPE_MESSAGE_SENT;
-        } else {
-            // If some other user sent the message
-            return VIEW_TYPE_MESSAGE_RECEIVED;
-        }
-
-    }
 
 
     public class ReceivedMessageHolder extends RecyclerView.ViewHolder {
@@ -125,7 +102,7 @@ public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.
             super(itemView);
             messageText = (TextView) itemView.findViewById(R.id.textViewOtherChatBubble);
 
-            nameText = (TextView) itemView.findViewById(R.id.textChatUserOther);   //bind name of message sender
+            //nameText = (TextView) itemView.findViewById(R.id.textChatUserOther);   //bind name of message sender
 
         }
 
@@ -133,7 +110,7 @@ public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.
             messageText.setText(messageListItem.getMessage());
 
 
-            nameText.setText(messageListItem.getSender());
+            //nameText.setText("Elise");
 
 
         }
@@ -141,6 +118,7 @@ public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.
 
     public class SentMessageHolder extends RecyclerView.ViewHolder {
         TextView messageText;
+
 
         SentMessageHolder(View itemView) {
             super(itemView);
@@ -158,5 +136,7 @@ public class MessageListAdapter extends RecyclerView.Adapter<MessageListAdapter.
     }
 
 
-     */
+
+
+
 }

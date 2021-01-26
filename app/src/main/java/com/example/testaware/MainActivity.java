@@ -54,6 +54,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+
     private boolean supportsAware;
     private String LOG = "LOG-Test-Aware";
     private SubscribeDiscoverySession mainSession;
@@ -95,7 +96,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     private final int                 IP_ADDRESS_MESSAGE             = 33;
-    private Inet6Address              ipv6;
+
+    private String ipAddr; //other IP
 
     private ServerSocket              serverSocket;
     private final int                 MESSAGE                        = 7;
@@ -105,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
     private WifiAwareNetworkInfo peerAwareInfo;
 
     private Inet6Address peerIpv6 ;
+    private static Inet6Address sendPeerIp;
     private int peerPort;
 
     private EditText editTextLongMessage;
@@ -227,7 +230,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    //clientSendMessage(peerIpv6, portToUse);
+                   // clientSendMessage(peerIpv6, portToUse);
+                    Log.i(LOG,"IP add of peer:!!!!"+ peerIpv6);
                 }
             }
         });
@@ -587,6 +591,8 @@ public class MainActivity extends AppCompatActivity {
                 network = network_;
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
+
+                setPeerIpv6(peerIpv6);
                 peerPort = peerAwareInfo.getPort();   //port is set in startServer, so no point in setting it before startServer is run
                 //startServer();
             }
@@ -702,7 +708,7 @@ public class MainActivity extends AppCompatActivity {
 
                         socket = new Socket(ipv6Address, 40699);   //just testing with port 40699
                         String msg= "";
-                    Log.d(LOG, "IPv6 Address for client:"+ ipv6Address);
+                        Log.d(LOG, "IPv6 Address for client:"+ ipv6Address);
                         editTextLongMessage = (EditText)findViewById(R.id.textViewSendLongMessage);
                         msg += editTextLongMessage.getText().toString();
                         outputStream= new DataOutputStream(socket.getOutputStream());
@@ -742,5 +748,14 @@ public class MainActivity extends AppCompatActivity {
         intentChat.putExtra("Client_port", 40699);
         startActivity(intentChat);
 
+    }
+
+    public void setPeerIpv6(Inet6Address sendPeerIp){
+        this.sendPeerIp= sendPeerIp;   //test with ipAddr
+
+    }
+
+    public static Inet6Address getPeerIpv6(){
+        return sendPeerIp;
     }
 }
