@@ -17,6 +17,7 @@ import com.example.testaware.adapters.MessageListAdapter;
 
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -43,26 +44,32 @@ public class ChatActivity extends AppCompatActivity {
     private Context context;
     private static Inet6Address peerIpv6;
 
+    private DataInputStream inputStream;
+    private DataOutputStream outputStream;
+    private User user;
+    private String myIpvAddr;
+    private Socket socket;
+    private boolean running;
 
 
 
 
+//client can send messages to server, this works. and other way around
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         this.context = this;
-
+        myIpvAddr= getLocalIp();
+        user= new User("Ser", myIpvAddr, true);          //change for every run, just foir testing
 
         peerIpv6 = MainActivity.getPeerIpv6();  //get peer ip from main
 
-        Log.i(LOG, "PeerIP"+peerIpv6.toString());
+        //Log.i(LOG, "PeerIP"+peerIpv6.toString());
 
         //otherIpAddr = getIntent().getStringExtra()
         //currentUser = new User ("kirsten",getLocalIpV6(), true); //set new user
         //otherUser = new User("elise", peerIpv6.toString(), false);
-        Log.i(LOG, "my ip"+getLocalIpV6());
-
 
 
         Log.i(LOG, "Chat Activity on create started");
@@ -74,52 +81,108 @@ public class ChatActivity extends AppCompatActivity {
         mMessageRecycler.setAdapter(mMessageAdapter);
         mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
 
-        startServer();
-        Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
-        sendChatMsgbtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    sendChatMessage();
-                    Log.i(LOG, "send btn pressed");
+        final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
+        if(user.getName()=="Server") {
+            startServer();
+            sendChatMsgbtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        sendMessage();
+                        Log.i(LOG, "send btn pressed");
+                    }
                 }
-            }
-        });
+            });
+        }
+        else{
+            initClient();
+            sendChatMsgbtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        sendMessage();
+                        Log.i(LOG, "send btn pressed");
+                    }
+                }
+            });
+        }
+
     }
 
 
-    private void sendChatMessage() {
+    private void initClient() {
         Runnable serverTask = new Runnable() {  //new thread for each client server conn, yes probably
             @Override
             public void run() {
 
                 //(Inet6Address) getIntent().getExtras().get("IPV6_Address");  //does not work
                 int clientPort = (int) getIntent().getExtras().get("Client_port");  //use to get dynamic ports
-
+                running= true;
                 //initialize socket and input stream
-                Socket socket = null;
+                socket = null;
                 Log.i(LOG, "sendChatMessage started ");
                 String chatMessage = editChatText.getText().toString();
 
-                DataOutputStream outputStream = null;
-                try {
 
-                        socket = new Socket(peerIpv6, 40699);   //TODO: just testing with port 40699
+
+
+                    try {
+
+                        socket = new Socket(peerIpv6, 40699);   //TODO: just testing with port 4069
+                      //  if(socket ==null)continue;
+                        inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
                         outputStream = new DataOutputStream(socket.getOutputStream());
-                        outputStream.writeUTF(chatMessage);
-                        outputStream.flush();
+
+
+                            outputStream.writeUTF("clientHello");
+                            outputStream.flush();
+                            Log.i(LOG, "ClientHello sent ");
+
+                            MessageListItem chatMsg = new MessageListItem("clientHello", getLocalIp());
+                            messageList.add(chatMsg);
+
+                            EditText textT = (EditText) findViewById(R.id.eTChatMsg);
+                            textT.getText().clear();
+
+
+
+
+                           if (inputStream!=null){
+                                receiveMessage();
+                            }
+
+                                                  
+
+ /*
+                            Log.d(LOG, "Reading message " + strMessageFromClient);
+
+                            MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                            messageList.add(chatMsg);
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mMessageAdapter.notifyDataSetChanged();
+
+                                }
+                            });
+                        }*/
 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+             /*
+                if(inputStream!=null){
+                    receiveMessage();
+
+                }
+                if(outputStream!=null){
+                    sendMessage();
+                }  */
 
 
-                MessageListItem chatMsg = new MessageListItem(chatMessage,getLocalIpV6());
-                messageList.add(chatMsg);
+                }
 
-                EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                textT.getText().clear();
-            }
 
 
         };
@@ -128,6 +191,78 @@ public class ChatActivity extends AppCompatActivity {
         serverThread.start();
 
     }
+    //this works
+    private void receiveMessage(){
+        Runnable serverTask = new Runnable() {
+            public void run() {
+                running = true;
+
+                try {
+                    inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+                    while (running) {
+                        strMessageFromClient = (String) inputStream.readUTF();
+                        Log.d(LOG, "Reading message " + strMessageFromClient);
+                        MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                        messageList.add(chatMsg);
+                    }
+
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mMessageAdapter.notifyDataSetChanged();
+
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            };
+
+            Thread serverThread = new Thread(serverTask);
+            serverThread.start();
+        }
+
+
+
+
+
+
+
+    //runnable?
+    private void sendMessage(){
+       Runnable serverTask = new Runnable() {  //
+       public void run() {
+       String chatMessage = editChatText.getText().toString();
+        try {
+            outputStream = new DataOutputStream(socket.getOutputStream());
+
+
+
+                outputStream.writeUTF(chatMessage);
+                outputStream.flush();
+
+                MessageListItem chatMsg = new MessageListItem(chatMessage, getLocalIp());
+                messageList.add(chatMsg);
+
+                EditText textT = (EditText) findViewById(R.id.eTChatMsg);
+                textT.getText().clear();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        }
+         };
+
+         Thread serverThread = new Thread(serverTask);
+         serverThread.start();
+
+    }
+
+
+
 
     //only receives messages
     private void startServer(){
@@ -137,9 +272,11 @@ public class ChatActivity extends AppCompatActivity {
                 //initialize socket and input stream
 
                 ServerSocket server;
-                Socket socket = null;
-                DataInputStream inputStream = null;
+              //  socket = null;
+                //inputStream = null;
+              //  outputStream =null;
                 //start server and wait for conn
+
                 try {
                     server = new ServerSocket(40699);
 
@@ -165,6 +302,13 @@ public class ChatActivity extends AppCompatActivity {
                         MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
                         messageList.add(chatMsg);
 
+                        if(inputStream!= null){
+                            receiveMessage();
+
+                        }
+
+
+
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -174,14 +318,33 @@ public class ChatActivity extends AppCompatActivity {
                         });
 
                     }
+
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                /*
+/*
+                try {
+
+                    outputStream = new DataOutputStream(socket.getOutputStream());
+                    if(outputStream!=null) {
+
+                        outputStream.writeUTF(chatMessage);
+                        outputStream.flush();
+
+                        MessageListItem chatMsg = new MessageListItem(chatMessage, getLocalIp());
+                        messageList.add(chatMsg);
+
+                        EditText textT = (EditText) findViewById(R.id.eTChatMsg);
+                        textT.getText().clear();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
 
-                 */
-                /*try {
+                try {
                     socket.close();
                     in.close();
                     Log.d(LOG, "Closing conn");
@@ -195,8 +358,10 @@ public class ChatActivity extends AppCompatActivity {
         serverThread.start();
     }
 
+
+
     //ipv6
-    public String getLocalIpV6() {
+    public String getLocalIp() {
         try {
             for (Enumeration<NetworkInterface> en = NetworkInterface
                     .getNetworkInterfaces(); en.hasMoreElements(); ) {

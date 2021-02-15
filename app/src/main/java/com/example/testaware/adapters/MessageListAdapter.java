@@ -46,7 +46,7 @@ public class MessageListAdapter extends RecyclerView.Adapter{
     public int getItemViewType(int position) {
         MessageListItem message = (MessageListItem) mMessageListItemList.get(position);
 
-        if (message.getIpv6Address().equals("ipv6_other_user")) {  // for testing. use ip address later. somethig like :userMessage.getIpv6Address().equals(getLocalIpV6()
+        if (message.getIpv6Address().equals("ipv6_other_user")) {  //TODO: for testing. use ip address later. somethig like :userMessage.getIpv6Address().equals(getLocalIpV6()
             // If the current user is the sender of the message
             return VIEW_TYPE_MESSAGE_RECEIVED;
         } else {
