@@ -1,4 +1,4 @@
-package com.example.testaware;
+package com.example.testaware.listitems;
 
 public class ChatListItem {
     private String username;
@@ -8,5 +8,6 @@ public class ChatListItem {
 
     public String getUsername(){
         return username;
+
     }
 }

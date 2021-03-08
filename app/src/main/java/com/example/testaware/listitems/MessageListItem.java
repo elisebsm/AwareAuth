@@ -1,4 +1,4 @@
-package com.example.testaware;
+package com.example.testaware.listitems;
 
 public class MessageListItem {
     String message;

@@ -1,7 +1,6 @@
 package com.example.testaware.adapters;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,15 +8,10 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.testaware.MessageListItem;
+import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
-import com.example.testaware.User;
 
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.Enumeration;
 
 public class MessageListAdapter extends RecyclerView.Adapter{
     private ArrayList<MessageListItem> mMessageListItemList;    //list of messages beeing sent

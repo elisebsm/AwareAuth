@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.example.testaware.ChatListItem;
+import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.R;
 
 import java.util.ArrayList;

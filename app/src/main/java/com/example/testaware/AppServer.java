@@ -1,19 +1,26 @@
 package com.example.testaware;
 
-import android.content.Context;
-import android.util.Log;
-
+import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageListAdapter;
+import com.example.testaware.listitems.MessageListItem;
+import com.example.testaware.models.Contact;
+import com.example.testaware.models.MessageObject;
+import com.example.testaware.models.ReceivedPacket;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.Inet6Address;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 
 //client can also instantiate connection.
@@ -21,84 +28,95 @@ import java.util.ArrayList;
 public class AppServer {
 
 
+    private static Inet6Address peerIpv6;
+    private static WeakReference<MainActivity> mainActivity; //TODO what is this??
     private String LOG = "LOG-Test-Aware-App-Client";
-
     private MessageListAdapter mMessageAdapter;  //endret til test
     private ArrayList<MessageListItem> messageList;
     private String strMessageFromClient;
-    private Context context;
-    private static Inet6Address peerIpv6;
+    private SSLContext sslContext;
     private DataInputStream inputStream;  //TODO: change to objectinputstream??
     private DataOutputStream outputStream;   //TODO: use so client can also send messages
-
     private boolean running;
+    private Map<PublicKey, ConnectedDevice> clients;
 
-    private AppServer(Context context, Inet6Address peerIpv6){
-        this.context=context;
-        this.peerIpv6=peerIpv6;
-    }
+    private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
 
 
-    //only receives messages
-    private void startServer(){
-        Runnable serverTask = new Runnable(){  //new thread for each client server conn
-            @Override
-            public void run() {
-                //initialize socket and input stream
-                running= true;
-                ServerSocket server;
-                Socket socket = null;
-                DataInputStream inputStream = null;
-                //start server and wait for conn
-                try {
-                    server = new ServerSocket(40699);
 
-                    int port = 40699;
-                    // server.getLocalPort();  //TODO: change to get dynamic ports
-                    while (running) {
-                        /*
-                        portOnSystem = portToBytes(port);   //get port set by server, and send it to the client (publisher or subscriber)
-                        if (publishDiscoverySession != null && peerHandle != null) { //client can either publisher or subscriber
-                            publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, portOnSystem);
-                        } else if (subscribeDiscoverySession != null && peerHandle != null)  {
-                            subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, portOnSystem);
-                        }
-                        */
-                        Log.d(LOG, "Server started, Waiting for client");
-                        socket = server.accept();
-                        Log.d(LOG, "Client accepted");
-                        inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                        outputStream = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-                        strMessageFromClient = (String) inputStream.readUTF();
-                        Log.d(LOG, "Reading message from client"+ strMessageFromClient);
+    public AppServer(SSLContext serverSSLContext, int serverPort){
+        //this.sslContext = serverSSLContext;
+        //this.peerIpv6 = peerIpv6;
 
-                        MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
-                        messageList.add(chatMsg);
+        running = true;
 
-                        //UI thread??
-                        mMessageAdapter.notifyDataSetChanged();
+        Runnable serverTask = () -> {  //new thread for each client server conn
+            SSLServerSocket serverSocket;
+            running  = true;
 
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+            try {
+                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
+                serverSocket.setNeedClientAuth(true);
+
+                while (running) {
+                    SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
+                    addClient(sslClientSocket);
                 }
-                /*
-
-
-                 */
-                /*try {
-                    socket.close();
-                    in.close();
-                    Log.d(LOG, "Closing conn");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }*/
+            } catch (IOException  e) {
+                e.printStackTrace();
             }
+            //TODO: close socket
         };
-
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
     }
 
 
+    public static void updateActivity(MainActivity activity) {
+        mainActivity = new WeakReference<>(activity);
+    }
+
+
+    protected void addClient(SSLSocket sslClientSocket){
+        ConnectedDevice connectedDevice = new ConnectedDevice(this, sslClientSocket);
+        clients.put(connectedDevice.getUserIdentity().getPublicKey(), connectedDevice);
+        clientProcessingPool.submit(connectedDevice);
+    }
+
+
+    protected void removeClient(ConnectedDevice connectedDevice){
+        if(clients.containsKey(connectedDevice.getUserIdentity().getPublicKey())){
+            connectedDevice.stop();
+            clients.remove(connectedDevice.getUserIdentity().getPublicKey());
+        }
+    }
+
+
+    public void stop(){
+        for (ConnectedDevice device: clients.values()){
+            removeClient(device);
+        }
+        running = false;
+    }
+
+
+    protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
+        Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
+        for(ConnectionListener listeners: mainActivity.get().getWifiAwareConnectionManager().getAppClient().getConnectionListeners()){
+            listeners.onServerPacket(packet);
+        }
+
+        if (packet instanceof MessageObject) { //TODO: Message or MessagePacket?
+            PublicKey to = ((MessageObject)packet).getMessage().getTo();
+
+            if(clients.containsKey(to)){
+                ConnectedDevice forwardTo = clients.get(to);
+                Runnable packetForwardingTask = () -> {
+                    forwardTo.sendMessage(packet);
+                };
+                Thread packetForwardingThred = new Thread(packetForwardingTask);
+                packetForwardingThred.start();
+            }
+        }
+    }
 }
