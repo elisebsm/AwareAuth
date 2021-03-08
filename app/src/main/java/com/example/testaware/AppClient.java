@@ -1,10 +1,6 @@
 package com.example.testaware;
 
 
-import com.example.testaware.models.Contact;
-import com.example.testaware.models.Message;
-import com.example.testaware.models.ReceivedPacket;
-
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;

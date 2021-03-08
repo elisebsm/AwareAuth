@@ -3,9 +3,6 @@ package com.example.testaware;
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageListAdapter;
 import com.example.testaware.listitems.MessageListItem;
-import com.example.testaware.models.Contact;
-import com.example.testaware.models.MessageObject;
-import com.example.testaware.models.ReceivedPacket;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

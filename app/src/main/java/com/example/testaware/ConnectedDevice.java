@@ -1,7 +1,5 @@
 package com.example.testaware;
 
-import com.example.testaware.models.ReceivedPacket;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -34,12 +32,12 @@ public class ConnectedDevice implements Runnable{
             outputStream = new ObjectOutputStream(sslClientSocket.getOutputStream());
             inputStream = new ObjectInputStream(sslClientSocket.getInputStream());
 
-            while(running){
+           /* while(running){
                 ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
                 appServer.onPacketReceived(this, receivedPacket);
-            }
+            }*/
             appServer.removeClient(this);
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             running = false;
         }
@@ -64,12 +62,7 @@ public class ConnectedDevice implements Runnable{
     }
 
 
-    public void sendMessage(ReceivedPacket receivedPacket) {
-            try {
-                outputStream.writeObject(receivedPacket);
-                outputStream.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    public void sendMessage() {
+
     }
 }

@@ -1,4 +1,4 @@
-package com.example.testaware.models;
+package com.example.testaware;
 
 import com.example.testaware.Constants;
 

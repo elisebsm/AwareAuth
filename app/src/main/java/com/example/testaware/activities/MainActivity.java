@@ -6,10 +6,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -31,8 +29,6 @@ import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -40,12 +36,9 @@ import android.widget.Toast;
 
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
-import com.example.testaware.models.Contact;
 import com.example.testaware.R;
-import com.example.testaware.ConnectionHandler;
 import com.example.testaware.adapters.ChatsListAdapter;
 
-import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
@@ -127,12 +120,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPublisher = false;
     private boolean hasEstablishedPublisherAndSubscriber = false;
 
-    @Getter
-    private ConnectionHandler connectionHandler;
-    @Getter
-    private ArrayList<Contact> contacts;
 
-   @Getter
+
+
     private static WifiAwareManager wifiAwareManager;
     private void initAwareManager(){
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);

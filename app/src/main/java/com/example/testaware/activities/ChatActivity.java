@@ -1,7 +1,6 @@
 package com.example.testaware.activities;
 
 import android.content.Context;
-import android.net.wifi.aware.WifiAwareManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.testaware.AppServer;
 import com.example.testaware.Constants;
-import com.example.testaware.models.Message;
+import com.example.testaware.Message;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
 import com.example.testaware.User;
@@ -78,7 +77,7 @@ public class ChatActivity extends AppCompatActivity {
 
             final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
             if (user.getName().equals("Serve")) {
-                appServer = new AppServer();
+                startServer();
             } else {
                 initClient();
             }
