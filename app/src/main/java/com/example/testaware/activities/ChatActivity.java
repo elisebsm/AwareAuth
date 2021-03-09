@@ -76,57 +76,51 @@ public class ChatActivity extends AppCompatActivity {
             mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
 
             final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
-            if (user.getName().equals("Serve")) {
+            if (MainActivity.isPublisher()) {
                 startServer();
             } else {
                 initClient();
             }
-            sendChatMsgbtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        sendMessage();
-                        Log.i(LOG, "send btn pressed");
-                    }
+            sendChatMsgbtn.setOnClickListener(v -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    sendMessage();
+                    Log.i(LOG, "send btn pressed");
                 }
             });
            }
 
 
         private void initClient() {
-            Runnable serverTask = new Runnable() {
-                @Override
-                public void run() {
-                    //int clientPort = (int) getIntent().getExtras().get("Client_port");
-                    running = true;
+            Runnable serverTask = () -> {
+                //int clientPort = (int) getIntent().getExtras().get("Client_port");
+                running = true;
 
-                    socket = null;
-                    Log.i(LOG, "sendChatMessage started ");
-                    String chatMessage = editChatText.getText().toString();
-                    try {
-                        SocketFactory socketFactory = SSLSocketFactory.getDefault();
-                        socket = (SSLSocket) socketFactory.createSocket(peerIpv6, Constants.SERVER_PORT);
-                        //SSLSession sslSession = socket.getSession();
+                socket = null;
+                Log.i(LOG, "sendChatMessage started ");
+                String chatMessage = editChatText.getText().toString();
+                try {
+                    SocketFactory socketFactory = SSLSocketFactory.getDefault();
+                    socket = socketFactory.createSocket(peerIpv6, Constants.SERVER_PORT);
+                    //SSLSession sslSession = socket.getSession();
 
-                        //socket = new Socket(peerIpv6, Constants.SERVER_PORT);
-                        inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                        outputStream = new DataOutputStream(socket.getOutputStream());
-                        outputStream.writeUTF("clientHello");
-                        outputStream.flush();
-                        Log.i(LOG, "ClientHello sent ");
+                    //socket = new Socket(peerIpv6, Constants.SERVER_PORT);
+                    inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+                    outputStream = new DataOutputStream(socket.getOutputStream());
+                    outputStream.writeUTF("clientHello");
+                    outputStream.flush();
+                    Log.i(LOG, "ClientHello sent ");
 
-                        MessageListItem chatMsg = new MessageListItem("clientHello", getLocalIp());
-                        messageList.add(chatMsg);
+                    MessageListItem chatMsg = new MessageListItem("clientHello", getLocalIp());
+                    messageList.add(chatMsg);
 
-                        EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                        textT.getText().clear();
+                    EditText textT = (EditText) findViewById(R.id.eTChatMsg);
+                    textT.getText().clear();
 
-                        if (inputStream != null) {
-                            receiveMessage();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    if (inputStream != null) {
+                        receiveMessage();
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             };
             Thread serverThread = new Thread(serverTask);
@@ -161,26 +155,24 @@ public class ChatActivity extends AppCompatActivity {
             };
             Thread serverThread = new Thread(serverTask);
             serverThread.start();
-
         }
 
 
         private void sendMessage() {
-            Runnable serverTask = new Runnable() {  //
-                public void run() {
-                    String chatMessage = editChatText.getText().toString();
-                    //TODO: make Message object for input stream
-                    try {
-                        outputStream = new DataOutputStream(socket.getOutputStream());
-                        outputStream.writeUTF(String.valueOf(chatMessage));
-                        outputStream.flush();
-                        MessageListItem chatMsg = new MessageListItem("Test:" + chatMessage , getLocalIp());
-                        messageList.add(chatMsg);
-                        EditText textT = findViewById(R.id.eTChatMsg);
-                        textT.getText().clear();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            //
+            Runnable serverTask = () -> {
+                String chatMessage = editChatText.getText().toString();
+                //TODO: make Message object for input stream
+                try {
+                    outputStream = new DataOutputStream(socket.getOutputStream());
+                    outputStream.writeUTF(String.valueOf(chatMessage));
+                    outputStream.flush();
+                    MessageListItem chatMsg = new MessageListItem("Test:" + chatMessage , getLocalIp());
+                    messageList.add(chatMsg);
+                    EditText textT = findViewById(R.id.eTChatMsg);
+                    textT.getText().clear();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             };
             Thread serverThread = new Thread(serverTask);
@@ -188,41 +180,34 @@ public class ChatActivity extends AppCompatActivity {
         }
     private Socket socket;
         private void startServer() {
-            Runnable serverTask = new Runnable() {  //new thread for each client server conn
-                @Override
-                public void run() {
-                    ServerSocket server;
-                    try {
-                        server = new ServerSocket(40699);
-                        int port = 40699;
-                        // server.getLocalPort();
-                        while (true) {
-                            Log.d(LOG, "Server started, Waiting for client");
-                            socket = server.accept();
-                            Log.d(LOG, "Client accepted");
-                            inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+            //new thread for each client server conn
+//TODO: close socket
+            Runnable serverTask = () -> {
+                ServerSocket server;
+                try {
+                    server = new ServerSocket(40699);
+                    int port = 40699;
+                    // server.getLocalPort();
+                    while (true) {
+                        Log.d(LOG, "Server started, Waiting for client");
+                        socket = server.accept();
+                        Log.d(LOG, "Client accepted");
+                        inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 
-                            String strMessageFromClient = inputStream.readUTF();
-                            Log.d(LOG, "Reading message from client"+ strMessageFromClient);
+                        String strMessageFromClient = inputStream.readUTF();
+                        Log.d(LOG, "Reading message from client"+ strMessageFromClient);
 
-                            MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
-                            messageList.add(chatMsg);
+                        MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                        messageList.add(chatMsg);
 
-                            if(inputStream!= null){
-                                receiveMessage();
-                            }
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    mMessageAdapter.notifyDataSetChanged();
-
-                                }
-                            });
+                        if(inputStream!= null){
+                            receiveMessage();
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        runOnUiThread(() -> mMessageAdapter.notifyDataSetChanged());
                     }
-                } //TODO: close socket
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             };
             Thread serverThread = new Thread(serverTask);
             serverThread.start();

@@ -33,7 +33,7 @@ public class AppClient implements Runnable{
     private DataOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     @Getter
-    private List<ConnectionListener> connectionListeners;
+    //private List<ConnectionListener> connectionListeners;
 
     private String LOG = "LOG-Test-Aware-Chat-Activity";
     @Getter
@@ -44,7 +44,7 @@ public class AppClient implements Runnable{
     AppClient(KeyPair keyPair, SSLContext sslContext){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
-        connectionListeners = new ArrayList<>();
+        //connectionListeners = new ArrayList<>();
     }
 
     @Override
@@ -61,25 +61,25 @@ public class AppClient implements Runnable{
             SSLSocketFactory socketFactory = sslContext.getSocketFactory();
             sslSocket = (SSLSocket) socketFactory.createSocket(Inet6Address.getLocalHost(), Constants.SERVER_PORT);
             //SSLSession sslSession = sslSocket.getSession();
-            for(ConnectionListener listener: connectionListeners){
+            /*for(ConnectionListener listener: connectionListeners){
                 listener.onConnect();
-            }
+            }*/
             inputStream = new ObjectInputStream(new BufferedInputStream(sslSocket.getInputStream()));
             outputStream = new DataOutputStream(sslSocket.getOutputStream());
             outputStream.writeUTF("clientHello");
             outputStream.flush();
             //TODO: send client hello message
             while(running){
-                if (inputStream != null){
-                    ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
-                    onPacketReceived(receivedPacket);
-                }
+//                if (inputStream != null){
+//                    ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
+//                    onPacketReceived(receivedPacket);
+//                }
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-            for (ConnectionListener connectionListener: connectionListeners){
+            /*for (ConnectionListener connectionListener: connectionListeners){
                 connectionListener.onDisconnect();
-            }
+            }*/
             if(sslSocket != null){
                 try {
                     sslSocket.close();
@@ -120,7 +120,7 @@ public class AppClient implements Runnable{
         return true;
     }
 
-    public void onPacketReceived(ReceivedPacket packet){
+   /* public void onPacketReceived(ReceivedPacket packet){
         Contact from = new Contact(getPeerIdentity());
         for(ConnectionListener connectionListener: connectionListeners){
             connectionListener.onReceivedPacket(from, packet);
@@ -133,5 +133,5 @@ public class AppClient implements Runnable{
 
     void removeConnectionListener(ConnectionListener listener) {
         connectionListeners.remove(listener);
-    }
+    }*/
 }
