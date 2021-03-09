@@ -36,7 +36,7 @@ public class ConnectedDevice implements Runnable{
                 ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
                 appServer.onPacketReceived(this, receivedPacket);
             }*/
-            appServer.removeClient(this);
+        //    appServer.removeClient(this);
         } catch (IOException e) {
             e.printStackTrace();
             running = false;

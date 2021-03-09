@@ -44,7 +44,7 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
+//import lombok.Getter;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
         return wifiAwareManager;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -159,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
             } else if(subscribeDiscoverySession != null && peerHandle != null) {
                 subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
             }
+            requestWiFiConnection();
         });
 
         setupPermissions();
@@ -320,8 +322,8 @@ public class MainActivity extends AppCompatActivity {
                     setOtherIPAddress(message);
                     Toast.makeText(MainActivity.this, "ip received", Toast.LENGTH_LONG).show();
                 } else if (message.length > 16) {
-                    String[] messageIn = new String(message).split(".");
-                    if(messageIn[0].equals("subscriber") && messageIn[1].equals("establishingRole")){
+                    String messageIn = new String(message);
+                    if(messageIn.contains("establishingRole")){
                         isPublisher = false;
                         hasEstablishedPublisherAndSubscriber = true;
                     }

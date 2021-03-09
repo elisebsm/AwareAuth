@@ -24,7 +24,7 @@ import javax.net.ssl.SSLSocket;
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
-
+/*
     private static Inet6Address peerIpv6;
     private static WeakReference<MainActivity> mainActivity; //TODO what is this??
     private String LOG = "LOG-Test-Aware-App-Client";
@@ -116,4 +116,6 @@ public class AppServer {
             }
         }
     }
+
+ */
 }

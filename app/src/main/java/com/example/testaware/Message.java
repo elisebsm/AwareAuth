@@ -20,16 +20,16 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
-import lombok.Getter;
+//import lombok.Getter;
 
 public class Message {
     private byte[] ciphertext;
     private String plaintext;
     private SecretKey key;
     private byte[] IV;
-    @Getter
+   // @Getter
     private PublicKey to;
-    @Getter
+   // @Getter
     private PublicKey from;
 
     public Message() throws NoSuchAlgorithmException {
