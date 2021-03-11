@@ -1,6 +1,10 @@
 package com.example.testaware;
 
 
+import android.util.Log;
+
+import com.example.testaware.activities.MainActivity;
+
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -35,7 +39,7 @@ public class AppClient implements Runnable{
     @Getter
     //private List<ConnectionListener> connectionListeners;
 
-    private String LOG = "LOG-Test-Aware-Chat-Activity";
+    private String LOG = "LOG-Test-Aware-Client";
     @Getter
     private KeyPair keyPair;
 
@@ -44,6 +48,8 @@ public class AppClient implements Runnable{
     public AppClient(KeyPair keyPair, SSLContext sslContext){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
+        Thread thread = new Thread(this);
+        thread.start();
         //connectionListeners = new ArrayList<>();
     }
 
@@ -51,15 +57,18 @@ public class AppClient implements Runnable{
     public void run() {
         //int clientPort = (int) getIntent().getExtras().get("Client_port");
         running = true;
+        Log.d(LOG, "running: true");
         sslSocket = null;
-        try {
+        this.inet6Address = MainActivity.getPeerIpv6();
+        /*try {
             this.inet6Address = (Inet6Address) Inet6Address.getLocalHost();
         } catch (UnknownHostException e) {
             this.inet6Address = (Inet6Address) Inet6Address.getLoopbackAddress();
-        }
+        }*/
         try {
+            Log.d(LOG, "Trying to init");
             SSLSocketFactory socketFactory = sslContext.getSocketFactory();
-            sslSocket = (SSLSocket) socketFactory.createSocket(Inet6Address.getLocalHost(), Constants.SERVER_PORT);
+            sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
             //SSLSession sslSession = sslSocket.getSession();
             /*for(ConnectionListener listener: connectionListeners){
                 listener.onConnect();

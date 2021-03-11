@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
     private WifiAwareNetworkInfo peerAwareInfo;
 
-    private Inet6Address peerIpv6 ;
+    private static Inet6Address peerIpv6 ;
     private int peerPort;
 
 
@@ -187,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
         this.keyPair = IdentityHandler.getKeyPair(this.context);
 
 
+
         Button send = findViewById(R.id.btnSend);
         send.setOnClickListener(view -> {
             requestWiFiConnection();
@@ -232,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
         if(!hasEstablishedPublisherAndSubscriber){
             if (publishDiscoverySession != null && subscribeDiscoverySession != null){
                 isPublisher = true;
+                findViewById(R.id.btnConnectPub).setVisibility(View.VISIBLE);
                 String msg = "subscriber.establishingRole";
                 byte[] msgtosend = msg.getBytes();
                 if (publishDiscoverySession != null && peerHandle != null) {
@@ -417,6 +419,7 @@ public class MainActivity extends AppCompatActivity {
                     if(messageIn.contains("subscriber") && messageIn.contains("establishingRole")) {
                         Log.d(LOG, "YES" + messageIn);
                         isPublisher = false;
+                        findViewById(R.id.btnConnectSub).setVisibility(View.VISIBLE);
                         hasEstablishedPublisherAndSubscriber = true;
                         publishDiscoverySession = null;
                         //requestWiFiConnection();
@@ -475,6 +478,7 @@ public class MainActivity extends AppCompatActivity {
                     //.setPort(Constants.SERVER_PORT)
                     .build();
             Log.d(LOG, "This devices is publisher");
+
         } else{
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
                     .build();
@@ -504,7 +508,6 @@ public class MainActivity extends AppCompatActivity {
                 networkCapabilities = networkCapabilities_;
                 network = network_;
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
-                //peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
                 setPeerIpv6(peerAwareInfo.getPeerIpv6Addr());
 
             }
@@ -536,10 +539,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-  /*  public static Inet6Address getPeerIpv6() {
+   public static Inet6Address getPeerIpv6() {
         return peerIpv6;
     }
-
+/*
     public static List<PeerHandle> getPeerHandleList(){
         return peerHandleList;
     }

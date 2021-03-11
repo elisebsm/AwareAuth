@@ -52,8 +52,8 @@ public class IdentityHandler {
             //keystore containing certificate
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
             //FileInputStream fileInputStream = new FileInputStream("KeyStore");
-            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/files/keystore/keystore.p12"); //todo: get the right file (.p12 format? PKCS)
-            keyStore.load(fileInputStream, "Master2021".toCharArray());
+            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/keystore/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
+            keyStore.load(fileInputStream, "elise123".toCharArray());
 
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("X509");
             keyManagerFactory.init(keyStore, null);
@@ -61,7 +61,7 @@ public class IdentityHandler {
 
 //trust manager
             //File caFile = getCA(context); //TODO change filepath
-            File caFile = new File("/data/data/com.example.testaware/files/ca/root_ca.pem");
+            File caFile = new File("/data/data/com.example.testaware/ca/ca.pem");
 
             InputStream inputStreamCertificate = null; //TODO close stream
             inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
@@ -145,9 +145,9 @@ public class IdentityHandler {
             keyStore = KeyStore.getInstance("PKCS12");
             //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
 
-            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/files/keystore/keystore.p12"));
+            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/keystore/keystore.jks"));
 
-            keyStore.load(fileInputStream, "Master2021".toCharArray());
+            keyStore.load(fileInputStream, "elise123".toCharArray());
             Enumeration<String> stringEnumeration = keyStore.aliases();
             String alias = "";
             boolean isAliasWithPrivateKey = false;

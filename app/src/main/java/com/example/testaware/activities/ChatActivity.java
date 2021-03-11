@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
@@ -105,8 +106,12 @@ public class ChatActivity extends AppCompatActivity {
             this.keyPair = IdentityHandler.getKeyPair(this.context);
 
 
+            TextView textView = findViewById(R.id.tvRole);
+            textView.setText("SERVER");
             AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+
             //AppClient appClient = new AppClient(keyPair, sslContext);
+            //textView.setText("CLIENT");
 
             /*if (MainActivity.isPublisher()){
                 AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
