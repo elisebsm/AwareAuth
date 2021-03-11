@@ -1,6 +1,8 @@
 package com.example.testaware;
 
 import android.content.Context;
+import android.net.wifi.aware.WifiAwareManager;
+import android.util.Log;
 
 import com.example.testaware.Contact;
 
@@ -21,6 +23,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -46,6 +49,10 @@ public class IdentityHandler {
 
 
         try {
+
+            //get client cert from keystore
+            X509Certificate cert= ( X509Certificate) getCertificate(context);
+
             // key manager
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
 
@@ -172,4 +179,51 @@ public class IdentityHandler {
         }
         return null;
     }
+
+    
+
+
+    public static X509Certificate getCertificate(Context context) {
+        try {
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/files/keystore/test3/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
+            keyStore.load(fileInputStream, "elise123".toCharArray());
+
+
+            Enumeration<String> es = keyStore.aliases();
+            String alias = "";
+
+            boolean isAliasWithPrivateKey = false;
+
+            while (es.hasMoreElements()) {
+                alias = es.nextElement();
+                if (isAliasWithPrivateKey = keyStore.isKeyEntry(alias)) {
+                    break;
+                }
+            }
+            if (isAliasWithPrivateKey) {
+                Key key = keyStore.getKey(alias, "elise123".toCharArray());
+                if (key instanceof PrivateKey) {
+                    return (X509Certificate) keyStore.getCertificate(alias);
+                }
+            }
+
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
 }
