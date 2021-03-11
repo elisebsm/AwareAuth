@@ -4,7 +4,7 @@ import android.content.Context;
 import android.net.wifi.aware.WifiAwareManager;
 import android.util.Log;
 
-import com.example.testaware.Contact;
+//import com.example.testaware.Contact;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -52,6 +52,10 @@ public class IdentityHandler {
 
             //get client cert from keystore
             X509Certificate cert= ( X509Certificate) getCertificate(context);
+
+            //get keypair of client from keystore
+            KeyPair keyP = getKeyPair();
+
 
             // key manager
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
@@ -129,7 +133,7 @@ public class IdentityHandler {
             }
         });
     }
-
+/*
     public static ArrayList<Contact> getContacts(Context context){
         ArrayList<Contact> contacts = new ArrayList<>();
         for (File contactFile: getContactFile(context)){
@@ -145,16 +149,17 @@ public class IdentityHandler {
         }
         return contacts;
     }
+    */
 
-    public static KeyPair getKeyPair(Context context){
+
+    public static KeyPair getKeyPair(){
         KeyStore keyStore = null;
         try {
             keyStore = KeyStore.getInstance("PKCS12");
             //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
+            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/files/keystore/test3/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
+            keyStore.load(fileInputStream, "elise123".toCharArray());
 
-            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/files/keystore/keystore.p12"));
-
-            keyStore.load(fileInputStream, "Master2021".toCharArray());
             Enumeration<String> stringEnumeration = keyStore.aliases();
             String alias = "";
             boolean isAliasWithPrivateKey = false;
@@ -167,7 +172,7 @@ public class IdentityHandler {
             }
 
             if(isAliasWithPrivateKey) {
-                Key key = keyStore.getKey(alias, new char[0]);
+                Key key = keyStore.getKey(alias, "elise123".toCharArray());
                 if (key instanceof PrivateKey){
                     Certificate certificate = keyStore.getCertificate(alias);
                     PublicKey publicKey = certificate.getPublicKey();
@@ -180,8 +185,7 @@ public class IdentityHandler {
         return null;
     }
 
-    
-
+    //works, tested in main
     public static X509Certificate getCertificate(Context context) {
         try {
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
@@ -223,6 +227,10 @@ public class IdentityHandler {
 
         return null;
     }
+
+
+
+
 
 
 }
