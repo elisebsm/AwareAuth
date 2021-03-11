@@ -182,7 +182,6 @@ public class IdentityHandler {
 
     
 
-
     public static X509Certificate getCertificate(Context context) {
         try {
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
