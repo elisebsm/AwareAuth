@@ -1,19 +1,34 @@
 package com.example.testaware.activities;
 
 import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.net.NetworkSpecifier;
+import android.net.wifi.aware.PeerHandle;
+import android.net.wifi.aware.PublishDiscoverySession;
+import android.net.wifi.aware.SubscribeDiscoverySession;
+import android.net.wifi.aware.WifiAwareNetworkInfo;
+import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
 import com.example.testaware.Constants;
+import com.example.testaware.IdentityHandler;
 import com.example.testaware.Message;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
@@ -32,13 +47,17 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+@RequiresApi(api = Build.VERSION_CODES.Q)
 public class ChatActivity extends AppCompatActivity {
         private Inet6Address peerIpv6;
         private EditText editChatText;
@@ -56,6 +75,17 @@ public class ChatActivity extends AppCompatActivity {
         private boolean running;
         private Message message;
         private AppServer appServer;
+        private Socket socket;
+
+    private ConnectivityManager       connectivityManager;
+    private NetworkSpecifier networkSpecifier;
+    private NetworkCapabilities networkCapabilities;
+    private PeerHandle peerHandle;
+    private WifiAwareNetworkInfo peerAwareInfo;
+
+
+    private SSLContext sslContext;
+    private KeyPair keyPair;
 
     //TODO: change to get dynamic ports
 
@@ -63,19 +93,51 @@ public class ChatActivity extends AppCompatActivity {
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_chat);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             this.context = this;
-            myIpvAddr = getLocalIp();
-            user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
-            peerIpv6 = MainActivity.getPeerIpv6();
+            setupUI();
 
-            editChatText = (EditText) findViewById(R.id.eTChatMsg);
+            myIpvAddr = getLocalIp();
+
+            user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
+
+            this.sslContext = IdentityHandler.getSSLContext(this.context);
+            this.keyPair = IdentityHandler.getKeyPair(this.context);
+
+
+            AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+            //AppClient appClient = new AppClient(keyPair, sslContext);
+
+            /*if (MainActivity.isPublisher()){
+                AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+            } else {
+                AppClient appClient = new AppClient(keyPair, sslContext);
+            }*/
+
+            //peerIpv6 = MainActivity.getPeerIpv6();
+            //publishDiscoverySession = MainActivity.getPublishDiscoverySession();
+            //subscribeDiscoverySession = MainActivity.getSubscribeDiscoverySession();
+
+
+            int position = getIntent().getIntExtra("position", 0);
+            //List<PeerHandle> peerHandleList = MainActivity.getPeerHandleList();
+            //peerHandle = peerHandleList.get(position);
+
+
+            //requestWiFiConnection();
+
+
+        }
+
+        private void setupUI(){
+            editChatText = findViewById(R.id.eTChatMsg);
             messageList = new ArrayList<>();
-            mMessageRecycler = (RecyclerView) findViewById(R.id.recyclerChat);
+            mMessageRecycler = findViewById(R.id.recyclerChat);
             mMessageAdapter = new MessageListAdapter(this, messageList);
             mMessageRecycler.setAdapter(mMessageAdapter);
             mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
 
-            final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
+            /*final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
             if (MainActivity.isPublisher()) {
                 startServer();
             } else {
@@ -86,9 +148,8 @@ public class ChatActivity extends AppCompatActivity {
                     sendMessage();
                     Log.i(LOG, "send btn pressed");
                 }
-            });
-           }
-
+            });*/
+        }
 
         private void initClient() {
             Runnable serverTask = () -> {
@@ -157,7 +218,6 @@ public class ChatActivity extends AppCompatActivity {
             serverThread.start();
         }
 
-
         private void sendMessage() {
             //
             Runnable serverTask = () -> {
@@ -178,10 +238,10 @@ public class ChatActivity extends AppCompatActivity {
             Thread serverThread = new Thread(serverTask);
             serverThread.start();
         }
-    private Socket socket;
+
         private void startServer() {
             //new thread for each client server conn
-//TODO: close socket
+            //TODO: close socket
             Runnable serverTask = () -> {
                 ServerSocket server;
                 try {
@@ -213,7 +273,6 @@ public class ChatActivity extends AppCompatActivity {
             serverThread.start();
         }
 
-
         public String getLocalIp() {
             try {
                 for (Enumeration<NetworkInterface> en = NetworkInterface
@@ -236,4 +295,5 @@ public class ChatActivity extends AppCompatActivity {
             }
             return null;
         }
+
 }

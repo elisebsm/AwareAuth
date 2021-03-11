@@ -8,9 +8,11 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.security.Key;
 import java.security.KeyManagementException;
 import java.security.KeyPair;
@@ -49,15 +51,18 @@ public class IdentityHandler {
 
             //keystore containing certificate
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream fileInputStream = new FileInputStream("KeyStore"); //todo: get the right file (.p12 format? PKCS)
-            keyStore.load(fileInputStream, new char[0]);
+            //FileInputStream fileInputStream = new FileInputStream("KeyStore");
+            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/files/keystore/keystore.p12"); //todo: get the right file (.p12 format? PKCS)
+            keyStore.load(fileInputStream, "Master2021".toCharArray());
 
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("X509");
             keyManagerFactory.init(keyStore, null);
             KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
 //trust manager
-            File caFile = getCA(context);
+            //File caFile = getCA(context); //TODO change filepath
+            File caFile = new File("/data/data/com.example.testaware/files/ca/root_ca.pem");
+
             InputStream inputStreamCertificate = null; //TODO close stream
             inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
             X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
@@ -67,7 +72,7 @@ public class IdentityHandler {
             keyStoreCA.setCertificateEntry(certificateAlias, certificate);
 
             KeyManagerFactory keyManagerFactoryCA = KeyManagerFactory.getInstance("X509");
-            keyManagerFactory.init(keyStoreCA, null);
+            keyManagerFactoryCA.init(keyStoreCA, null);
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("X509");
             trustManagerFactory.init(keyStoreCA);
             TrustManager [] trustManagers = trustManagerFactory.getTrustManagers();
@@ -82,6 +87,7 @@ public class IdentityHandler {
         return null;
     }
 
+
     //TODO: tell the socket connection to use a socketfactory??
     // for http from android developer Tell the URLConnection to use a SocketFactory from our SSLContext
 
@@ -94,16 +100,17 @@ public class IdentityHandler {
         });
         //TODO: get ca file (.pem file)
         return Objects.requireNonNull(files)[0];
+
     }
 
     private static File getPKCS(Context context){
-        File [] files = context.getExternalFilesDirs("identity")[0].listFiles(new FilenameFilter() {
+        File [] files = context.getExternalFilesDirs("keystore")[0].listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 return name.toLowerCase().endsWith(".pk12");
             }
         });
-        return Objects.requireNonNull(files)[0];
+        return null;
     }
 
 
@@ -136,8 +143,11 @@ public class IdentityHandler {
         KeyStore keyStore = null;
         try {
             keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
-            keyStore.load(fileInputStream, new char[0]);
+            //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
+
+            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/files/keystore/keystore.p12"));
+
+            keyStore.load(fileInputStream, "Master2021".toCharArray());
             Enumeration<String> stringEnumeration = keyStore.aliases();
             String alias = "";
             boolean isAliasWithPrivateKey = false;

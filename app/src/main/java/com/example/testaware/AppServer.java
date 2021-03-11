@@ -97,7 +97,7 @@ public class AppServer {
     }
 
 
-    protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
+  /*  protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
         Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
         for(ConnectionListener listeners: mainActivity.get().getWifiAwareConnectionManager().getAppClient().getConnectionListeners()){
             listeners.onServerPacket(packet);
@@ -115,5 +115,5 @@ public class AppServer {
                 packetForwardingThred.start();
             }
         }
-    }
+    }*/
 }

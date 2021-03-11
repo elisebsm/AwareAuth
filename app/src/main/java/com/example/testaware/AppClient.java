@@ -41,7 +41,7 @@ public class AppClient implements Runnable{
 
     private Inet6Address inet6Address;
 
-    AppClient(KeyPair keyPair, SSLContext sslContext){
+    public AppClient(KeyPair keyPair, SSLContext sslContext){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
         //connectionListeners = new ArrayList<>();

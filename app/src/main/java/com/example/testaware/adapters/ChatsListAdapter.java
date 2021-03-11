@@ -43,10 +43,15 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
         holder.name.setText(chat.getUsername());*/
 
         // Lookup view for data population
-        TextView tvName = (TextView) convertView.findViewById(R.id.tvUsername);
+        TextView tvName = convertView.findViewById(R.id.tvUsername);
         // Populate the data into the template view using the data object
         tvName.setText(chat.getUsername());
         // Return the completed view to render on screen
+
+        TextView peerIP = convertView.findViewById(R.id.tvPeerIP);
+        // Populate the data into the template view using the data object
+        tvName.setText(chat.getPeerIpv6());
+
         return convertView;
     }
 

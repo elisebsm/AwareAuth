@@ -1,3 +1,4 @@
+/*
 package com.example.testaware;
 
 import android.Manifest;
@@ -259,9 +260,11 @@ public class WiFiAwareConnectionManager {
     }
 
 
-    /**
+    */
+/**
      * Helper to set the status field.
-     */
+     *//*
+
     private void setMessage(byte[] msg) {
         String outmsg = new String(msg).replace("messageToBeSent: ","");
     }
@@ -317,4 +320,4 @@ class AsyncTaskRunner extends AsyncTask<String, String, String> {
         Log.d("RESULTAT", String.valueOf(text));
 
     }
-}
+}*/
