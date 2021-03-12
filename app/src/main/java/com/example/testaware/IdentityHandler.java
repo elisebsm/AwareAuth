@@ -6,6 +6,8 @@ import android.util.Log;
 
 import com.example.testaware.Contact;
 
+import com.example.testaware.Contact;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +40,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.sql.ConnectionEventListener;
 
 public class IdentityHandler {
     SSLContext sslContext;
@@ -47,6 +50,10 @@ public class IdentityHandler {
 
         //FileInputStream inputStreamCertificate = context.openFileInput("rsacert.pem")
 
+
+        try {
+            // key manager
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
 
         try {
 
@@ -59,8 +66,8 @@ public class IdentityHandler {
             //keystore containing certificate
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
             //FileInputStream fileInputStream = new FileInputStream("KeyStore");
-            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/files/keystore/keystore.p12"); //todo: get the right file (.p12 format? PKCS)
-            keyStore.load(fileInputStream, "Master2021".toCharArray());
+            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/keystore/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
+            keyStore.load(fileInputStream, "elise123".toCharArray());
 
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("X509");
             keyManagerFactory.init(keyStore, null);
@@ -68,7 +75,7 @@ public class IdentityHandler {
 
 //trust manager
             //File caFile = getCA(context); //TODO change filepath
-            File caFile = new File("/data/data/com.example.testaware/files/ca/root_ca.pem");
+            File caFile = new File("/data/data/com.example.testaware/ca/ca.pem");
 
             InputStream inputStreamCertificate = null; //TODO close stream
             inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
@@ -152,6 +159,77 @@ public class IdentityHandler {
             keyStore = KeyStore.getInstance("PKCS12");
             //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
 
+            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/keystore/keystore.jks"));
+
+            keyStore.load(fileInputStream, "elise123".toCharArray());
+            Enumeration<String> stringEnumeration = keyStore.aliases();
+            String alias = "";
+            boolean isAliasWithPrivateKey = false;
+
+            while(stringEnumeration.hasMoreElements()){
+                alias = stringEnumeration.nextElement();
+                if(isAliasWithPrivateKey = keyStore.isKeyEntry(alias)){
+                    break;
+                }
+            }
+
+            if(isAliasWithPrivateKey) {
+                Key key = keyStore.getKey(alias, new char[0]);
+                if (key instanceof PrivateKey){
+                    Certificate certificate = keyStore.getCertificate(alias);
+                    PublicKey publicKey = certificate.getPublicKey();
+                    return new KeyPair(publicKey, (PrivateKey) key);
+                }
+            }
+        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+            e.printStackTrace();
+        }
+        return Objects.requireNonNull(files)[0];
+
+    }
+
+    private static File getPKCS(Context context){
+        File [] files = context.getExternalFilesDirs("keystore")[0].listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".pk12");
+            }
+        });
+        return null;
+    }
+
+
+    private static File [] getContactFile(Context context){
+        return context.getExternalFilesDirs("contacts")[0].listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".pem");
+            }
+        });
+    }
+
+    public static ArrayList<Contact> getContacts(Context context){
+        ArrayList<Contact> contacts = new ArrayList<>();
+        for (File contactFile: getContactFile(context)){
+            try {
+                FileInputStream fileInputStream = new FileInputStream(contactFile);
+                CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+                X509Certificate x509Certificate = (X509Certificate) certificateFactory.generateCertificate(fileInputStream);
+                contacts.add(new Contact(x509Certificate));
+            } catch (FileNotFoundException | CertificateException e) {
+                e.printStackTrace();
+            }
+
+        }
+        return contacts;
+    }
+
+    public static KeyPair getKeyPair(Context context){
+        KeyStore keyStore = null;
+        try {
+            keyStore = KeyStore.getInstance("PKCS12");
+            //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
+
             FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/files/keystore/keystore.p12"));
 
             keyStore.load(fileInputStream, "Master2021".toCharArray());
@@ -180,7 +258,7 @@ public class IdentityHandler {
         return null;
     }
 
-    
+
 
 
     public static X509Certificate getCertificate(Context context) {
@@ -224,6 +302,4 @@ public class IdentityHandler {
 
         return null;
     }
-
-
 }

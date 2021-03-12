@@ -24,7 +24,7 @@ import javax.net.ssl.SSLSocket;
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
-/*
+
     private static Inet6Address peerIpv6;
     private static WeakReference<MainActivity> mainActivity; //TODO what is this??
     private String LOG = "LOG-Test-Aware-App-Client";
@@ -97,7 +97,7 @@ public class AppServer {
     }
 
 
-    protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
+  /*  protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
         Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
         for(ConnectionListener listeners: mainActivity.get().getWifiAwareConnectionManager().getAppClient().getConnectionListeners()){
             listeners.onServerPacket(packet);
@@ -115,7 +115,5 @@ public class AppServer {
                 packetForwardingThred.start();
             }
         }
-    }
-
- */
+    }*/
 }
