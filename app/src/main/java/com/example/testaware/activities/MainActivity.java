@@ -151,14 +151,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        setContentView(R.layout.activity_main);
 
         wifiAwareManager = null;
         wifiAwareSession = null;
@@ -167,11 +166,9 @@ public class MainActivity extends AppCompatActivity {
         keyPair = null;
         macAddress = null;
 
-
-        setContentView(R.layout.activity_main);
         context = this;
-        initAwareManager();
 
+        initAwareManager();
         addPeersToChatList();
 
         Button btn = findViewById(R.id.btnPublish);
@@ -179,15 +176,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 establishWhoIsPublisherAndSubscriber();
-
-
             }
         });
-
-
-        this.sslContext = IdentityHandler.getSSLContext(this.context);
-        this.keyPair = IdentityHandler.getKeyPair(this.context);
-
 
 
         Button send = findViewById(R.id.btnSend);
@@ -195,8 +185,8 @@ public class MainActivity extends AppCompatActivity {
             requestWiFiConnection();
             String msg= "messageToBeSent: ";
 
-            //EditText editText = findViewById(R.id.eTMsg);
-            //msg += editText.getText().toString();
+            EditText editText = findViewById(R.id.eTMsg);
+            msg += editText.getText().toString();
             byte[] msgtosend = msg.getBytes();
             if (publishDiscoverySession != null && peerHandle != null) {
                 publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
@@ -221,10 +211,12 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(LOCATION_PERMS_COARSE, LOCATION_REQUEST_COARSE);
         }
 
-
+        this.sslContext = IdentityHandler.getSSLContext(this.context);
+        this.keyPair = IdentityHandler.getKeyPair(this.context);
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         attachToSession();
     }
+
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void addPeersToChatList(){
@@ -241,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
             MainActivity.this.requestWiFiConnection();
         });
     }
+
 
     private void establishWhoIsPublisherAndSubscriber(){
         if(!hasEstablishedPublisherAndSubscriber){
@@ -262,9 +255,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     public static boolean isPublisher(){
         return isPublisher;
     }
+
 
     public void startPublishAndSubscribe(){
         publish();
@@ -281,6 +276,8 @@ public class MainActivity extends AppCompatActivity {
         publishThread.start();*/
         subscribe();
     }
+
+
     private void attachToSession(){
         //TODO: check if a cluster exists, if not the first user will be publisher?
         wifiAwareManager.attach(new AttachCallback() {
@@ -376,13 +373,15 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
         Log.d(LOG, "App stopped");
     }
+
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         Log.d(LOG, "App onDestroy");
         //TODO: remove peer from list
-
     }
+
 
     private void subscribe(){
         SubscribeConfig config = new SubscribeConfig.Builder()
@@ -444,6 +443,7 @@ public class MainActivity extends AppCompatActivity {
         }, null);
     }
 
+
     /**
      * Helper to set the status field.
      */
@@ -453,12 +453,14 @@ public class MainActivity extends AppCompatActivity {
         editText.setText(outmsg);
     }
 
+
     private void setMacAddress(byte[] mac) {
         myMac = mac;
         String macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         EditText editText = findViewById(R.id.eTYourMac);
         editText.setText(macAddress);
     }
+
 
     private void setOtherMacAddress(byte[] mac) {
         otherMac = mac;
@@ -468,7 +470,7 @@ public class MainActivity extends AppCompatActivity {
         editText.setText(macAddress);
     }
 
-    //-------------------------------------------------------------------------------------------- +++++
+
     private void setOtherIPAddress(byte[] ip) {
         otherIP = ip;
     }

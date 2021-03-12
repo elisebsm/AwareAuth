@@ -62,7 +62,7 @@ import javax.net.ssl.SSLSocketFactory;
 public class ChatActivity extends AppCompatActivity {
         private Inet6Address peerIpv6;
         private EditText editChatText;
-        private String LOG = "LOG-Test-Aware-Chat-Activity";
+        private String LOG = "ø-Chat-Activity";
         private RecyclerView mMessageRecycler;
         private MessageListAdapter mMessageAdapter;  //endret til test
         private ArrayList<MessageListItem> messageList;
@@ -107,11 +107,11 @@ public class ChatActivity extends AppCompatActivity {
 
 
             TextView textView = findViewById(R.id.tvRole);
-            textView.setText("SERVER");
-            AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+            //textView.setText("SERVER");
+            //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
 
-            //AppClient appClient = new AppClient(keyPair, sslContext);
-            //textView.setText("CLIENT");
+            AppClient appClient = new AppClient(keyPair, sslContext);
+            textView.setText("CLIENT");
 
             /*if (MainActivity.isPublisher()){
                 AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);

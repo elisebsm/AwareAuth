@@ -76,8 +76,8 @@ public class AppServer {
 
     protected void addClient(SSLSocket sslClientSocket){
         ConnectedDevice connectedDevice = new ConnectedDevice(this, sslClientSocket);
-        clients.put(connectedDevice.getUserIdentity().getPublicKey(), connectedDevice);
-        clientProcessingPool.submit(connectedDevice);
+        //clients.put(connectedDevice.getUserIdentity().getPublicKey(), connectedDevice);
+        //clientProcessingPool.submit(connectedDevice);
     }
 
 
