@@ -22,6 +22,8 @@ public class ConnectedDevice implements Runnable{
     public ConnectedDevice(AppServer appServer, SSLSocket sslClientSocket) {
         this.sslClientSocket = sslClientSocket;
         this.appServer = appServer;
+        Thread thread = new Thread(this);
+        thread.start();
     }
 
     @Override
