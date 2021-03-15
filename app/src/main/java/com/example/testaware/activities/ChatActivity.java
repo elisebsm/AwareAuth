@@ -49,12 +49,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import java.security.KeyPair;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -103,7 +106,7 @@ public class ChatActivity extends AppCompatActivity {
             user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
 
             this.sslContext = IdentityHandler.getSSLContext(this.context);
-            this.keyPair = IdentityHandler.getKeyPair(this.context);
+            this.keyPair = IdentityHandler.getKeyPair();
 
 
             TextView textView = findViewById(R.id.tvRole);
@@ -301,4 +304,25 @@ public class ChatActivity extends AppCompatActivity {
             return null;
         }
 
+
+    private X509Certificate getPeerCertificate() {
+        try {
+            Certificate[] certs = socket2.getSession().getPeerCertificates();
+            if(certs.length > 0 && certs[0] instanceof X509Certificate) {
+                return (X509Certificate) certs[0];
+
+            }
+        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
+
+        }
+
+
+        return null;
+    }
+ /*   private X509Certificate chechPeerCertificate(){
+            //TODO: chech if peerCert signed by CA, if not send to peerSigner if trusted. Prompt user yes/no. If yes, send to PeerSigner
+        return cert;
+    }
+
+                          */
 }

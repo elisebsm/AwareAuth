@@ -30,6 +30,7 @@ import java.util.Objects;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -41,7 +42,7 @@ public class IdentityHandler {
         //FileInputStream inputStreamCertificate = context.openFileInput("rsacert.pem")
             try {
                 //get client cert from keystore
-                X509Certificate cert = (X509Certificate) getCertificate(context);
+                X509Certificate cert = (X509Certificate) getCertificate();
 
                 // key manager
                 CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
@@ -58,7 +59,7 @@ public class IdentityHandler {
 
 //trust manager
                 //File caFile = getCA(context); //TODO change filepath
-                File caFile = new File("/data/data/com.example.testaware/ca/ca.pem");
+                File caFile = new File("/data/data/com.example.testaware/keystore/ca.pem");
 
                 InputStream inputStreamCertificate = null; //TODO close stream
                 inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
@@ -135,7 +136,7 @@ public class IdentityHandler {
     }
 
 
-    public static KeyPair getKeyPair(Context context){
+    public static KeyPair getKeyPair(){
         KeyStore keyStore = null;
         try {
             keyStore = KeyStore.getInstance("PKCS12");
@@ -170,7 +171,7 @@ public class IdentityHandler {
     }
 
 
-    public static X509Certificate getCertificate(Context context) {
+    public static X509Certificate getCertificate() {
         try {
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
             FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/keystore/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
@@ -199,4 +200,6 @@ public class IdentityHandler {
         }
         return null;
     }
+
+
 }

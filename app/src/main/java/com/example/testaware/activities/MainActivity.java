@@ -41,6 +41,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.testaware.IdentityHandler;
+import com.example.testaware.PeerSigner;
 import com.example.testaware.RolesChangedListener;
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
@@ -60,6 +61,7 @@ import java.net.Inet6Address;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -212,9 +214,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         this.sslContext = IdentityHandler.getSSLContext(this.context);
-        this.keyPair = IdentityHandler.getKeyPair(this.context);
+        this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         attachToSession();
+
+
+        try {
+            PeerSigner.peerSign();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        }
     }
 
 
