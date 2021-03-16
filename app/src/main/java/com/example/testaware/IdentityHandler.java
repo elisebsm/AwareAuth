@@ -57,7 +57,7 @@ public class IdentityHandler {
                 keyManagerFactory.init(keyStore, null);
                 KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
-//trust manager
+                //trust manager
                 //File caFile = getCA(context); //TODO change filepath
                 File caFile = new File("/data/data/com.example.testaware/keystore/ca.pem");
 
@@ -174,7 +174,7 @@ public class IdentityHandler {
     public static X509Certificate getCertificate() {
         try {
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/keystore/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
+            FileInputStream fileInputStream = new FileInputStream(new File("/data/data/com.example.testaware/keystore/keystore.jks")); //todo: get the right file (.p12 format? PKCS)
             keyStore.load(fileInputStream, "elise123".toCharArray());
 
             Enumeration<String> es = keyStore.aliases();

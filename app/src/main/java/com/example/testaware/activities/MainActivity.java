@@ -60,7 +60,11 @@ import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
@@ -138,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean hasEstablishedPublisherAndSubscriber = false;
     private SSLContext sslContext;
     private KeyPair keyPair;
+    private String signedKey;
 
 
     //private WifiAwareManager wifiAwareManager;
@@ -219,13 +224,9 @@ public class MainActivity extends AppCompatActivity {
         attachToSession();
 
 
-        try {
-            PeerSigner.peerSign();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        }
+
+        String signedKey= PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
+
     }
 
 

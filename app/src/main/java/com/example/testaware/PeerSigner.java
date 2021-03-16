@@ -1,204 +1,80 @@
 package com.example.testaware;
 
+import android.util.Log;
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.security.SignatureException;
-import java.security.UnrecoverableEntryException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Enumeration;
-import java.util.IdentityHashMap;
+import java.util.Base64;
+
+/*
+This method is supposed to be called before the ssl connection is established with another peer, because user is not yet authenticated. Peer authenticates another peer. Web of trust. Sign public key
+of user who wants to get authenticated.
+*/
 
 public class PeerSigner {
 
-    //Does not have SSL context yet
-    //HaveCSR from peer
-    //goes in here if the certificate provided to peer is self-signed and not signed by root-ca
+    private static String LOG = "PeerSigner";
+    private static String signedKey;
 
+    public static String peerSign() {
+        try {
 
-
-
-    private X509Certificate peerCertificate;
-    private String test;
-
-
-    public PeerSigner(String test){ //TODO: change to X509Certificate peerCertificate
-        this.test= test;
-
-    }
-
-    public static void peerSign() throws IOException, CertificateException {
-        //get own Certificate, to send later
-        X509Certificate signerCertificate= getCertificate();
-
-        //get own keyst for signing
-        KeyPair signerKeyPair= getKeyPair();
-
-
-        //TODO: just for testing - get file sent from peer later.
-        //get peer self signed certificate,
+        X509Certificate signerCertificate= IdentityHandler.getCertificate();
+        KeyPair signerKeyPair= IdentityHandler.getKeyPair();
 
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-
-        File caFile = new File("/data/data/com.example.testaware/keystore/client2.pem");
+        File caFile = new File("/data/data/com.example.testaware/keystore/client2.pem");  //TODO: take in peer pem file received from peer, or get public key from peer
         InputStream inputStreamCertificate = null; //TODO close stream
         inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
         X509Certificate peerCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
-
         String alias = peerCertificate.getSubjectX500Principal().getName();
-
-        // get public key
         PublicKey peerPubKey= peerCertificate.getPublicKey();
-
 
         signPeerKey(peerPubKey, signerKeyPair);
 
-
-        //and add peerCert to trust store
-      /*  KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        FileInputStream fis = new FileInputStream("/data/data/com.example.testaware/keystore/trust.store");
-        trustStore.load(fis, "elise123".toCharArray());
-        trustStore.setCertificateEntry(alias, peerCertificate);
-*/
+        } catch (Exception e) {
+            Log.i(LOG, e.toString());
+            e.printStackTrace();
+        }
+        return signedKey;
     }
 
-    public static void signPeerKey(PublicKey peerKey, KeyPair signerKeyPair){
+    public static void signPeerKey(PublicKey peerKey, KeyPair signerKeyPair) {
 
         try {
-            File keyFile= new File("signedKey.txt");
-            if (keyFile.createNewFile()) {
+            PrivateKey privKey = signerKeyPair.getPrivate();
+            PublicKey pubKey = signerKeyPair.getPublic();
 
-                //FileWriter myWriter = new FileWriter("signedKey.txt");
+            Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
+            ecdsaSign.initSign(privKey);
+            byte[] bytes = peerKey.toString().getBytes();
+            ecdsaSign.update(bytes);
+            byte[] signature = ecdsaSign.sign();
 
-                PrivateKey privKey = signerKeyPair.getPrivate();
+            String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
+            signedKey = Base64.getEncoder().encodeToString(signature);
 
-                Signature ecdsa = Signature.getInstance("SHA256withECDSA");
+            ecdsaSign.initVerify(pubKey);       //TODO: put somewhere else for verifying, just for testing
+            ecdsaSign.update(bytes);
 
-                ecdsa.initSign(privKey);
-
-                String str = peerKey.toString();;
-                byte[] strByte = str.getBytes("UTF-8");
-                ecdsa.update(strByte);
-
-                byte[] realSig = ecdsa.sign();
-                String signature= new BigInteger(1, realSig).toString(16);
-                System.out.println("Signature: " + signature);
-
-                ecdsa.initVerify(signerKeyPair.getPublic());
-                ecdsa.update(realSig);
-                if (ecdsa.verify(realSig))
-                    System.out.println("valid");
-                else
-                    System.out.println("invalid!!!!");
+            if (ecdsaSign.verify(signature)) {
+                Log.i(LOG, "valid");
             } else {
-                System.out.println("File already exists.");
+                Log.i(LOG, "invalid");
             }
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
-            System.out.println("An error occurred.");
+
+
+        } catch (Exception e) {
+            // TODO: handle exception
             e.printStackTrace();
         }
 
     }
-/*
-    public Boolean verifySignatureOnKey(String signature) throws NoSuchAlgorithmException, InvalidKeyException {
-
-        //Signature ecdsa = Signature.getInstance("SHA256withECDSA");
-        // Validation
-        ecdsa.initVerify(signerKeyPair.getPublic());
-        ecdsa.update(signature);
-        if (ecdsa.verify(signature))
-            System.out.println("valid");
-        else
-            System.out.println("invalid!!!!");
-
-    }
-*/
-
-    public static KeyPair getKeyPair(){
-        KeyStore keyStore = null;
-        try {
-            keyStore = KeyStore.getInstance("PKCS12");
-            //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
-
-            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/keystore/keystore.jks"));
-
-            keyStore.load(fileInputStream, "elise123".toCharArray());
-            Enumeration<String> stringEnumeration = keyStore.aliases();
-            String alias = "";
-            boolean isAliasWithPrivateKey = false;
-
-            while(stringEnumeration.hasMoreElements()){
-                alias = stringEnumeration.nextElement();
-                if(isAliasWithPrivateKey = keyStore.isKeyEntry(alias)){
-                    break;
-                }
-            }
-            if(isAliasWithPrivateKey) {
-                Key key = keyStore.getKey(alias, new char[0]);
-                if (key instanceof PrivateKey){
-                    Certificate certificate = keyStore.getCertificate(alias);
-                    PublicKey publicKey = certificate.getPublicKey();
-                    return new KeyPair(publicKey, (PrivateKey) key);
-                }
-            }
-        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
-            e.printStackTrace();
-        }
-        //return Objects.requireNonNull(files)[0];
-        return null;
-    }
-
-
-    public static X509Certificate getCertificate() {
-        try {
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/keystore/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
-            keyStore.load(fileInputStream, "elise123".toCharArray());
-
-            Enumeration<String> es = keyStore.aliases();
-            String alias = "";
-
-            boolean isAliasWithPrivateKey = false;
-
-            while (es.hasMoreElements()) {
-                alias = es.nextElement();
-                if (isAliasWithPrivateKey = keyStore.isKeyEntry(alias)) {
-                    break;
-                }
-            }
-            if (isAliasWithPrivateKey) {
-                Key key = keyStore.getKey(alias, "elise123".toCharArray());
-                if (key instanceof PrivateKey) {
-                    return (X509Certificate) keyStore.getCertificate(alias);
-                }
-            }
-
-        } catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException | UnrecoverableEntryException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
 }
