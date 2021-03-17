@@ -9,6 +9,7 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -30,6 +31,8 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -37,6 +40,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.example.testaware.AppServer;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.listitems.ChatListItem;
@@ -57,7 +61,6 @@ import javax.net.ssl.SSLContext;
 public class MainActivity extends AppCompatActivity {
 
 
-    private String LOG = "LOG-Test-Aware";
     private WifiAwareManager wifiAwareManager;
     private WifiAwareSession wifiAwareSession;
     private Context context;
@@ -117,9 +120,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSION_FINE_LOCATION_CODE = 99;
     private static final int MY_PERMISSION_NETWORK_STATE_CODE = 77;
 
+    private static final int          MY_PERMISSION_EXTERNAL_REQUEST_CODE = 99;
+
     private static boolean isPublisher = false;
     private boolean hasEstablishedPublisherAndSubscriber = false;
-    private SSLContext sslContext;
+    private static SSLContext sslContext;
     private KeyPair keyPair;
     private String signedKey;
 
@@ -137,39 +142,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private String LOG = "LOG-Test-Aware";
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        wifiAwareManager = null;
+        wifiAwareSession = null;
+        connectivityManager = null;
+        networkSpecifier = null;
+        publishDiscoverySession = null;
+        subscribeDiscoverySession = null;
+        peerHandle = null;
+
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
-        wifiAwareManager = null;
-        wifiAwareSession = null;
-        context = null;
-        sslContext = null;
-        keyPair = null;
-        macAddress = null;
+        connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
 
         context = this;
 
-        initAwareManager();
         addPeersToChatList();
 
         Button btn = findViewById(R.id.btnPublish);
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                establishWhoIsPublisherAndSubscriber();
-            }
-        });
+        btn.setOnClickListener(v -> establishWhoIsPublisherAndSubscriber());
 
 
         Button send = findViewById(R.id.btnSend);
         send.setOnClickListener(view -> {
             requestWiFiConnection();
-            String msg= "messageToBeSent: ";
+            /*String msg= "messageToBeSent: ";
 
             EditText editText = findViewById(R.id.eTMsg);
             msg += editText.getText().toString();
@@ -178,8 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
             } else if(subscribeDiscoverySession != null && peerHandle != null) {
                 subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-            }
-            requestWiFiConnection();
+            }*/
         });
 
 
@@ -197,18 +202,122 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(LOCATION_PERMS_COARSE, LOCATION_REQUEST_COARSE);
         }
 
-        this.sslContext = IdentityHandler.getSSLContext(this.context);
+        sslContext = IdentityHandler.getSSLContext(this.context);
         this.keyPair = IdentityHandler.getKeyPair();
-        wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         attachToSession();
 
+        Button conPub = findViewById(R.id.btnConnectPub);
+        conPub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainActivity.this.requestWiFiConnection();
+                /*Thread startConn = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Looper.prepare();
+                        MainActivity.this.requestWiFiConnection();
+                    }
+                });
+                startConn.start();*/
+                Button startServerButton = findViewById(R.id.btnStartServer);
+                startServerButton.setVisibility(View.VISIBLE);
+                startServerButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+                        Log.d(LOG, "SERVER: " + peerIpv6);
+                    }
+                });
+            }
+        });
 
+        Button subPub = findViewById(R.id.btnConnectSub);
+        subPub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainActivity.this.requestWiFiConnection();
+                /*Thread startConn = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Looper.prepare();
+                        MainActivity.this.requestWiFiConnection();
+                    }
+                });
+                startConn.start();*/
+            }
+        });
 
-        String signedKey= PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
+        //String signedKey = PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
 
     }
 
 
+
+    /**
+     * App Permissions for Coarse Location
+     **/
+    private void setupPermissions() {
+        // If we don't have the record network permission...
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // And if we're on SDK M or later...
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // Ask again, nicely, for the permissions.
+                String[] permissionsWeNeed = new String[]{ Manifest.permission.ACCESS_COARSE_LOCATION };
+                requestPermissions(permissionsWeNeed, MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE);
+            }
+        }
+
+        //-------------------------------------------------------------------------------------------- +++++
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            // And if we're on SDK M or later...
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // Ask again, nicely, for the permissions.
+                String[] permissionsWeNeed = new String[]{ Manifest.permission.WRITE_EXTERNAL_STORAGE };
+                requestPermissions(permissionsWeNeed, MY_PERMISSION_EXTERNAL_REQUEST_CODE);
+            }
+        }
+        //-------------------------------------------------------------------------------------------- -----
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    return;
+
+                } else {
+                    Toast.makeText(this, "Permission for location not granted. NAN can't run.", Toast.LENGTH_LONG).show();
+                    finish();
+                    // The permission was denied, so we can show a message why we can't run the app
+                    // and then close the app.
+                }
+            }
+
+            //-------------------------------------------------------------------------------------------- +++++
+            case MY_PERMISSION_EXTERNAL_REQUEST_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    return;
+
+                } else {
+                    Toast.makeText(this, "no sd card access", Toast.LENGTH_LONG).show();
+                }
+            }
+            //-------------------------------------------------------------------------------------------- -----
+            // Other permissions could go down here
+
+        }
+    }
+
+
+    public static SSLContext getSslContext(){
+        return sslContext;
+    }
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void addPeersToChatList(){
         ArrayList<ChatListItem> userList = new ArrayList<>();
@@ -221,7 +330,7 @@ public class MainActivity extends AppCompatActivity {
         listViewChats.setAdapter(chatListAdapter);
         listViewChats.setOnItemClickListener((parent, view, position, id) -> {
             MainActivity.this.openChat(position);
-            MainActivity.this.requestWiFiConnection();
+            //MainActivity.this.requestWiFiConnection();
         });
     }
 
@@ -289,10 +398,79 @@ public class MainActivity extends AppCompatActivity {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 startPublishAndSubscribe();
+                //closeSession(); ENDRET
             }
         }, null);
     }
 
+    private final byte[]              serviceInfo            = "android".getBytes();
+    /*private void publish () {
+        PublishConfig config = new PublishConfig.Builder()
+                .setServiceName(Constants.SERVICE_NAME)
+                .build();
+        //TODO: set service specific info ?
+
+        wifiAwareSession.publish(config, new DiscoverySessionCallback() {
+            @Override
+            public void onPublishStarted(PublishDiscoverySession session) {
+                Log.i(LOG, "publish started");
+                super.onPublishStarted(session);
+                publishDiscoverySession = session;
+                if (publishDiscoverySession != null && peerHandle != null) {
+                    publishDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
+                    Log.d("nanPUBLISH", "onPublishStarted sending mac");
+                }
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.Q)
+            @Override
+            public void onMessageReceived(PeerHandle peerHandle_, byte[] message) {
+                super.onMessageReceived(peerHandle, message);
+
+                Log.i(LOG, "onMessageReceived");
+                if(message.length == 2) {
+                    portToUse = byteToPortInt(message);
+                    Log.d(LOG, "subscribe, will use port number "+ portToUse);
+                } else if (message.length == 6){
+                    setOtherMacAddress(message);
+                    Log.d(LOG, "setOtherMacAddress "+ message);
+                } else if (message.length == 16) {
+                    setOtherIPAddress(message);
+                    Log.d(LOG, "setOtherIPAddress "+ message);
+                } else if (message.length > 16) {
+                    String[] messageIn = new String(message).split(".");
+                    if(messageIn[0].equals("subscriber") && messageIn[1].equals("establishingRole")){
+                        isPublisher = false;
+                        hasEstablishedPublisherAndSubscriber = true;
+                    }
+                }
+                peerHandle = peerHandle_;
+                if (!otherMacList.contains(macAddress)){
+                    otherMacList.add(macAddress);
+                    peerHandleList.add(peerHandle);
+                    int numOfSubscribers = peerHandleList.size();
+                    Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
+                    if(otherMacList.size()>1){
+                        for (int i = 0; i <otherMacList.size(); i ++){
+                            Log.d(LOG, "otherMacList " + i + " macAddress: " + otherMacList.get(i));
+                            //byte [] messageOtherMac =  otherMacList.get(i).getBytes();
+                            //publishDiscoverySession.sendMessage(peerHandle, MESSAGE, messageOtherMac);
+                        }
+                    }
+
+                    if(peerHandleList.size()>1){
+                        for (int i = 0; i <peerHandleList.size(); i ++){
+                            Log.d(LOG, "peerHandleList " + i + " peerhandle: " + peerHandleList.get(i));
+                            //byte [] messageOtherMac =  peerHandleList.get(i).getBytes();
+                            //publishDiscoverySession.sendMessage(peerHandle, MESSAGE, messageOtherMac);
+                        }
+                    }
+                    Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
+                    addPeersToChatList();
+                }
+            }
+        }, null);
+    }*/
 
     private void publish () {
         PublishConfig config = new PublishConfig.Builder()
@@ -358,21 +536,65 @@ public class MainActivity extends AppCompatActivity {
         }, null);
     }
 
+    /*private void subscribe(){
+        SubscribeConfig config = new SubscribeConfig.Builder()
+                .setServiceName(Constants.SERVICE_NAME)
+                .build();
+        wifiAwareSession.subscribe(config, new DiscoverySessionCallback() {
+            @Override
+            public void onSubscribeStarted(SubscribeDiscoverySession session) {
+                super.onSubscribeStarted(session);
+                subscribeDiscoverySession = session;
+                Log.i(LOG, "subscribe started");
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        Log.d(LOG, "App stopped");
-    }
+                if (subscribeDiscoverySession != null && peerHandle != null) {
+                    subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
+                    Log.d(LOG, " subscribe, onServiceStarted send mac");
+                }
+            }
 
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.d(LOG, "App onDestroy");
-        //TODO: remove peer from list
-    }
-
+            @RequiresApi(api = Build.VERSION_CODES.Q)
+            @Override
+            public void onServiceDiscovered(PeerHandle peerHandle_, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
+                super.onServiceDiscovered(peerHandle, serviceSpecificInfo, matchFilter);
+                peerHandle=peerHandle_;
+                if (subscribeDiscoverySession != null && peerHandle != null) {
+                    subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
+                }
+                // establishWhoIsPublisherAndSubscriber();
+            }
+            @RequiresApi(api = Build.VERSION_CODES.Q)
+            @Override
+            public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
+                super.onMessageReceived(peerHandle, message);
+                Log.d(LOG, "subscribe, received message");
+                Toast.makeText(MainActivity.this, "received", Toast.LENGTH_LONG).show();
+                if(message.length == 2) {
+                    portToUse = byteToPortInt(message);
+                    Log.d(LOG, "subscribe, will use port number "+ portToUse);
+                } else if (message.length == 6){
+                    setOtherMacAddress(message);
+                    Log.d(LOG, "setOtherMacAddress "+ message);
+                } else if (message.length == 16) {
+                    setOtherIPAddress(message);
+                    Log.d(LOG, "setOtherIPAddress "+ message);
+                } else if (message.length > 16) {
+                    String messageIn = new String(message);
+                    Log.d(LOG, "Message IN:" + messageIn);
+                    if(messageIn.contains("subscriber") && messageIn.contains("establishingRole")) {
+                        Log.d(LOG, "YES" + messageIn);
+                        isPublisher = false;
+                        findViewById(R.id.btnConnectSub).setVisibility(View.VISIBLE);
+                        hasEstablishedPublisherAndSubscriber = true;
+                        publishDiscoverySession = null;
+                        //requestWiFiConnection();
+                    }
+                    //setMessage(message);
+                    //Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
+                }
+            }
+        }, null);
+    }*/
 
     private void subscribe(){
         SubscribeConfig config = new SubscribeConfig.Builder()
@@ -399,7 +621,7 @@ public class MainActivity extends AppCompatActivity {
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
                 }
-               // establishWhoIsPublisherAndSubscriber();
+                // establishWhoIsPublisherAndSubscriber();
             }
             @RequiresApi(api = Build.VERSION_CODES.Q)
             @Override
@@ -433,6 +655,44 @@ public class MainActivity extends AppCompatActivity {
             }
         }, null);
     }
+
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(LOG, "MainActivity stopped");
+    }
+
+
+    private void closeSession() {
+
+        if (publishDiscoverySession != null) {
+            publishDiscoverySession.close();
+            publishDiscoverySession = null;
+        }
+
+        if (subscribeDiscoverySession != null) {
+            subscribeDiscoverySession.close();
+            subscribeDiscoverySession = null;
+        }
+
+        if (wifiAwareSession != null) {
+            wifiAwareSession.close();
+            wifiAwareSession = null;
+        }
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(LOG, "App onDestroy");
+        //TODO: remove peer from list
+    }
+
+
+
 
 
     /**
@@ -491,8 +751,11 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(LOG, "This devices is subscriber");
         }
-        connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-
+        //connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (networkSpecifier == null) {
+            Log.d(LOG, "No NetworkSpecifier Created ");
+            return;
+        }
         NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
                 .setNetworkSpecifier(networkSpecifier)
@@ -502,10 +765,16 @@ public class MainActivity extends AppCompatActivity {
         connectivityManager.requestNetwork(myNetworkRequest, new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(Network network_) {
+                super.onAvailable(network);
                 //Toast.makeText(context, "onAvaliable", Toast.LENGTH_LONG).show();
-                Log.d(LOG, "onAvaliable");
+                Log.d(LOG, "onAvaliable + Network:" + network_.toString());
             }
 
+            @Override
+            public void onUnavailable() {
+                super.onUnavailable();
+                Log.d(LOG, "entering onUnavailable ");
+            }
 
             @Override
             public void onCapabilitiesChanged(Network network_, NetworkCapabilities networkCapabilities_) {
@@ -515,12 +784,18 @@ public class MainActivity extends AppCompatActivity {
                 network = network_;
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 setPeerIpv6(peerAwareInfo.getPeerIpv6Addr());
-
+                Log.d(LOG, "Peeripv6: " + peerAwareInfo.getPeerIpv6Addr() );
             }
 
+            @Override
+            public void onLosing(Network network, int maxMsToLive) {
+                super.onLosing(network, maxMsToLive);
+                Log.d(LOG, "losing Network");
+            }
 
             @Override
             public void onLost(Network network_) {
+                super.onLost(network);
                 //Toast.makeText(context, "onLost", Toast.LENGTH_LONG).show();
                 Log.d(LOG, "onLost");
             }
@@ -581,9 +856,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    /**
+
+}
+
+/*
+
+    */
+/**
      * App Permissions for Coarse Location
-     **/
+     **//*
+
     private void setupPermissions(){
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -631,6 +913,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
+*/
 /*            case MY_PERMISSION_NETWORK_STATE_CODE: { //WHY: må vi ha denne?
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -640,7 +923,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Log.i(LOG, "Network state permission not granted");
                 }
-            }*/
+            }*//*
+
         }
-    }
-}
+    }*/

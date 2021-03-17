@@ -32,7 +32,7 @@ public class Message {
    // @Getter
     private PublicKey from;
 
-    public Message() throws NoSuchAlgorithmException {
+    public Message(String message) throws NoSuchAlgorithmException {
         generateIV();
         generateSecretKey();
     }

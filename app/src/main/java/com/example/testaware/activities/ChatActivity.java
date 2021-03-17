@@ -61,15 +61,16 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
+import lombok.Setter;
+
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class ChatActivity extends AppCompatActivity {
         private Inet6Address peerIpv6;
         private EditText editChatText;
-        private String LOG = "ø-Chat-Activity";
+        private String LOG = "LOG-Test-Aware-Chat-Activity";
         private RecyclerView mMessageRecycler;
-        private MessageListAdapter mMessageAdapter;  //endret til test
-        private ArrayList<MessageListItem> messageList;
-        private String messageFromClient;
+        public static MessageListAdapter mMessageAdapter;  //endret til test
+        public static ArrayList<MessageListItem> messageList;
         private Context context;
         private DataInputStream inputStream;
         private DataOutputStream outputStream;
@@ -78,7 +79,6 @@ public class ChatActivity extends AppCompatActivity {
         private SSLSocket socket2;
         private boolean running;
         private Message message;
-        private AppServer appServer;
         private Socket socket;
 
     private ConnectivityManager       connectivityManager;
@@ -90,6 +90,9 @@ public class ChatActivity extends AppCompatActivity {
 
     private SSLContext sslContext;
     private KeyPair keyPair;
+
+        private AppClient appClient;
+        private AppServer appServer;
 
     //TODO: change to get dynamic ports
 
@@ -105,35 +108,25 @@ public class ChatActivity extends AppCompatActivity {
 
             user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
 
-            this.sslContext = IdentityHandler.getSSLContext(this.context);
+            this.sslContext = MainActivity.getSslContext();
+            //this.sslContext = IdentityHandler.getSSLContext(this.context);
             this.keyPair = IdentityHandler.getKeyPair();
-
-
+            peerIpv6 = MainActivity.getPeerIpv6();
             TextView textView = findViewById(R.id.tvRole);
-            //textView.setText("SERVER");
-            //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
 
-            AppClient appClient = new AppClient(keyPair, sslContext);
-            textView.setText("CLIENT");
+            textView.setText("SERVER");
+            //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+            //Log.d(LOG, "SERVER: " + peerIpv6);
+
+            //appClient = new AppClient(keyPair, sslContext);
+            //textView.setText("CLIENT");
+            //Log.d(LOG, "CLIENT: " + peerIpv6);
 
             /*if (MainActivity.isPublisher()){
                 AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
             } else {
                 AppClient appClient = new AppClient(keyPair, sslContext);
             }*/
-
-            //peerIpv6 = MainActivity.getPeerIpv6();
-            //publishDiscoverySession = MainActivity.getPublishDiscoverySession();
-            //subscribeDiscoverySession = MainActivity.getSubscribeDiscoverySession();
-
-
-            int position = getIntent().getIntExtra("position", 0);
-            //List<PeerHandle> peerHandleList = MainActivity.getPeerHandleList();
-            //peerHandle = peerHandleList.get(position);
-
-
-            //requestWiFiConnection();
-
 
         }
 
@@ -150,54 +143,70 @@ public class ChatActivity extends AppCompatActivity {
                 startServer();
             } else {
                 initClient();
-            }
+            }*/
+            Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
             sendChatMsgbtn.setOnClickListener(v -> {
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    sendMessage();
-                    Log.i(LOG, "send btn pressed");
-                }
-            });*/
-        }
-
-        private void initClient() {
-            Runnable serverTask = () -> {
-                //int clientPort = (int) getIntent().getExtras().get("Client_port");
-                running = true;
-
-                socket = null;
-                Log.i(LOG, "sendChatMessage started ");
-                String chatMessage = editChatText.getText().toString();
-                try {
-                    SocketFactory socketFactory = SSLSocketFactory.getDefault();
-                    socket = socketFactory.createSocket(peerIpv6, Constants.SERVER_PORT);
-                    //SSLSession sslSession = socket.getSession();
-
-                    //socket = new Socket(peerIpv6, Constants.SERVER_PORT);
-                    inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                    outputStream = new DataOutputStream(socket.getOutputStream());
-                    outputStream.writeUTF("clientHello");
-                    outputStream.flush();
-                    Log.i(LOG, "ClientHello sent ");
-
-                    MessageListItem chatMsg = new MessageListItem("clientHello", getLocalIp());
-                    messageList.add(chatMsg);
-
-                    EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                    textT.getText().clear();
-
-                    if (inputStream != null) {
-                        receiveMessage();
+                    EditText messageText = findViewById(R.id.eTChatMsg);
+                    String messageToSend = messageText.getText().toString();
+                    if(appClient != null){
+                        //try {
+                            //Message message = new Message(messageToSend);
+                            //appClient.sendMessage(message);
+                            appClient.sendMessage(messageToSend);
+                        } /*catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        }*/
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            };
-            Thread serverThread = new Thread(serverTask);
-            serverThread.start();
+                    Log.i(LOG, "Send btn pressed");
+                //}
+            });
         }
 
 
-        private void receiveMessage() {
+        public static void setChat(String message){
+            MessageListItem chatMsg = new MessageListItem(message, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+            messageList.add(chatMsg);
+            mMessageAdapter.notifyDataSetChanged();
+        }
+
+
+        public void notifyMessageAdapter(){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ChatActivity.mMessageAdapter.notifyDataSetChanged();
+                }
+            });
+        }
+
+
+        public static String getLocalIp() {
+            try {
+                for (Enumeration<NetworkInterface> en = NetworkInterface
+                        .getNetworkInterfaces(); en.hasMoreElements(); ) {
+                    NetworkInterface intf = en.nextElement();
+                    for (Enumeration<InetAddress> enumIpAddr = intf
+                            .getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                        InetAddress inetAddress = enumIpAddr.nextElement();
+                        System.out.println("ip1--:" + inetAddress);
+                        System.out.println("ip2--:" + inetAddress.getHostAddress());
+
+                        if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet6Address) {
+                            String ipaddress = inetAddress.getHostAddress();
+                            return ipaddress;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                Log.e("IP Address", ex.toString());
+            }
+            return null;
+        }
+
+
+             /*private void receiveMessage() {
             Runnable serverTask = new Runnable() {
                 public void run() {
                     running = true;
@@ -224,16 +233,16 @@ public class ChatActivity extends AppCompatActivity {
             };
             Thread serverThread = new Thread(serverTask);
             serverThread.start();
-        }
+        }*/
 
-        private void sendMessage() {
+       /* private void sendMessage(SSLSocket sslSocket) {
             //
             Runnable serverTask = () -> {
                 String chatMessage = editChatText.getText().toString();
                 //TODO: make Message object for input stream
                 try {
-                    outputStream = new DataOutputStream(socket.getOutputStream());
-                    outputStream.writeUTF(String.valueOf(chatMessage));
+                    outputStream = new DataOutputStream(sslSocket.getOutputStream());
+                    outputStream.writeUTF(chatMessage);
                     outputStream.flush();
                     MessageListItem chatMsg = new MessageListItem("Test:" + chatMessage , getLocalIp());
                     messageList.add(chatMsg);
@@ -245,64 +254,7 @@ public class ChatActivity extends AppCompatActivity {
             };
             Thread serverThread = new Thread(serverTask);
             serverThread.start();
-        }
-
-        private void startServer() {
-            //new thread for each client server conn
-            //TODO: close socket
-            Runnable serverTask = () -> {
-                ServerSocket server;
-                try {
-                    server = new ServerSocket(40699);
-                    int port = 40699;
-                    // server.getLocalPort();
-                    while (true) {
-                        Log.d(LOG, "Server started, Waiting for client");
-                        socket = server.accept();
-                        Log.d(LOG, "Client accepted");
-                        inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-
-                        String strMessageFromClient = inputStream.readUTF();
-                        Log.d(LOG, "Reading message from client"+ strMessageFromClient);
-
-                        MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
-                        messageList.add(chatMsg);
-
-                        if(inputStream!= null){
-                            receiveMessage();
-                        }
-                        runOnUiThread(() -> mMessageAdapter.notifyDataSetChanged());
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            };
-            Thread serverThread = new Thread(serverTask);
-            serverThread.start();
-        }
-
-        public String getLocalIp() {
-            try {
-                for (Enumeration<NetworkInterface> en = NetworkInterface
-                        .getNetworkInterfaces(); en.hasMoreElements(); ) {
-                    NetworkInterface intf = en.nextElement();
-                    for (Enumeration<InetAddress> enumIpAddr = intf
-                            .getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-                        InetAddress inetAddress = enumIpAddr.nextElement();
-                        System.out.println("ip1--:" + inetAddress);
-                        System.out.println("ip2--:" + inetAddress.getHostAddress());
-
-                        if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet6Address) {
-                            String ipaddress = inetAddress.getHostAddress();
-                            return ipaddress;
-                        }
-                    }
-                }
-            } catch (Exception ex) {
-                Log.e("IP Address", ex.toString());
-            }
-            return null;
-        }
+        }*/
 
 
     private X509Certificate getPeerCertificate() {

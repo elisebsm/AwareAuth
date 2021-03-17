@@ -1,17 +1,27 @@
 package com.example.testaware;
 
+import android.os.Build;
+import android.transition.ChangeTransform;
+import android.util.Log;
+
+import androidx.annotation.RequiresApi;
+
+import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageListAdapter;
 import com.example.testaware.listitems.MessageListItem;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
 import java.net.Inet6Address;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,7 +37,7 @@ public class AppServer {
 
     private static Inet6Address peerIpv6;
     private static WeakReference<MainActivity> mainActivity; //TODO what is this??
-    private String LOG = "LOG-Test-Aware-App-Client";
+    private String LOG = "LOG-Test-Aware-App-Server";
     private MessageListAdapter mMessageAdapter;  //endret til test
     private ArrayList<MessageListItem> messageList;
     private String strMessageFromClient;
@@ -41,26 +51,48 @@ public class AppServer {
 
 
 
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, int serverPort){
-        //this.sslContext = serverSSLContext;
-        //this.peerIpv6 = peerIpv6;
-
         running = true;
 
         Runnable serverTask = () -> {  //new thread for each client server conn
-            SSLServerSocket serverSocket;
             running  = true;
-
             try {
-                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
+                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
                 serverSocket.setNeedClientAuth(true);
-
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
-                    addClient(sslClientSocket);
+                    sslClientSocket.startHandshake();
+
+                    Log.d(LOG, "(SSLSocket) serverSocket.accept() ");
+                    //addClient(sslClientSocket);
+
+                    inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
+                    //TODO: send client hello message
+                    while(running){
+                        if (inputStream != null){
+                            String strMessageFromClient = (String) inputStream.readUTF();  //FEIL
+                            Log.d(LOG, "Reading message " + strMessageFromClient);
+
+                            MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+
+
+                            //ChatActivity.messageList.add(chatMsg);
+                            //ChatActivity chatActivity = new ChatActivity();
+                            //chatActivity.notifyMessageAdapter();
+                            //ChatActivity.mMessageAdapter.notifyDataSetChanged();
+
+
+                            //ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
+                            //onPacketReceived(receivedPacket);
+                        }
+                    }
                 }
             } catch (IOException  e) {
+               Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
+
+                Log.d(LOG, "Exception in AppServer in constructor");
             }
             //TODO: close socket
         };
@@ -117,3 +149,5 @@ public class AppServer {
         }
     }*/
 }
+
+

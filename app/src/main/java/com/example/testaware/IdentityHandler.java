@@ -41,43 +41,35 @@ public class IdentityHandler {
     public static SSLContext getSSLContext(Context context) {
         //FileInputStream inputStreamCertificate = context.openFileInput("rsacert.pem")
             try {
-                //get client cert from keystore
-                X509Certificate cert = (X509Certificate) getCertificate();
-
-                // key manager
-                CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-
                 //keystore containing certificate
                 KeyStore keyStore = KeyStore.getInstance("PKCS12");
-                //FileInputStream fileInputStream = new FileInputStream("KeyStore");
-                FileInputStream fileInputStream = new FileInputStream("/data/data/com.example.testaware/keystore/keystore.jks"); //todo: get the right file (.p12 format? PKCS)
+                FileInputStream fileInputStream = new FileInputStream(Constants.KEYSTORE_PATH);
                 keyStore.load(fileInputStream, "elise123".toCharArray());
 
                 KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("X509");
-                keyManagerFactory.init(keyStore, null);
+                keyManagerFactory.init(keyStore, "elise123".toCharArray());
+
                 KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
-                //trust manager
-                //File caFile = getCA(context); //TODO change filepath
-                File caFile = new File("/data/data/com.example.testaware/keystore/ca.pem");
 
-                InputStream inputStreamCertificate = null; //TODO close stream
-                inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
-                X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
-                String certificateAlias = certificate.getSubjectX500Principal().getName();
-                KeyStore keyStoreCA = KeyStore.getInstance(KeyStore.getDefaultType());
-                keyStoreCA.load(null);
-                keyStoreCA.setCertificateEntry(certificateAlias, certificate);
 
-                KeyManagerFactory keyManagerFactoryCA = KeyManagerFactory.getInstance("X509");
-                keyManagerFactoryCA.init(keyStoreCA, null);
+                X509Certificate rootCertificate = (X509Certificate) keyStore.getCertificate("root");
+                String certificateAlias = rootCertificate.getSubjectX500Principal().getName();
+                KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                trustStore.load(null);
+
+                trustStore.setCertificateEntry(certificateAlias, rootCertificate);
+
+                KeyManagerFactory trustKeyManagerFactory = KeyManagerFactory.getInstance("X509");
+                trustKeyManagerFactory.init(trustStore, "elise123".toCharArray());
                 TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("X509");
-                trustManagerFactory.init(keyStoreCA);
+                trustManagerFactory.init(trustStore);
                 TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
 
-                // Create an SSLContext that uses our TrustManager
                 SSLContext sslContext = SSLContext.getInstance("TLS");
                 sslContext.init(keyManagers, trustManagers, null);
+
+
                 return sslContext;
             } catch (IOException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException e) {
                 e.printStackTrace();
@@ -140,11 +132,9 @@ public class IdentityHandler {
         KeyStore keyStore = null;
         try {
             keyStore = KeyStore.getInstance("PKCS12");
-            //FileInputStream fileInputStream = new FileInputStream(getPKCS(context));
-
-            FileInputStream fileInputStream = new FileInputStream( new File("/data/data/com.example.testaware/keystore/keystore.jks"));
-
+            FileInputStream fileInputStream = new FileInputStream( new File(Constants.KEYSTORE_PATH));
             keyStore.load(fileInputStream, "elise123".toCharArray());
+
             Enumeration<String> stringEnumeration = keyStore.aliases();
             String alias = "";
             boolean isAliasWithPrivateKey = false;
@@ -174,7 +164,7 @@ public class IdentityHandler {
     public static X509Certificate getCertificate() {
         try {
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream fileInputStream = new FileInputStream(new File("/data/data/com.example.testaware/keystore/keystore.jks")); //todo: get the right file (.p12 format? PKCS)
+            FileInputStream fileInputStream = new FileInputStream(Constants.KEYSTORE_PATH);
             keyStore.load(fileInputStream, "elise123".toCharArray());
 
             Enumeration<String> es = keyStore.aliases();
