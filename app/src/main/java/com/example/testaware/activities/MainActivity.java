@@ -1,6 +1,5 @@
 package com.example.testaware.activities;
 
-import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,47 +30,27 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.PeerSigner;
-import com.example.testaware.RolesChangedListener;
+import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.ServerSocket;
-import java.net.UnknownHostException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
-
-import lombok.Getter;
 //import lombok.Getter;
 
 

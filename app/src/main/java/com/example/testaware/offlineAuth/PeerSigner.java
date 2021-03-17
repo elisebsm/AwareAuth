@@ -1,6 +1,9 @@
-package com.example.testaware;
+package com.example.testaware.offlineAuth;
 
 import android.util.Log;
+
+import com.example.testaware.IdentityHandler;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,18 +25,20 @@ public class PeerSigner {
 
     private static String LOG = "PeerSigner";
     private static String signedKey;
+    private static X509Certificate signerCertificate;
+    private static X509Certificate peerCertificate;
 
     public static String peerSign() {
         try {
 
-        X509Certificate signerCertificate= IdentityHandler.getCertificate();
+        signerCertificate= IdentityHandler.getCertificate();
         KeyPair signerKeyPair= IdentityHandler.getKeyPair();
 
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
         File caFile = new File("/data/data/com.example.testaware/keystore/client2.pem");  //TODO: take in peer pem file received from peer, or get public key from peer
         InputStream inputStreamCertificate = null; //TODO close stream
         inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
-        X509Certificate peerCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
+        peerCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
         String alias = peerCertificate.getSubjectX500Principal().getName();
         PublicKey peerPubKey= peerCertificate.getPublicKey();
 
@@ -61,16 +66,7 @@ public class PeerSigner {
             String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
             signedKey = Base64.getEncoder().encodeToString(signature);
 
-            ecdsaSign.initVerify(pubKey);       //TODO: put somewhere else for verifying, just for testing
-            ecdsaSign.update(bytes);
-
-            if (ecdsaSign.verify(signature)) {
-                Log.i(LOG, "valid");
-            } else {
-                Log.i(LOG, "invalid");
-            }
-
-
+            Boolean valid= VerifyCredentials.verify(signedKey, signerCertificate, peerCertificate);
         } catch (Exception e) {
             // TODO: handle exception
             e.printStackTrace();
