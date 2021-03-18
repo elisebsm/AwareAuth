@@ -114,13 +114,13 @@ public class ChatActivity extends AppCompatActivity {
             peerIpv6 = MainActivity.getPeerIpv6();
             TextView textView = findViewById(R.id.tvRole);
 
-            textView.setText("SERVER");
+           // textView.setText("SERVER");
             //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
             //Log.d(LOG, "SERVER: " + peerIpv6);
 
-            //appClient = new AppClient(keyPair, sslContext);
-            //textView.setText("CLIENT");
-            //Log.d(LOG, "CLIENT: " + peerIpv6);
+            appClient = new AppClient(keyPair, sslContext);
+            textView.setText("CLIENT");
+            Log.d(LOG, "CLIENT: " + peerIpv6);
 
             /*if (MainActivity.isPublisher()){
                 AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
@@ -165,8 +165,8 @@ public class ChatActivity extends AppCompatActivity {
         }
 
 
-        public static void setChat(String message){
-            MessageListItem chatMsg = new MessageListItem(message, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+        public static void setChat(String message, String ipv6){
+            MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
             messageList.add(chatMsg);
             mMessageAdapter.notifyDataSetChanged();
         }

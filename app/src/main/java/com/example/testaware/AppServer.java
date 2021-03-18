@@ -74,8 +74,8 @@ public class AppServer {
                             String strMessageFromClient = (String) inputStream.readUTF();  //FEIL
                             Log.d(LOG, "Reading message " + strMessageFromClient);
 
-                            MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
-
+                           // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                            ChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
 
                             //ChatActivity.messageList.add(chatMsg);
                             //ChatActivity chatActivity = new ChatActivity();

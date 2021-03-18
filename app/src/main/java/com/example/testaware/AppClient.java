@@ -79,12 +79,16 @@ public class AppClient implements Runnable{
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
             while(running){
-                if(inet6Address != null){
+                if(inet6Address != null && sslContext!=null){
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
 
                     Log.d(LOG, "Connected to " + inet6Address.getHostName());
                 } else {
                     Log.d(LOG, "Trying to create Socket but inte6Adrres is NULL");
+                    /*sslContext = MainActivity.getSslContext();  //TODO: try this for bux fix? or something similar
+                    socketFactory = sslContext.getSocketFactory();
+                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+                    Log.d(LOG, "Trying again"); */
                 }
 
             /*for(ConnectionListener listener: connectionListeners){
@@ -103,7 +107,7 @@ public class AppClient implements Runnable{
                     if (inputStream != null){
                         String strMessageFromClient = (String) inputStream.readUTF();   //FEIL
                         Log.d(LOG, "Reading message " + strMessageFromClient);
-                        ChatActivity.setChat(strMessageFromClient);
+                        ChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
                         //ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
                         //onPacketReceived(receivedPacket);
                     }
@@ -152,8 +156,9 @@ public class AppClient implements Runnable{
                 outputStream.writeUTF(message);
                 outputStream.flush();
 
-                MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
+                ChatActivity.setChat(message,ChatActivity.getLocalIp());
+              //  MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
+                //ChatActivity.messageList.add(chatMsg);
 
                 //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
                 //textT.getText().clear();

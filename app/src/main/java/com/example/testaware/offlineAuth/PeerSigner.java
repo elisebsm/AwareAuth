@@ -35,7 +35,7 @@ public class PeerSigner {
         KeyPair signerKeyPair= IdentityHandler.getKeyPair();
 
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        File caFile = new File("/data/data/com.example.testaware/keystore/client2.pem");  //TODO: take in peer pem file received from peer, or get public key from peer
+        File caFile = new File("/data/data/com.example.testaware/client2.pem");  //TODO: take in peer pem file received from peer, or get public key from peer
         InputStream inputStreamCertificate = null; //TODO close stream
         inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
         peerCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
@@ -66,7 +66,8 @@ public class PeerSigner {
             String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
             signedKey = Base64.getEncoder().encodeToString(signature);
 
-            Boolean valid= VerifyCredentials.verify(signedKey, signerCertificate, peerCertificate);
+            Boolean valid= VerifyCredentials.verifySignature(signedKey, signerCertificate, peerCertificate);
+            Log.i(LOG, "Verify is " +valid+ "!!!!!!!");
         } catch (Exception e) {
             // TODO: handle exception
             e.printStackTrace();

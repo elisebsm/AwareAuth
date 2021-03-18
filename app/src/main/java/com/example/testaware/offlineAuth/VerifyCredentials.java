@@ -15,7 +15,9 @@ import java.security.cert.Certificate;
 public class VerifyCredentials {
     private static String LOG = "VerifyPeer";
 
-    public static Boolean verify(String signedPeerKey,Certificate signerCert, Certificate peerCertificate){
+
+
+    public static Boolean verifySignature(String signedPeerKey,Certificate signerCert, Certificate peerCertificate){
         PublicKey signerPubKey = signerCert.getPublicKey();   //public key of n
         Boolean valid=false;
         try{
@@ -29,6 +31,7 @@ public class VerifyCredentials {
             if (ecdsaSign.verify(signedPeerKeyBytes)) {
                 Log.i(LOG, "valid");
                 valid=true;
+                //TODO: call authetnicatedUser here
             } else {
                 Log.i(LOG, "invalid");
                 valid = false;
@@ -46,7 +49,7 @@ public class VerifyCredentials {
     public static void addAuthenticatedUser(Certificate peerCertificate){
         //PublicKey peerPubKey = peerCertificate.getPublicKey();
         try {
-            FileWriter myWriter = new FileWriter("/data/data/com.example.testaware/keystore/certificates/authenticateUserCertificate.txt");
+            FileWriter myWriter = new FileWriter("/data/data/com.example.testaware/authenticateUserCertificate.txt");
             myWriter.write(peerCertificate.toString());
             myWriter.close();
             System.out.println("Successfully wrote to the file.");
@@ -60,6 +63,10 @@ public class VerifyCredentials {
     //TODO: change location. Should not be called here -> before second ssl connection
     public static void generateChallenge(){
         
+    }
+    //verify signer cert against root ca
+    public static void verifySigner(Certificate signerCert){
+
     }
 
 
