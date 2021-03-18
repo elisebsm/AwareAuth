@@ -1,4 +1,4 @@
-package com.example.testaware;
+package com.example.testaware.models;
 
 import java.security.cert.X509Certificate;
 
@@ -12,7 +12,7 @@ public class Contact {
         this.certificate = certificate;
     }
 
-    public String getUserName(){
+    public String getCommonName(){
         X509Certificate x509Certificate = certificate;
         X500Principal x500Principal = x509Certificate.getIssuerX500Principal();
         String [] split = x500Principal.getName().split(",");

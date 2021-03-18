@@ -1,4 +1,5 @@
 /*
+
 package com.example.testaware;
 
 import android.Manifest;
@@ -37,8 +38,21 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.Getter;
+
+
+
 public class WiFiAwareConnectionManager {
 
+    @Getter
+    private WifiAwareManager wifiAwareManager;
+
+     WiFiAwareConnectionManager(Context context) {
+        wifiAwareManager.WI
+    }
+}
+*/
+/*
     private boolean supportsAware;
     private String LOG = "LOG-Test-Aware";
     private SubscribeDiscoverySession mainSession;
@@ -260,10 +274,14 @@ public class WiFiAwareConnectionManager {
     }
 
 
-    */
+    *//*
+
+*/
 /**
      * Helper to set the status field.
      *//*
+*/
+/*
 
     private void setMessage(byte[] msg) {
         String outmsg = new String(msg).replace("messageToBeSent: ","");
@@ -320,4 +338,8 @@ class AsyncTaskRunner extends AsyncTask<String, String, String> {
         Log.d("RESULTAT", String.valueOf(text));
 
     }
-}*/
+}*//*
+
+
+
+*/
