@@ -2,16 +2,7 @@ package com.example.testaware.activities;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
-import android.net.NetworkSpecifier;
-import android.net.wifi.aware.PeerHandle;
-import android.net.wifi.aware.PublishDiscoverySession;
-import android.net.wifi.aware.SubscribeDiscoverySession;
-import android.net.wifi.aware.WifiAwareNetworkInfo;
-import android.net.wifi.aware.WifiAwareNetworkSpecifier;
+
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,7 +10,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,68 +18,43 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
-import com.example.testaware.Constants;
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.Message;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
 import com.example.testaware.User;
 import com.example.testaware.adapters.MessageListAdapter;
 
-
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.Inet6Address;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
+
 
 import java.security.KeyPair;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.List;
 
-import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
 
-import lombok.Setter;
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class ChatActivity extends AppCompatActivity {
-        private Inet6Address peerIpv6;
-        private EditText editChatText;
         private String LOG = "LOG-Test-Aware-Chat-Activity";
         private RecyclerView mMessageRecycler;
         public static MessageListAdapter mMessageAdapter;  //endret til test
         public static ArrayList<MessageListItem> messageList;
         private Context context;
-        private DataInputStream inputStream;
-        private DataOutputStream outputStream;
         private User user;
         private String myIpvAddr;
-        private SSLSocket socket2;
-        private boolean running;
-        private Message message;
-        private Socket socket;
 
-    private ConnectivityManager       connectivityManager;
-    private NetworkSpecifier networkSpecifier;
-    private NetworkCapabilities networkCapabilities;
-    private PeerHandle peerHandle;
-    private WifiAwareNetworkInfo peerAwareInfo;
+        private  Inet6Address peerIpv6;
+        private EditText editChatText;
 
-
-    private SSLContext sslContext;
-    private KeyPair keyPair;
+        private SSLContext sslContext;
+        private KeyPair keyPair;
 
         private AppClient appClient;
         private AppServer appServer;
@@ -257,7 +222,7 @@ public class ChatActivity extends AppCompatActivity {
         }*/
 
 
-    private X509Certificate getPeerCertificate() {
+/*    private X509Certificate getPeerCertificate() {
         try {
             Certificate[] certs = socket2.getSession().getPeerCertificates();
             if(certs.length > 0 && certs[0] instanceof X509Certificate) {
@@ -270,7 +235,7 @@ public class ChatActivity extends AppCompatActivity {
 
 
         return null;
-    }
+    }*/
  /*   private X509Certificate chechPeerCertificate(){
             //TODO: chech if peerCert signed by CA, if not send to peerSigner if trusted. Prompt user yes/no. If yes, send to PeerSigner
         return cert;

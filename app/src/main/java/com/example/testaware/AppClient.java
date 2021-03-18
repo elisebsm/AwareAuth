@@ -2,22 +2,23 @@ package com.example.testaware;
 
 
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
-import android.widget.EditText;
 
 import androidx.annotation.RequiresApi;
 
-import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listitems.MessageListItem;
+import com.example.testaware.listeners.ConnectionListener;
+import com.example.testaware.models.AbstractPacket;
+import com.example.testaware.models.Contact;
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import java.net.Inet6Address;
-import java.net.UnknownHostException;
 import java.security.KeyPair;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -40,11 +41,12 @@ public class AppClient implements Runnable{
     private SSLSocket sslSocket;
     private SSLContext sslContext;
 
-    private DataInputStream inputStream;
-    private DataOutputStream outputStream;
+    private ObjectInputStream inputStream;
+    private ObjectOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
+
     @Getter
-    //private List<ConnectionListener> connectionListeners;
+    private List<ConnectionListener> connectionListeners;
 
     private String LOG = "LOG-Test-Aware-Client";
     @Getter
@@ -52,79 +54,139 @@ public class AppClient implements Runnable{
 
     private Inet6Address inet6Address;
 
+    private int port;
+
     public AppClient(KeyPair keyPair, SSLContext sslContext){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
+        this.inet6Address = MainActivity.getPeerIpv6();
+
         Thread thread = new Thread(this);
         thread.start();
-        //connectionListeners = new ArrayList<>();
+
+        connectionListeners = new ArrayList<>();
     }
+
+
+    private X509Certificate getServerIdentity() {
+        try {
+            Certificate[] certs = sslSocket.getSession().getPeerCertificates();
+            if(certs.length > 0 && certs[0] instanceof X509Certificate) {
+                return (X509Certificate) certs[0];
+            }
+        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
+            ignored.printStackTrace();
+
+        }
+        return null;
+    }
+
+    /*boolean send(AbstractPacket packet) {
+        if (outputStream == null) return false;
+        Runnable runnable = () -> {
+            try {
+                outputStream.writeObject(packet);
+                outputStream.flush();
+            } catch (IOException e) {
+                Log.e(LOG, e.getMessage());
+                running = false;
+            }
+        };
+
+        sendService.submit(runnable);
+        return true;
+    }*/
+
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    public boolean sendMessage(String message){
+        if(outputStream == null){
+            Log.d(LOG, "outputstream is null");
+            return false;
+        }
+        Runnable sendMessageRunnable = () -> {
+            try {
+                Log.d(LOG, "outputstream send message runnable");
+                Log.d(LOG, "outputstream " + message);
+                outputStream.writeObject(message);
+                outputStream.flush();
+
+                /*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
+                ChatActivity.messageList.add(chatMsg);
+
+                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
+                //textT.getText().clear();*/
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.d(LOG, "Exception in Appclient  in sendMessage()");
+                running = false;
+            }
+        };
+        sendService.submit(sendMessageRunnable);
+        return true;
+    }
+
+
+    private void onPacketReceived(AbstractPacket packet) {
+        Contact from = new Contact(getServerIdentity());
+        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
+        for(ConnectionListener connectionListener : connectionListeners) {
+            connectionListener.onPacket(from, packet);
+        }
+    }
+
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void run() {
-        //int clientPort = (int) getIntent().getExtras().get("Client_port");
         running = true;
-        Log.d(LOG, "running: true");
         sslSocket = null;
-        this.inet6Address = MainActivity.getPeerIpv6();
-        Log.d(LOG, "Peer ipvg: " + inet6Address);
+
         /*try {
             this.inet6Address = (Inet6Address) Inet6Address.getLocalHost();
         } catch (UnknownHostException e) {
             this.inet6Address = (Inet6Address) Inet6Address.getLoopbackAddress();
         }*/
 
-        Log.d(LOG, "Trying to init");
+        this.port = Constants.SERVER_PORT;
+
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
             while(running){
-                if(inet6Address != null && sslContext!=null){
-                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
 
-                    Log.d(LOG, "Connected to " + inet6Address.getHostName());
-                } else {
-                    Log.d(LOG, "Trying to create Socket but inte6Adrres is NULL");
-                    /*sslContext = MainActivity.getSslContext();  //TODO: try this for bux fix? or something similar
-                    socketFactory = sslContext.getSocketFactory();
-                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
-                    Log.d(LOG, "Trying again"); */
-                }
-
-            /*for(ConnectionListener listener: connectionListeners){
+            for(ConnectionListener listener: connectionListeners){
                 listener.onConnect();
-            }*/
-                //inputStream = new ObjectInputStream(new BufferedInputStream(sslSocket.getInputStream()));
-
-
-                outputStream = new DataOutputStream(sslSocket.getOutputStream());
-                inputStream = new DataInputStream(sslSocket.getInputStream());
-                Log.d(LOG, "inputstream created");
+            }
+                outputStream = new ObjectOutputStream(sslSocket.getOutputStream());
+                inputStream = new ObjectInputStream(sslSocket.getInputStream());
                 outputStream.writeUTF("clientHello");
                 outputStream.flush();
-                //TODO: send client hello message
+
                 while(running){
                     if (inputStream != null){
-                        String strMessageFromClient = (String) inputStream.readUTF();   //FEIL
+
+                        String strMessageFromClient = (String) inputStream.readObject();   //FEIL
                         Log.d(LOG, "Reading message " + strMessageFromClient);
-                        ChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
-                        //ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
-                        //onPacketReceived(receivedPacket);
+                        //ChatActivity.setChat(strMessageFromClient);
+                        AbstractPacket receivedPacket = (AbstractPacket) inputStream.readObject();
+                        onPacketReceived(receivedPacket);
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
-            /*for (ConnectionListener connectionListener: connectionListeners){
+            for (ConnectionListener connectionListener: connectionListeners){
                 connectionListener.onDisconnect();
-            }*/
+            }
             if(sslSocket != null){
                 try {
                     sslSocket.close();
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
+                //SystemClock.sleep(2000);
             }
         }
     }
@@ -143,40 +205,6 @@ public class AppClient implements Runnable{
     }
 
 
-    private ArrayList<MessageListItem> messageList;
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream send message runnable");
-                outputStream.writeUTF(message);
-                outputStream.flush();
-
-                ChatActivity.setChat(message,ChatActivity.getLocalIp());
-              //  MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                //ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
-    }
-
-   /* public void onPacketReceived(ReceivedPacket packet){
-        Contact from = new Contact(getPeerIdentity());
-        for(ConnectionListener connectionListener: connectionListeners){
-            connectionListener.onReceivedPacket(from, packet);
-        }
-    }
 
     void registerConnectionListener(ConnectionListener listener) {
         connectionListeners.add(listener);
@@ -184,7 +212,7 @@ public class AppClient implements Runnable{
 
     void removeConnectionListener(ConnectionListener listener) {
         connectionListeners.remove(listener);
-    }*/
+    }
 }
 
 

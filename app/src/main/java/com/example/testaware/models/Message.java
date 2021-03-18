@@ -1,4 +1,4 @@
-package com.example.testaware;
+package com.example.testaware.models;
 
 import com.example.testaware.Constants;
 
@@ -20,6 +20,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import lombok.Getter;
+
 //import lombok.Getter;
 
 public class Message {
@@ -27,9 +29,10 @@ public class Message {
     private String plaintext;
     private SecretKey key;
     private byte[] IV;
-   // @Getter
+
+    @Getter
     private PublicKey to;
-   // @Getter
+    @Getter
     private PublicKey from;
 
     public Message(String message) throws NoSuchAlgorithmException {

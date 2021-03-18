@@ -11,12 +11,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <Button
+        <!--<Button
             android:id="@+id/btnPublish"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:text="Decide publisher"
+            android:text="Publisher"
             app:layout_constraintBottom_toTopOf="@+id/eTYourMac"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="1.0"
@@ -32,7 +32,16 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.344" />
+            app:layout_constraintVertical_bias="0.344" />-->
+        <TextView
+            android:id="@+id/tvRole"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/tvOnAvailable"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 
     <LinearLayout
@@ -131,7 +140,7 @@
 
 </LinearLayout>
 
-<LinearLayout
+<!--<LinearLayout
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
@@ -139,28 +148,26 @@
         android:id="@+id/btnConnectPub"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Connect Publisher"
+        android:text="Start Conn Pub"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/eTMsg"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.554"
-        android:visibility="gone" />
+        app:layout_constraintVertical_bias="0.554" />
 
     <Button
         android:id="@+id/btnConnectSub"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Connect Subscriber"
+        android:text="Start Conn Sub"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/eTMsg"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.535"
-        android:visibility="gone"/>
-</LinearLayout>
+        app:layout_constraintVertical_bias="0.535" />
+</LinearLayout>-->
 
 
 
@@ -168,30 +175,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <Button
-            android:id="@+id/btnSendLongMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="116dp"
-            android:text="Send Long Message"
-            app:layout_constraintBottom_toTopOf="@+id/btnSubscribe"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.934"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.0" />
 
-        <EditText
-            android:id="@+id/textViewSendLongMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Message"
-            app:layout_constraintBottom_toTopOf="@+id/btnSubscribe"
-            app:layout_constraintEnd_toStartOf="@+id/btnSendLongMessage"
-            app:layout_constraintHorizontal_bias="0.107"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="1.0" />
+
+
         <Button
             android:id="@+id/btnStartServer"
             android:layout_width="wrap_content"

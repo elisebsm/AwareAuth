@@ -2,13 +2,13 @@ package com.example.testaware;
 
 import android.content.Context;
 
-import java.io.BufferedInputStream;
+import com.example.testaware.models.Contact;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.Key;
 import java.security.KeyManagementException;
 import java.security.KeyPair;
@@ -30,7 +30,6 @@ import java.util.Objects;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
