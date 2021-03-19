@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
+import com.example.testaware.Constants;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
@@ -79,13 +80,13 @@ public class ChatActivity extends AppCompatActivity {
             peerIpv6 = MainActivity.getPeerIpv6();
             TextView textView = findViewById(R.id.tvRole);
 
-           // textView.setText("SERVER");
-            //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
-            //Log.d(LOG, "SERVER: " + peerIpv6);
+            textView.setText("SERVER");
+            AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+            Log.d(LOG, "SERVER: " + peerIpv6);
 
-            appClient = new AppClient(keyPair, sslContext);
-            textView.setText("CLIENT");
-            Log.d(LOG, "CLIENT: " + peerIpv6);
+          //  appClient = new AppClient(keyPair, sslContext);
+         //   textView.setText("CLIENT");
+         //   Log.d(LOG, "CLIENT: " + peerIpv6);
 
             /*if (MainActivity.isPublisher()){
                 AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
@@ -130,7 +131,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
 
-        public static void setChat(String message, String ipv6){
+        public void setChat(String message, String ipv6){
             MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
             messageList.add(chatMsg);
             mMessageAdapter.notifyDataSetChanged();

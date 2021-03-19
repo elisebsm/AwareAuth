@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
     private String signedKey;
 
-    //private String role = "subscriber";
+   // private String role = "subscriber";
     private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 });
                 startConn.start();*//*
             }
-        });*/
+        });
 
         //String signedKey = PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
 
@@ -265,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 }
             });
         }
-
+*/
     }
 
 
@@ -645,7 +645,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 super.onAvailable(network);
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
-                AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+                boolean runnable = true;
+                while(runnable){
+                    if (sslContext!=null){
+                        AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+                        runnable =false;
+                    }
+                }
+
 
             }
 

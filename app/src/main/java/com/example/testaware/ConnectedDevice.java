@@ -62,7 +62,7 @@ public class ConnectedDevice implements Runnable{
 
     @Override
     public void run() {
-        running = true;
+       /* running = true;
 
         Log.d(LOG, sslClientSocket.getInetAddress().getHostAddress() + " connected");
 
@@ -79,7 +79,7 @@ public class ConnectedDevice implements Runnable{
             e.printStackTrace();
             Log.e(LOG, e.getMessage());
             running = false;
-        }
+        }*/
     }
 
 }
