@@ -71,14 +71,13 @@ public class AppServer {
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     //addClient(sslClientSocket);
-
                     Log.d(LOG, "client accepted");
                     inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                     while(running){
                         if (inputStream != null){
                             String strMessageFromClient = (String) inputStream.readObject();  //FEIL
                             Log.d(LOG, "Reading message " + strMessageFromClient);
-                            //MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                           // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
                         }
                     }
                 }
@@ -116,8 +115,8 @@ public class AppServer {
         }
         running = false;
     }
-/*
 
+/*
     protected void onPacketReceived(ConnectedDevice device, AbstractPacket packet){
         Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
         Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
@@ -140,8 +139,8 @@ public class AppServer {
             }
         }
     }
+*/
 
- */
 }
 
 
