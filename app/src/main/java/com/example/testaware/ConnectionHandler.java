@@ -21,7 +21,7 @@ import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
 
-public class ConnectionHandler implements ConnectionListener{
+public class ConnectionHandler {  //add this implements ConnectionListener
 
     private String LOG = "LOG-Test-Aware-Connection-Handler";
 
@@ -64,7 +64,7 @@ public class ConnectionHandler implements ConnectionListener{
     public void removeConnectionListener(ConnectionListener listener) {
         appClient.removeConnectionListener(listener);
     }
-
+/*
 
     public void sendMessage(Message message) {
         if(appClient == null) {
@@ -110,4 +110,6 @@ public class ConnectionHandler implements ConnectionListener{
         }
         return new ArrayList<>(Objects.requireNonNull(messages.get(publicKey)));
     }
+    */
+
 }

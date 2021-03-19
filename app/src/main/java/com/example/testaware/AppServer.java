@@ -16,6 +16,7 @@ import com.example.testaware.models.Contact;
 import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -74,6 +75,11 @@ public class AppServer {
 
                     Log.d(LOG, "client accepted");
                     inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
+                    outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
+                    Thread t = new ClientHandeler(serverPort, inputStream, outputStream);
+                    t.start();
+                    Log.d(LOG, "Starting new Thread -");
+                    /*
                     while(running){
                         if (inputStream != null){
                             String strMessageFromClient = (String) inputStream.readObject();  //FEIL
@@ -81,9 +87,9 @@ public class AppServer {
 
                             MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
                         }
-                    }
+                    }*/
                 }
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException e) {
                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
@@ -118,7 +124,7 @@ public class AppServer {
         running = false;
     }
 
-
+/*
     protected void onPacketReceived(ConnectedDevice device, AbstractPacket packet){
         Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
         Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
@@ -141,6 +147,8 @@ public class AppServer {
             }
         }
     }
+    */
+
 }
 
 

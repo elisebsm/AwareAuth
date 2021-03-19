@@ -70,10 +70,10 @@ public class Server {
                     inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                   //  outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream());
                     // create a new thread object
-                    Thread t = new ClientHandeler(serverPort, inputStream, outputStream);
+                   // Thread t = new ClientHandeler(serverPort, inputStream, outputStream);
 
                     // Invoking the start() method
-                    t.start();
+                    //t.start();
 
                     Log.d(LOG, "Starting new Thread -");
 /*

@@ -9,6 +9,7 @@ import android.net.wifi.aware.PeerHandle;
 import android.net.wifi.aware.WifiAwareNetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Message;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -98,15 +99,13 @@ public class TestChatActivity extends AppCompatActivity {
         //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
         //Log.d(LOG, "SERVER: " + peerIpv6);
 
-       // appClient = new AppClient(keyPair, sslContext);
+       //appClient = new AppClient(keyPair, sslContext);
         textView.setText("CLIENT");
         Log.d(LOG, "CLIENT: " + peerIpv6);
-        client = new Client(keyPair,sslContext);
+        client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
         Thread thread = new Thread(client);
         thread.start();
 
-        //for main -- after wifi conn is up
-       // Server server = new Server(sslContext, Constants.SERVER_PORT);
 
 
     }
@@ -128,7 +127,11 @@ public class TestChatActivity extends AppCompatActivity {
                 if(client != null){
 
                    client.sendMessage(messageToSend);
-                } /*catch (NoSuchAlgorithmException e) {
+                }
+                else{
+                    ClientHandeler.setOutputStream(messageToSend);
+                }
+                /*catch (NoSuchAlgorithmException e) {
                             e.printStackTrace();
                         }*/
             }

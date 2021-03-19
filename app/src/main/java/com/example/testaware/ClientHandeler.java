@@ -12,6 +12,8 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Objects;
 
 import javax.net.ssl.SSLContext;
@@ -22,11 +24,10 @@ public class ClientHandeler extends Thread{
 
     private String LOG = "LOG-Test-Aware-Client-handeler";
     private int serverPort;
-    private DataInputStream in;
-    private DataOutputStream out;
-    private SSLContext serverSSLContext;
+    private static ObjectInputStream in;
+    private static ObjectOutputStream out;
 
-    public ClientHandeler(int serverPort, DataInputStream in, DataOutputStream out) {
+    public ClientHandeler(int serverPort, ObjectInputStream in, ObjectOutputStream out) {
         this.serverPort = serverPort;
         this.in = in;
         this.out = out;
@@ -42,8 +43,7 @@ public class ClientHandeler extends Thread{
                 if (in != null) {
                     String strMessageFromClient = in.readUTF();  //FEIL
                     Log.d(LOG, "Reading message " + strMessageFromClient);
-                    TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");  //TODO: check if activity is running?
-
+                    TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
                 }
             }
             catch (IOException e) {
@@ -54,7 +54,7 @@ public class ClientHandeler extends Thread{
     //TODO: close socket
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private void setOutputStream(String msgToSend){
+    public static void setOutputStream(String msgToSend){
         try {
             out.writeUTF(msgToSend);
             out.flush();
@@ -63,5 +63,8 @@ public class ClientHandeler extends Thread{
             e.printStackTrace();
         }
     }
+
+
+
 
 }

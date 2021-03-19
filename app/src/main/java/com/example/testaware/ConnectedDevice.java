@@ -62,6 +62,11 @@ public class ConnectedDevice implements Runnable{
 
     @Override
     public void run() {
+
+    }
+/*
+    @Override
+    public void run() {
         running = true;
 
         Log.d(LOG, sslClientSocket.getInetAddress().getHostAddress() + " connected");
@@ -81,5 +86,7 @@ public class ConnectedDevice implements Runnable{
             running = false;
         }
     }
+    */
+
 
 }

@@ -50,45 +50,32 @@ public class Client implements Runnable{
         this.sslContext = sslContext;
         Thread thread = new Thread(this);
         thread.start();
-        //connectionListeners = new ArrayList<>();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void run() {
-        //int clientPort = (int) getIntent().getExtras().get("Client_port");
         running = true;
         Log.d(LOG, "running: true");
         sslSocket = null;
         this.inet6Address = MainActivity.getPeerIpv6();
         Log.d(LOG, "Peer ipvg: " + inet6Address);
-        /*try {
-            this.inet6Address = (Inet6Address) Inet6Address.getLocalHost();
-        } catch (UnknownHostException e) {
-            this.inet6Address = (Inet6Address) Inet6Address.getLoopbackAddress();
-        }*/
 
         Log.d(LOG, "Trying to init");
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
             while(running){
-                if(inet6Address != null && sslContext!=null){
+                if(inet6Address != null ){
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
 
                     Log.d(LOG, "Connected to " + inet6Address.getHostName());
                 } else {
                     Log.d(LOG, "Trying to create Socket but inte6Adrres is NULL");
-                    /*sslContext = MainActivity.getSslContext();  //TODO: try this for bux fix? or something similar
+                   /* sslContext = MainActivity.getSslContext();  //TODO: try this for bux fix? or something similar
                     socketFactory = sslContext.getSocketFactory();
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
-                    Log.d(LOG, "Trying again"); */
+                    Log.d(LOG, "Trying again");*/
                 }
-
-            /*for(ConnectionListener listener: connectionListeners){
-                listener.onConnect();
-            }*/
-                //inputStream = new ObjectInputStream(new BufferedInputStream(sslSocket.getInputStream()));
-
 
                 outputStream = new DataOutputStream(sslSocket.getOutputStream());
                 inputStream = new DataInputStream(sslSocket.getInputStream());
@@ -98,20 +85,17 @@ public class Client implements Runnable{
                 //TODO: send client hello message
                 while(running){
                     if (inputStream != null){
-                        String strMessageFromClient = (String) inputStream.readUTF();   //FEIL
+                        String strMessageFromClient = inputStream.readUTF();   //FEIL
                         Log.d(LOG, "Reading message " + strMessageFromClient);
                         TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
-                        //ReceivedPacket receivedPacket = (ReceivedPacket) inputStream.readObject();
-                        //onPacketReceived(receivedPacket);
+
                     }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
-            /*for (ConnectionListener connectionListener: connectionListeners){
-                connectionListener.onDisconnect();
-            }*/
+
             if(sslSocket != null){
                 try {
                     sslSocket.close();
@@ -150,11 +134,7 @@ public class Client implements Runnable{
                 outputStream.flush();
 
                 TestChatActivity.setChat(message,ChatActivity.getLocalIp());
-                //  MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                //ChatActivity.messageList.add(chatMsg);
 
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.d(LOG, "Exception in Appclient  in sendMessage()");

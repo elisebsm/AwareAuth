@@ -43,8 +43,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.testaware.AppServer;
+import com.example.testaware.ClientHandeler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
+import com.example.testaware.Server;
+import com.example.testaware.TestChatActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -54,13 +57,21 @@ import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
@@ -134,8 +145,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
     private String signedKey;
 
-    //private String role = "subscriber";
-    private String role = "publisher";
+    private String role = "subscriber";
+  //  private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
 
@@ -262,8 +273,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 public void onClick(View v) {
                     AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
                     Log.d(LOG, "SERVER: " + peerIpv6);
+
                 }
             });
+        }
+
+        else{
+            Log.d(LOG, "waiting for conn");
+
         }
 
     }
@@ -296,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         //-------------------------------------------------------------------------------------------- -----
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
@@ -330,8 +348,42 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
         }
     }
+/*
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    public void startServer(SSLContext sslContext, int serverPort){
+        Boolean running = true;
+        this.keyPair = IdentityHandler.getKeyPair();
+        Log.d(LOG, "starting server");
 
+        Runnable serverTask = () -> {
+        try {
+            SSLServerSocket serverSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(serverPort);
+            serverSocket.setNeedClientAuth(true);
+            while (true) {
+                SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
+                sslClientSocket.startHandshake();
 
+                Log.d(LOG, "Server accept !!");
+
+                DataInputStream inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
+                DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
+                Thread t = new ClientHandeler(serverPort, inputStream, outputStream);
+                t.start();
+                Log.d(LOG, "Starting new Thread -");
+            }
+        } catch (IOException e) {
+            Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+            e.printStackTrace();
+
+            Log.d(LOG, "Exception in AppServer in constructor");
+        }
+        //TODO: close socket
+        };
+        Thread serverThread = new Thread(serverTask);
+        serverThread.start();
+    }
+
+*/
     public static SSLContext getSslContext(){
         return sslContext;
     }
@@ -647,6 +699,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
                 AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
 
+
             }
 
             @Override
@@ -688,7 +741,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void openChat(int position){
-        Intent intentChat = new Intent(this, ChatActivity.class);
+        Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
         startActivity(intentChat);
     }
