@@ -62,9 +62,6 @@ public class TestChatActivity extends AppCompatActivity {
     private NetworkCapabilities networkCapabilities;
     private PeerHandle peerHandle;
     private WifiAwareNetworkInfo peerAwareInfo;
-
-
-
     private SSLContext sslContext;
     private KeyPair keyPair;
 
@@ -103,8 +100,6 @@ public class TestChatActivity extends AppCompatActivity {
 
       //  Thread thread = new Thread(appClient);
       //  thread.start();
-
-
 
     }
 
@@ -196,9 +191,4 @@ public class TestChatActivity extends AppCompatActivity {
 
         return null;
     }
- /*   private X509Certificate chechPeerCertificate(){
-            //TODO: chech if peerCert signed by CA, if not send to peerSigner if trusted. Prompt user yes/no. If yes, send to PeerSigner
-        return cert;
-    }
-*/
 }

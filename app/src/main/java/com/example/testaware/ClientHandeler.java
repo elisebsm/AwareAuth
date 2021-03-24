@@ -27,7 +27,7 @@ public class ClientHandeler extends Thread{
     private static ObjectInputStream in;
     private static ObjectOutputStream out;
 
-    public ClientHandeler( ObjectInputStream in, ObjectOutputStream out) {
+    public ClientHandeler(ObjectInputStream in, ObjectOutputStream out) {
         this.in = in;
         this.out = out;
     }
@@ -42,12 +42,11 @@ public class ClientHandeler extends Thread{
                 while (running) {
                     strMessageFromClient = in.readObject();
                     Log.d(LOG, "Reading message " + strMessageFromClient);
+                    //TODO: set ChatActivity.setChat(msgToSend, "ipv6_other_user");
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
-            Log.d(LOG, "Reading message " + strMessageFromClient);
-
 
     }
     //TODO: close socket
@@ -57,13 +56,9 @@ public class ClientHandeler extends Thread{
         try {
             out.writeUTF(msgToSend);
             out.flush();
-          //  ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
+          //TODO: set  ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
-
-
 }

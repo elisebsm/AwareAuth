@@ -60,7 +60,7 @@ public class AppClient implements Runnable{
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
 
-       // Thread thread = new Thread(this);
+        //Thread thread = new Thread(this);
        // thread.start();
 
         connectionListeners = new ArrayList<>();
@@ -109,12 +109,7 @@ public class AppClient implements Runnable{
                 Log.d(LOG, "outputstream testhhhhh" + message);
                 outputStream.writeObject(message);
                 outputStream.flush();
-
-                /*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*/
+                //TODO: set view
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.d(LOG, "Exception in Appclient  in sendMessage()");
