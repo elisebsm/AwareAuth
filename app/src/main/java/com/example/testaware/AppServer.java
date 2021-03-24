@@ -37,18 +37,13 @@ import lombok.Getter;
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
-
     private String LOG = "LOG-Test-Aware-App-Server";
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
     private boolean running;
     private Map<PublicKey, ConnectedClient> clients;
-
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
-
-
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
-
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -57,13 +52,10 @@ public class AppServer {
         mainActivity = new WeakReference<>(activity);
     }
 
-
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, int serverPort){
         running = true;
         clients = new ConcurrentHashMap<>();
-
-
 
         Runnable serverTask = () -> {
             running  = true;
@@ -77,7 +69,7 @@ public class AppServer {
                     inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                     outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
-                    ClientHandeler client = new ClientHandeler(serverPort, inputStream, outputStream);
+                    ClientHandeler client = new ClientHandeler(inputStream, outputStream);
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");

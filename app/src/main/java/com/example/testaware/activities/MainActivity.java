@@ -127,8 +127,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private String signedKey;
 
     @Getter
-    private String role = "subscriber";
-    //private String role = "publisher";
+   // private String role = "subscriber";
+    private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
 

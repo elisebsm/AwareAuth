@@ -32,7 +32,7 @@ public class ClientHandeler extends Thread{
 
     private boolean running;
 
-    public ClientHandeler(int serverPort, ObjectInputStream in, ObjectOutputStream out) {
+    public ClientHandeler(ObjectInputStream in, ObjectOutputStream out) {
         this.in = in;
         this.out = out;
 
