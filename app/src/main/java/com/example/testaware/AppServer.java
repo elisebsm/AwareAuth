@@ -44,7 +44,7 @@ public class AppServer {
     private Map<PublicKey, ConnectedClient> clients;
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
-
+    private String [] protocol;
     @Getter
     private static WeakReference<MainActivity> mainActivity;
 
@@ -56,12 +56,17 @@ public class AppServer {
     public AppServer(SSLContext serverSSLContext, int serverPort){
         running = true;
         clients = new ConcurrentHashMap<>();
+        protocol= new String[1];
+        protocol [0]= Constants.SUPPORTED_CIPHER_GCM;
 
         Runnable serverTask = () -> {
             running  = true;
             try {
                 SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
+                serverSocket.setEnabledCipherSuites(protocol);
+                Log.d(LOG, "Ciphers supported"+ protocol);
                 serverSocket.setNeedClientAuth(true);
+
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     //addClient(sslClientSocket);
