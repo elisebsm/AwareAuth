@@ -39,8 +39,11 @@ import android.widget.Toast;
 
 import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
+import com.example.testaware.ClientHandeler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
+import com.example.testaware.Server;
+import com.example.testaware.TestChatActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
 import com.example.testaware.listeners.SSLContextedObserver;
@@ -52,6 +55,11 @@ import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 
 import java.io.Serializable;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Inet6Address;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -61,6 +69,7 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -69,6 +78,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
@@ -137,8 +148,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
     private KeyPair keyPair;
+    private String signedKey;
 
-    //private String role = "subscriber";
+   // private String role = "subscriber";
     private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
@@ -179,7 +191,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         //this.sslContext = IdentityHandler.getSSLContext(this.context);
         this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
-        attachToSession();
 
         context = this;
 
@@ -436,6 +447,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
                 }
+
                 if (!peerHandleList.contains(peerHandle_)){
                     peerHandleList.add(peerHandle_);
                 }
@@ -478,6 +490,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
                         addPeersToChatList();
                     }
+
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
                     Log.d(LOG, "setOtherIPAddress "+ message);
@@ -487,7 +500,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     if(messageIn.contains("startConnection")) {
                         requestWiFiConnection(peerHandle, "subscriber");
                     }
-                }else if (messageIn.contains("startConnection")) {
+                } else if (messageIn.contains("startConnection")) {
                     Log.d(LOG, "Message IN:" + messageIn);
                         requestWiFiConnection(peerHandle, "subscriber");
                 }
@@ -564,7 +577,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
                 //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
                 AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
-
             }
 
             @Override
@@ -604,7 +616,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void openChat(int position){
-        Intent intentChat = new Intent(this, ChatActivity.class);
+        Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
        /* Contact contact = new Contact(IdentityHandler.getCertificate());
         intentChat.putExtra("contact", (Serializable) contact);
@@ -668,7 +680,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
 
-    public int byteToPortInt(byte[] bytes) {
+    public int byteToPortInt(byte[] bytes){
         return ((bytes[1] & 0xFF) << 8 | (bytes[0] & 0xFF));
     }
 

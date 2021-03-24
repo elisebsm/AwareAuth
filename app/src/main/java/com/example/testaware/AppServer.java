@@ -14,6 +14,7 @@ import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -72,6 +73,11 @@ public class AppServer {
 
                     Log.d(LOG, "client accepted");
                     inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
+                    outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
+                    Thread t = new ClientHandeler(serverPort, inputStream, outputStream);
+                    t.start();
+                    Log.d(LOG, "Starting new Thread -");
+                    /*
                     while(running){
                         if (inputStream != null){
 
@@ -83,7 +89,7 @@ public class AppServer {
 
                             MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");
                         }
-                    }
+                    }*/
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
