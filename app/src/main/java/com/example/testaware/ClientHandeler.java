@@ -58,7 +58,7 @@ public class ClientHandeler extends Thread{
         try {
             out.writeUTF(msgToSend);
             out.flush();
-            ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
+          //  ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
         } catch (IOException e) {
             e.printStackTrace();
         }

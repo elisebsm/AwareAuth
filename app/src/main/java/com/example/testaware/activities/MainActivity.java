@@ -145,8 +145,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
     private String signedKey;
 
-    private String role = "subscriber";
-  //  private String role = "publisher";
+   // private String role = "subscriber";
+    private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
 

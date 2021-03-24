@@ -133,7 +133,7 @@ public class Client implements Runnable{
                 outputStream.writeUTF(message);
                 outputStream.flush();
 
-                TestChatActivity.setChat(message,ChatActivity.getLocalIp());
+              //  TestChatActivity.setChat(message,ChatActivity.getLocalIp());
 
             } catch (IOException e) {
                 e.printStackTrace();

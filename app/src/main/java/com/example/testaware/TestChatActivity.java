@@ -95,16 +95,16 @@ public class TestChatActivity extends AppCompatActivity {
         peerIpv6 = MainActivity.getPeerIpv6();
         TextView textView = findViewById(R.id.tvRole);
 
-        // textView.setText("SERVER");
+         textView.setText("SERVER");
         //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
         //Log.d(LOG, "SERVER: " + peerIpv6);
 
        //appClient = new AppClient(keyPair, sslContext);
-        textView.setText("CLIENT");
-        Log.d(LOG, "CLIENT: " + peerIpv6);
-        client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
-        Thread thread = new Thread(client);
-        thread.start();
+       // textView.setText("CLIENT");
+       // Log.d(LOG, "CLIENT: " + peerIpv6);
+        //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
+       // Thread thread = new Thread(client);
+        //thread.start();
 
 
 
