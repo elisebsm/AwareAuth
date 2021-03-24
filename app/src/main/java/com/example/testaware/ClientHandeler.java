@@ -50,10 +50,10 @@ public class ClientHandeler extends Thread{
                     Log.d(LOG, "Reading message " + messageFromClient);
                     //TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
             }
-            catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
+
+        } catch (IOException | ClassNotFoundException e) {
+             e.printStackTrace();
+         }
     }
     //TODO: close socket
 
