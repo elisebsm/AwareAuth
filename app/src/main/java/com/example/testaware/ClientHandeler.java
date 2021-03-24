@@ -43,7 +43,7 @@ public class ClientHandeler extends Thread{
     @Override
     public void run(){
         running = true;
-
+        Log.d(LOG, "Clienthandeler running");
          try {
              while (running) {
                     Object messageFromClient = in.readObject();

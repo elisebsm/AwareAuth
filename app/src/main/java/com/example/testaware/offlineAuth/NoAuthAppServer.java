@@ -15,10 +15,12 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
 import java.security.PublicKey;
 import java.util.Map;
 import java.util.Objects;
@@ -32,12 +34,10 @@ import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
+//this class start server on diff port than other server, so one server that accepts connections to clients who dont have certificates (but are authenticated by peer)
+public class NoAuthAppServer {
 
-//client can also instantiate connection.
-//implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
-public class AppServer {
-
-    private String LOG = "LOG-Test-Aware-App-Server";
+    private String LOG = "LOG-Test-Aware-No-Auth-App-Server";
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
     private boolean running;
@@ -45,6 +45,7 @@ public class AppServer {
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
+    private boolean isAuthenticated;
     @Getter
     private static WeakReference<MainActivity> mainActivity;
 
@@ -52,8 +53,14 @@ public class AppServer {
         mainActivity = new WeakReference<>(activity);
     }
 
+    public static boolean userPeerAuthenticated(String inetAddress){
+        //check text file for inetAddress//MAC
+        //if yes, return true
+        return true;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public AppServer(SSLContext serverSSLContext, int serverPort){
+    public NoAuthAppServer(SSLContext serverSSLContext, int serverPort, String peerMAC ){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
         protocol= new String[1];
@@ -63,39 +70,48 @@ public class AppServer {
             running  = true;
             try {
                 SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
-                serverSocket.setEnabledCipherSuites(protocol);
+                serverSocket.setEnabledCipherSuites(protocol);  // no need for client auth
+
                 Log.d(LOG, "Ciphers supported"+ protocol);
-                serverSocket.setNeedClientAuth(true);
 
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
-                    //addClient(sslClientSocket);
-                    Log.d(LOG, "client accepted");
-                    inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
-                    outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
+                    String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
+                    if(userPeerAuthenticated(connectedPeerIP)){
+                        //addClient(sslClientSocket);
+                        Log.d(LOG, "client accepted");
+                        inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
+                        outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
-                    ClientHandeler client = new ClientHandeler(inputStream, outputStream);
-                    Thread t = new Thread(client);
-                    t.start();
-                    Log.d(LOG, "Starting new Thread -");
-/*
-                    while(running){
-                        if (inputStream != null){
+                        ClientHandeler noAuthClient = new ClientHandeler(inputStream, outputStream);
+                        Thread t = new Thread(noAuthClient);
+                        t.start();
+                        Log.d(LOG, "Starting new Thread -");
 
-                            //AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
-                            //onPacketReceived(abstractPacket);
+                        while(running){
+                            if (inputStream != null){
 
-                            String strMessageFromClient = String.valueOf(inputStream.readObject());  //FEIL
-                            Log.d(LOG, "Reading message " + strMessageFromClient);
+                                //AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
+                                //onPacketReceived(abstractPacket);
 
-                            MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");
-                           // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                                String strMessageFromClient = String.valueOf(inputStream.readObject());  //FEIL
+                                Log.d(LOG, "Reading message " + strMessageFromClient);
+
+                                MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");
+                                // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
+                            }
                         }
+
                     }
-                    */
+                    else{
+                        sslClientSocket.close();
+                    }
+
+
+
                 }
-            }  catch (IOException e) {
-               Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+            }  catch (IOException | ClassNotFoundException e) {
+                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
@@ -105,13 +121,13 @@ public class AppServer {
         serverThread.start();
     }
 
-
+/*
     protected void addClient(SSLSocket sslClientSocket){
         ConnectedClient clientTask = new ConnectedClient(this, sslClientSocket);
         clients.put(clientTask.getUserIdentity().getPublicKey(), clientTask);
         clientProcessingPool.submit(clientTask);
     }
-
+*/
 
     protected void removeClient(ConnectedClient connectedClient){
         if(clients.containsKey(connectedClient.getUserIdentity().getPublicKey())){
@@ -187,7 +203,7 @@ public class AppServer {
         return true;
     }*/
 
-     @RequiresApi(api = Build.VERSION_CODES.Q)
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     public boolean sendMessage(String message){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");

@@ -66,7 +66,7 @@ public class PeerSigner {
             String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
             signedKey = Base64.getEncoder().encodeToString(signature);
 
-            Boolean valid= VerifyCredentials.verifySignature(signedKey, signerCertificate, peerCertificate);
+            Boolean valid= VerifyCredentials.verifyCredentials(signedKey, signerCertificate, peerCertificate);
             Log.i(LOG, "Verify is " +valid+ "!!!!!!!");
         } catch (Exception e) {
             // TODO: handle exception
