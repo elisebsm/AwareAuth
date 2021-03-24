@@ -21,6 +21,7 @@ import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 
 import java.lang.ref.WeakReference;
+
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -36,7 +37,7 @@ public class TestChatActivity extends AppCompatActivity {
 
     private Inet6Address peerIpv6;
     private EditText editChatText;
-    private String LOG = "LOG-Test-Aware-Chat-Activity";
+    private String LOG = "LOG-Test-Aware-Test-Chat-Activity";
     private RecyclerView mMessageRecycler;
     public static MessageAdapter mMessageAdapter;
 

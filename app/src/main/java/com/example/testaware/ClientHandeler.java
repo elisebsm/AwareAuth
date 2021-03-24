@@ -8,6 +8,7 @@ import androidx.annotation.RequiresApi;
 
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,14 +27,12 @@ import lombok.Getter;
 public class ClientHandeler extends Thread{
 
     private String LOG = "LOG-Test-Aware-Client-handeler";
-    private int serverPort;
     private static ObjectInputStream in;
     private static ObjectOutputStream out;
 
     private boolean running;
 
     public ClientHandeler(int serverPort, ObjectInputStream in, ObjectOutputStream out) {
-        this.serverPort = serverPort;
         this.in = in;
         this.out = out;
 
@@ -45,8 +44,8 @@ public class ClientHandeler extends Thread{
     public void run(){
         running = true;
 
-        while (running) {
-            try {
+         try {
+             while (running) {
                     Object messageFromClient = in.readObject();
                     Log.d(LOG, "Reading message " + messageFromClient);
                     //TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
@@ -63,7 +62,7 @@ public class ClientHandeler extends Thread{
         try {
             out.writeObject(msgToSend);
             out.flush();
-          //  ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
+          //TODO: set  ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -96,8 +95,4 @@ public class ClientHandeler extends Thread{
         sendService.submit(sendMessageRunnable);
         return true;
     }
-
-
-
-
 }

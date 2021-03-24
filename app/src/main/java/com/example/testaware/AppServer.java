@@ -14,13 +14,13 @@ import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
 import java.security.PublicKey;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,7 +72,6 @@ public class AppServer {
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     //addClient(sslClientSocket);
-
                     Log.d(LOG, "client accepted");
                     inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                     outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
@@ -81,7 +80,7 @@ public class AppServer {
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
-                    /*
+
                     while(running){
                         if (inputStream != null){
 
@@ -92,10 +91,12 @@ public class AppServer {
                             Log.d(LOG, "Reading message " + strMessageFromClient);
 
                             MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");
+                           // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
                         }
-                    }*/
+                    }
                 }
-            } catch (IOException e) {
+            }  catch (IOException | ClassNotFoundException e) {
+               Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
@@ -208,6 +209,7 @@ public class AppServer {
         sendService.submit(sendMessageRunnable);
         return true;
     }
+
 
 }
 

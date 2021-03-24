@@ -61,12 +61,7 @@ public class ConnectedClient implements Runnable{
 
     @Override
     public void run() {
-
-    }
-/*
-    @Override
-    public void run() {
-        running = true;
+       /* running = true;
 
         Log.d(LOG, sslClientSocket.getInetAddress().getHostAddress() + " connected");
 
@@ -83,9 +78,7 @@ public class ConnectedClient implements Runnable{
             e.printStackTrace();
             Log.e(LOG, e.getMessage());
             running = false;
-        }
+        }*/
     }
-    */
-
 
 }
