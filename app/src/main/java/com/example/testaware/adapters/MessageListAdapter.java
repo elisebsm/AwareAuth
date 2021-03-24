@@ -11,11 +11,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
 
+import java.security.KeyPair;
 import java.util.ArrayList;
 
 public class MessageListAdapter extends RecyclerView.Adapter{
     private ArrayList<MessageListItem> mMessageListItemList;    //list of messages beeing sent
     Context context;
+    private KeyPair keyPair;
 
 
     private static final int VIEW_TYPE_MESSAGE_SENT = 1;
@@ -25,9 +27,9 @@ public class MessageListAdapter extends RecyclerView.Adapter{
     public MessageListAdapter(Context context, ArrayList<MessageListItem> messageListItemList) {
 
         mMessageListItemList = messageListItemList;
-        context = context;
-
+        this.context = context;
     }
+
 
     @Override
     public int getItemCount() {
@@ -46,11 +48,7 @@ public class MessageListAdapter extends RecyclerView.Adapter{
         } else {
             // If some other user sent the message
             return VIEW_TYPE_MESSAGE_SENT;
-
-
-
         }
-
     }
 
 
@@ -68,8 +66,9 @@ public class MessageListAdapter extends RecyclerView.Adapter{
             return new ReceivedMessageHolder(view);
         }
         return null;
-
     }
+
+
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         MessageListItem messageListItem = (MessageListItem) mMessageListItemList.get(position);
@@ -82,11 +81,7 @@ public class MessageListAdapter extends RecyclerView.Adapter{
             case VIEW_TYPE_MESSAGE_RECEIVED:
                 ((ReceivedMessageHolder) holder).bind(messageListItem);
         }
-
-
-
     }
-
 
 
     public class ReceivedMessageHolder extends RecyclerView.ViewHolder {
@@ -94,7 +89,7 @@ public class MessageListAdapter extends RecyclerView.Adapter{
 
         ReceivedMessageHolder(View itemView) {
             super(itemView);
-            messageText = (TextView) itemView.findViewById(R.id.textViewOtherChatBubble);
+            //messageText = (TextView) itemView.findViewById(R.id.textViewOtherChatBubble);     Endret, kommentert ut
 
             //nameText = (TextView) itemView.findViewById(R.id.textChatUserOther);   //bind name of message sender
 
@@ -102,11 +97,6 @@ public class MessageListAdapter extends RecyclerView.Adapter{
 
         void bind(MessageListItem messageListItem) {
             messageText.setText(messageListItem.getMessage());
-
-
-            //nameText.setText("Elise");
-
-
         }
     }
 
@@ -116,15 +106,12 @@ public class MessageListAdapter extends RecyclerView.Adapter{
 
         SentMessageHolder(View itemView) {
             super(itemView);
-
-            messageText = (TextView) itemView.findViewById(R.id.textViewVMyChatBubble);
+            // messageText = (TextView) itemView.findViewById(R.id.textViewVMyChatBubble);     Endret, kommentert ut
 
         }
 
         void bind(MessageListItem messageListItem) {
             messageText.setText(messageListItem.getMessage());
-
-
         }
 
     }

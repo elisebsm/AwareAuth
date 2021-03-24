@@ -19,6 +19,12 @@
         android:divider="#fff"
         android:layout_height="0dp"/>
 
+    <ListView
+        android:id="@+id/lvMessages"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:divider="#fff"/>
 
     <LinearLayout
         android:id="@+id/layoutChatBox"

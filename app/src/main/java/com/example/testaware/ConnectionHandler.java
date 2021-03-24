@@ -3,6 +3,7 @@ package com.example.testaware;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.testaware.activities.MainActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -41,21 +42,30 @@ public class ConnectionHandler implements ConnectionListener{
 
     private ArrayList<AbstractPacket> packets;
 
-    public ConnectionHandler (Context context){
-       /* this.context = context;
+    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair){
+        this.context = context;
         this.sslContext = IdentityHandler.getSSLContext(context);
         this.keyPair = IdentityHandler.getKeyPair();
         this.messages = new HashMap<>();
         this.packets = new ArrayList<>();
 
-        appClient = new AppClient(keyPair, sslContext);
-        appClient.registerConnectionListener(this);
+        //appClient = new AppClient(keyPair, sslContext);
+        //appClient.registerConnectionListener(this);
 
-        Thread thread = new Thread(appClient);
-        thread.start();*/
+        Thread thread = new Thread(appServer);
+        thread.start();
          //TODO initialize wifi aware here?
     }
 
+    public void setAppServer(AppServer appServer){
+        this.appServer = appServer;
+    }
+
+    public void setAppClient(AppClient appClient){
+        this.appClient = appClient;
+        Thread thread = new Thread(appClient);
+        thread.start();
+    }
 
     public void registerConnectionListener(ConnectionListener listener) {
         appClient.registerConnectionListener(listener);
@@ -75,7 +85,7 @@ public class ConnectionHandler implements ConnectionListener{
             messages.put(message.getTo(), new ArrayList<>());
         }
         messages.get(message.getTo()).add(message);
-        //appClient.send(new MessagePacket(message));
+        appClient.sendMessage(message);
     }
 
     @Override

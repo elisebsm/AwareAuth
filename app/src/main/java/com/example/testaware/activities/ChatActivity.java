@@ -1,14 +1,17 @@
 package com.example.testaware.activities;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 
+import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
@@ -19,33 +22,52 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
 import com.example.testaware.IdentityHandler;
+import com.example.testaware.adapters.MessageAdapter;
+import com.example.testaware.listeners.ConnectionListener;
+import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.R;
 import com.example.testaware.User;
 import com.example.testaware.adapters.MessageListAdapter;
+import com.example.testaware.models.AbstractPacket;
+import com.example.testaware.models.Contact;
+import com.example.testaware.models.Message;
+import com.example.testaware.models.MessagePacket;
 
+import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.Inet6Address;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
 
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 
+import lombok.Getter;
+
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity implements ConnectionListener {
         private String LOG = "LOG-Test-Aware-Chat-Activity";
         private RecyclerView mMessageRecycler;
-        public static MessageListAdapter mMessageAdapter;  //endret til test
-        public static ArrayList<MessageListItem> messageList;
+        public MessageAdapter mMessageAdapter;  //Endret
+        //public  ArrayList<MessageListItem> messageList; //Endret
+        public  ArrayList<Message> messageList;
         private Context context;
         private User user;
         private String myIpvAddr;
@@ -56,8 +78,21 @@ public class ChatActivity extends AppCompatActivity {
         private SSLContext sslContext;
         private KeyPair keyPair;
 
+        @Getter
         private AppClient appClient;
         private AppServer appServer;
+
+        private ConnectivityManager connectivityManager;
+
+    private Contact contact;
+
+    private static WeakReference<MainActivity> mainActivity;
+    public static void updateActivity(MainActivity activity) {
+        mainActivity = new WeakReference<>(activity);
+    }
+
+    String role;
+    //String role = "Server";
 
     //TODO: change to get dynamic ports
 
@@ -67,41 +102,53 @@ public class ChatActivity extends AppCompatActivity {
             setContentView(R.layout.activity_chat);
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             this.context = this;
-            setupUI();
+
 
             myIpvAddr = getLocalIp();
 
-            user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
 
-            this.sslContext = MainActivity.getSslContext();
-            //this.sslContext = IdentityHandler.getSSLContext(this.context);
+            //user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
+
+            SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
+            this.sslContext = sslContextedObserver.getSslContext();
+            this.connectivityManager = sslContextedObserver.getConnectivityManager();
+
             this.keyPair = IdentityHandler.getKeyPair();
             peerIpv6 = MainActivity.getPeerIpv6();
             TextView textView = findViewById(R.id.tvRole);
 
-           // textView.setText("SERVER");
-            //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
-            //Log.d(LOG, "SERVER: " + peerIpv6);
+            textView.setText("SERVER");
+            role = "Server";
 
-            appClient = new AppClient(keyPair, sslContext);
-            textView.setText("CLIENT");
-            Log.d(LOG, "CLIENT: " + peerIpv6);
+            //textView.setText("CLIENT");
+            //role = "Client";
 
-            /*if (MainActivity.isPublisher()){
-                AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
-            } else {
-                AppClient appClient = new AppClient(keyPair, sslContext);
-            }*/
+            this.appClient  = mainActivity.get().getConnectionHandler().getAppClient();
+            this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
+
+                    Intent intent = getIntent();
+            contact = (Contact) intent.getSerializableExtra("contact" + "");
+            setTitle(contact.getCommonName());
+
+            setupUI();
 
         }
 
         private void setupUI(){
             editChatText = findViewById(R.id.eTChatMsg);
             messageList = new ArrayList<>();
-            mMessageRecycler = findViewById(R.id.recyclerChat);
-            mMessageAdapter = new MessageListAdapter(this, messageList);
-            mMessageRecycler.setAdapter(mMessageAdapter);
-            mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
+
+
+            mMessageAdapter = new MessageAdapter(this, R.layout.other_message, messageList, keyPair);
+            ListView listView = findViewById(R.id.lvMessages);
+
+
+            //mMessageRecycler = findViewById(R.id.recyclerChat); //Endret
+            listView.setAdapter(mMessageAdapter);     //Endret
+            //mMessageRecycler.setAdapter(mMessageAdapter);
+            //mMessageRecycler.setLayoutManager(new LinearLayoutManager(this)); //Endret, kommentert ut
+
+
 
             /*final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
             if (MainActivity.isPublisher()) {
@@ -110,42 +157,56 @@ public class ChatActivity extends AppCompatActivity {
                 initClient();
             }*/
             Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
+            EditText messageText = findViewById(R.id.eTChatMsg);
             sendChatMsgbtn.setOnClickListener(v -> {
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    EditText messageText = findViewById(R.id.eTChatMsg);
-                    String messageToSend = messageText.getText().toString();
-                    if(appClient != null){
-                        //try {
-                            //Message message = new Message(messageToSend);
-                            //appClient.sendMessage(message);
-                            appClient.sendMessage(messageToSend);
-                        } /*catch (NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        }*/
-                    }
+                    Log.d(LOG, messageText.getText().toString());
+                    sendMessage(messageText.getText().toString());
+                    messageText.setText("");
                     Log.i(LOG, "Send btn pressed");
-                //}
             });
+
+           // Intent intent = getIntent();
+           // contact = (Contact) intent.getSerializableExtra("EXTRA_CONTACT");
+           // setTitle(contact.getCommonName());
         }
 
 
-        public static void setChat(String message, String ipv6){
-            MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
-            messageList.add(chatMsg);
-            mMessageAdapter.notifyDataSetChanged();
+    private void sendMessage(String msg) {
+        Log.d(LOG, "Sending message: " + msg);
+
+        final Message message;
+        message = new Message(
+                contact.getCertificate().getPublicKey(),
+                keyPair.getPublic(),
+                msg,
+                keyPair.getPrivate());
+        mMessageAdapter.add(message);
+        mainActivity.get().getConnectionHandler().sendMessage(message);
+        if(role.equals("Client")){
+            appClient.sendMessage(message);
+        } else {
+            appServer.sendMessage(message);
         }
 
-
-        public void notifyMessageAdapter(){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    ChatActivity.mMessageAdapter.notifyDataSetChanged();
-                }
-            });
+        /*final Message message;
+        try {
+            message = new Message(
+                    contact.getCertificate().getPublicKey(),
+                    keyPair.getPublic(),
+                    msg,
+                    keyPair.getPrivate()
+            );
+            messageList.add(message);
+            mMessageAdapter.add(message);
+            mainActivity.get().getConnectionManager().sendMessage(message);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NoSuchPaddingException | IOException | BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
         }
-
+*/
+        //MessageListItem messageListItem = new MessageListItem(msg, "ipv6_other_user" );    Endret, kommentert ut
+        //messageList.add(messageListItem);                                                      Endret, kommentert ut
+        //mMessageAdapter.notifyDataSetChanged();        Endret, kommentert ut
+    }
 
         public static String getLocalIp() {
             try {
@@ -169,6 +230,35 @@ public class ChatActivity extends AppCompatActivity {
             }
             return null;
         }
+
+    @Override
+    public void onConnect() {
+
+    }
+
+    @Override
+    public void onDisconnect() {
+
+    }
+
+    @Override
+    public void onPacket(Contact contact, AbstractPacket packet) {
+        if(packet instanceof MessagePacket) {
+            MessagePacket messagePacket = (MessagePacket) packet;
+            final Message message = messagePacket.getMessage();
+
+            if(message.getFrom().equals(contact.getCertificate().getPublicKey())) {
+                runOnUiThread(() -> {
+                    mMessageAdapter.add(message);
+                });
+            }
+        }
+    }
+
+    @Override
+    public void onServerPacket(AbstractPacket packet) {
+
+    }
 
 
              /*private void receiveMessage() {

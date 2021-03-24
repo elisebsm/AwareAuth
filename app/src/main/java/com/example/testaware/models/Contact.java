@@ -1,11 +1,15 @@
 package com.example.testaware.models;
 
+import java.io.Serializable;
 import java.security.cert.X509Certificate;
 
 import javax.security.auth.x500.X500Principal;
 
-public class Contact {
+import lombok.Getter;
 
+public class Contact implements Serializable {
+
+    @Getter
     private X509Certificate certificate;
 
     public Contact(X509Certificate certificate){

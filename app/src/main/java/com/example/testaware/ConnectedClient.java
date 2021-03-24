@@ -13,7 +13,7 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-public class ConnectedDevice implements Runnable{
+public class ConnectedClient implements Runnable{
 
     private SSLSocket sslClientSocket;
     private AppServer appServer;
@@ -21,11 +21,10 @@ public class ConnectedDevice implements Runnable{
     private boolean running;
 
     private ObjectOutputStream outputStream;
-    private ObjectInputStream inputStream;
 
     private String LOG = "LOG-Test-Aware-ConnectedDevice";
 
-    public ConnectedDevice(AppServer appServer, SSLSocket sslClientSocket) {
+    public ConnectedClient(AppServer appServer, SSLSocket sslClientSocket) {
         this.sslClientSocket = sslClientSocket;
         this.appServer = appServer;
         //Thread thread = new Thread(this);
@@ -68,11 +67,11 @@ public class ConnectedDevice implements Runnable{
 
         try {
             outputStream = new ObjectOutputStream(sslClientSocket.getOutputStream());
-            inputStream = new ObjectInputStream(sslClientSocket.getInputStream());
+            ObjectInputStream inputStream = new ObjectInputStream(sslClientSocket.getInputStream());
 
             while(running){
                 AbstractPacket receivedPacket = (AbstractPacket) inputStream.readObject();
-                appServer.onPacketReceived(this, receivedPacket);
+                //appServer.onPacketReceived(this, receivedPacket);
             }
             appServer.removeClient(this);
         } catch (IOException | ClassNotFoundException e) {

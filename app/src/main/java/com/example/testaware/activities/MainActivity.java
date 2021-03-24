@@ -9,7 +9,6 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -18,7 +17,6 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.net.wifi.aware.AttachCallback;
-import android.net.wifi.aware.DiscoverySession;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
 import android.net.wifi.aware.PeerHandle;
@@ -32,34 +30,44 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Looper;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.listeners.ConnectionListener;
+import com.example.testaware.listeners.OnSSLContextChangedListener;
+import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
-import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 
+import java.io.Serializable;
 import java.net.Inet6Address;
-import java.net.ServerSocket;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
@@ -99,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
     private final int MAC_ADDRESS_MESSAGE = 11;
-    private BroadcastReceiver broadcastReceiver;
     private ConnectivityManager connectivityManager;
     private NetworkSpecifier networkSpecifier;
 
@@ -128,11 +135,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     private static final int MY_PERMISSION_EXTERNAL_REQUEST_CODE = 99;
 
-    private static boolean isPublisher = false;
-    private boolean hasEstablishedPublisherAndSubscriber = false;
-    private static SSLContext sslContext;
+
     private KeyPair keyPair;
-    private String signedKey;
 
     //private String role = "subscriber";
     private String role = "publisher";
@@ -147,6 +151,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     @Getter
     private ConnectionHandler connectionHandler;
 
+    @Getter
+    private SSLContextedObserver sslContextedObserver;
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -163,22 +169,38 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         peerHandle = null;
 
 
-
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
         TextView tvRole = findViewById(R.id.tvRole);
         tvRole.setText(role);
 
-        connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        //this.sslContext = IdentityHandler.getSSLContext(this.context);
+        this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
+        attachToSession();
 
         context = this;
 
-        addPeersToChatList();
+        sslContextedObserver = new SSLContextedObserver();
 
-       /* Button btn = findViewById(R.id.btnPublish);
-        btn.setOnClickListener(v -> establishWhoIsPublisherAndSubscriber());*/
+        sslContextedObserver.setListener(new OnSSLContextChangedListener(){
+            @Override
+            public void onSSLContextChanged(SSLContext sslContext){
+                connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContext, keyPair);
+                //connectionHandler.registerConnectionListener(MainActivity.this);
+                attachToSession();
+            }
+        });
+        sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
+
+
+
+        addPeersToChatList();
+        ChatActivity.updateActivity(this);
+        AppServer.updateActivity(this);
 
 
 
@@ -212,59 +234,19 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             requestPermissions(LOCATION_PERMS_COARSE, LOCATION_REQUEST_COARSE);
         }
 
-        sslContext = IdentityHandler.getSSLContext(this.context);
-        this.keyPair = IdentityHandler.getKeyPair();
-        attachToSession();
-
-       // connectionHandler = new ConnectionHandler(getApplicationContext());
-        //connectionHandler.registerConnectionListener(this);
-
-       /* Button conPub = findViewById(R.id.btnConnectPub);
-        conPub.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MainActivity.this.requestWiFiConnection(peerHandle, "publish");
-                *//*Thread startConn = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Looper.prepare();
-                        MainActivity.this.requestWiFiConnection();
-                    }
-                });
-                startConn.start();*//*
-
-            }
-        });
-
-        Button subPub = findViewById(R.id.btnConnectSub);
-        subPub.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MainActivity.this.requestWiFiConnection(peerHandle, "subscriber");
-                *//*Thread startConn = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Looper.prepare();
-                        MainActivity.this.requestWiFiConnection();
-                    }
-                });
-                startConn.start();*//*
-            }
-        });*/
-
         //String signedKey = PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
 
-        if(role.equals("publisher")){
+     /*   if(role.equals("publisher")){
             Button startServerButton = findViewById(R.id.btnStartServer);
             startServerButton.setVisibility(View.VISIBLE);
             startServerButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+                    AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
                     Log.d(LOG, "SERVER: " + peerIpv6);
                 }
             });
-        }
+        }*/
 
     }
 
@@ -274,27 +256,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
      * App Permissions for Coarse Location
      **/
     private void setupPermissions() {
-        // If we don't have the record network permission...
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // And if we're on SDK M or later...
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                // Ask again, nicely, for the permissions.
                 String[] permissionsWeNeed = new String[]{ Manifest.permission.ACCESS_COARSE_LOCATION };
                 requestPermissions(permissionsWeNeed, MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE);
             }
         }
-
-        //-------------------------------------------------------------------------------------------- +++++
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            // And if we're on SDK M or later...
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                // Ask again, nicely, for the permissions.
-                String[] permissionsWeNeed = new String[]{ Manifest.permission.WRITE_EXTERNAL_STORAGE };
-                requestPermissions(permissionsWeNeed, MY_PERMISSION_EXTERNAL_REQUEST_CODE);
-            }
-        }
-        //-------------------------------------------------------------------------------------------- -----
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -309,32 +278,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 } else {
                     Toast.makeText(this, "Permission for location not granted. NAN can't run.", Toast.LENGTH_LONG).show();
                     finish();
-                    // The permission was denied, so we can show a message why we can't run the app
-                    // and then close the app.
                 }
             }
-
-            //-------------------------------------------------------------------------------------------- +++++
-            case MY_PERMISSION_EXTERNAL_REQUEST_CODE: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    return;
-
-                } else {
-                    Toast.makeText(this, "no sd card access", Toast.LENGTH_LONG).show();
-                }
-            }
-            //-------------------------------------------------------------------------------------------- -----
-            // Other permissions could go down here
-
         }
     }
 
 
-    public static SSLContext getSslContext(){
-        return sslContext;
-    }
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void addPeersToChatList(){
         ArrayList<ChatListItem> userList = new ArrayList<>();
@@ -347,21 +297,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         listViewChats.setAdapter(chatListAdapter);
         listViewChats.setOnItemClickListener((parent, view, position, id) -> {
             MainActivity.this.openChat(position);
-            //MainActivity.this.requestWiFiConnection();
         });
     }
-
-
 
 
     public void startPublishAndSubscribe(String role){
         if(role.equals("subscriber")){
             subscribe();
-        }else {
+        } else {
             publish();
-
         }
-
     }
 
 
@@ -371,19 +316,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             public void onAttached(WifiAwareSession session) {
                 super.onAttached(session);
                 wifiAwareSession = session;
-                //TODO: close session
+
             }
             @Override
             public void onAttachFailed() {
             }
-
         }, new IdentityChangedListener() {
             @Override
             public void onIdentityChanged(byte[] mac) {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 startPublishAndSubscribe(role);
-                //closeSession(); ENDRET
+                //closeSession(); ENDRET  //TODO: close session
             }
         }, null);
     }
@@ -424,7 +368,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         otherMacList.add(macAddress);
                         if (!peerHandleList.contains(peerHandle_)){
                             peerHandleList.add(peerHandle_);
-                            //requestWiFiConnection(peerHandle_);
                         }
                         int numOfSubscribers = peerHandleList.size();
                         Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
@@ -446,7 +389,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
                         addPeersToChatList();
                     }
-
 
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
@@ -494,7 +436,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
                 }
-
                 if (!peerHandleList.contains(peerHandle_)){
                     peerHandleList.add(peerHandle_);
                 }
@@ -504,7 +445,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                 super.onMessageReceived(peerHandle, message);
                 Log.d(LOG, "subscribe, received message");
-                //Toast.makeText(MainActivity.this, "received", Toast.LENGTH_LONG).show();
                 String messageIn = new String(message);
                 if(message.length == 2) {
                     portToUse = byteToPortInt(message);
@@ -538,8 +478,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
                         addPeersToChatList();
                     }
-
-
                 } else if (message.length == 16) {
                     setOtherIPAddress(message);
                     Log.d(LOG, "setOtherIPAddress "+ message);
@@ -549,8 +487,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     if(messageIn.contains("startConnection")) {
                         requestWiFiConnection(peerHandle, "subscriber");
                     }
-                    //setMessage(message);
-                    //Toast.makeText(MainActivity.this, "message received", Toast.LENGTH_LONG).show();
                 }else if (messageIn.contains("startConnection")) {
                     Log.d(LOG, "Message IN:" + messageIn);
                         requestWiFiConnection(peerHandle, "subscriber");
@@ -558,7 +494,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             }
         }, null);
     }
-
 
 
     @Override
@@ -569,7 +504,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
     private void closeSession() {
-
         if (publishDiscoverySession != null) {
             publishDiscoverySession.close();
             publishDiscoverySession = null;
@@ -613,22 +547,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             Log.d(LOG, "This devices is publisher");
         }
 
-
-
-       /* if (isPublisher){
-            networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
-                    //.setPort(Constants.SERVER_PORT)
-                    .build();
-            Log.d(LOG, "This devices is publisher");
-
-        } else{
-            networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
-                    .build();
-
-            Log.d(LOG, "This devices is subscriber");
-        }*/
-
-        //connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         if (networkSpecifier == null) {
             Log.d(LOG, "No NetworkSpecifier Created ");
             return;
@@ -637,7 +555,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
                 .setNetworkSpecifier(networkSpecifier)
                 .build();
-        //Toast.makeText(context, "networkrequest build", Toast.LENGTH_LONG).show();
 
         connectivityManager.requestNetwork(myNetworkRequest, new ConnectivityManager.NetworkCallback() {
             @Override
@@ -645,7 +562,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 super.onAvailable(network);
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
-                AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
+                //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
+                AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
 
             }
 
@@ -653,9 +571,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             public void onUnavailable() {
                 super.onUnavailable();
                 Log.d(LOG, "entering onUnavailable ");
-
                 Toast.makeText(context, "onUnavailable", Toast.LENGTH_LONG).show();
-
             }
 
             @Override
@@ -690,6 +606,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void openChat(int position){
         Intent intentChat = new Intent(this, ChatActivity.class);
         intentChat.putExtra("position", position);
+       /* Contact contact = new Contact(IdentityHandler.getCertificate());
+        intentChat.putExtra("contact", (Serializable) contact);
+        if(role.equals("Subscriber")){
+
+            connectionHandler.setAppClient(new AppClient(keyPair, sslContextedObserver.getSslContext()));
+        }   KOMMENTERT Tirsdag*/
         startActivity(intentChat);
     }
 
@@ -746,33 +668,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
 
-    public int byteToPortInt(byte[] bytes){
+    public int byteToPortInt(byte[] bytes) {
         return ((bytes[1] & 0xFF) << 8 | (bytes[0] & 0xFF));
-    }
-
-/*    private void establishWhoIsPublisherAndSubscriber(){
-        if(!hasEstablishedPublisherAndSubscriber){
-            if (publishDiscoverySession != null && subscribeDiscoverySession != null){
-                isPublisher = true;
-                findViewById(R.id.btnConnectPub).setVisibility(View.VISIBLE);
-                String msg = "subscriber.establishingRole";
-                byte[] msgtosend = msg.getBytes();
-                if (publishDiscoverySession != null && peerHandle != null) {
-                    publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-                } else if(subscribeDiscoverySession != null && peerHandle != null) {
-                    subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-                }
-            } else if(publishDiscoverySession != null){
-                isPublisher = true;
-            }
-            hasEstablishedPublisherAndSubscriber = true;
-            //subscribeDiscoverySession = null;
-        }
-    }*/
-
-
-    public static boolean isPublisher(){
-        return isPublisher;
     }
 
 
@@ -795,4 +692,45 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     public void onServerPacket(AbstractPacket packet) {
 
     }
+
+
+    /*private OnSSLContextChangedListener listener;
+
+
+
+    public void setListener(OnSSLContextChangedListener listener) {
+        this.listener = listener;
+    }
+
+    public SSLContext getSslContext(){
+        return sslContext;
+    }
+
+    public void setSslContext(SSLContext sslContext){
+        this.sslContext = sslContext;
+        if(listener != null){
+            listener.onSSLContextChanged(sslContext);
+        }
+    }*/
+
+    /*    private void establishWhoIsPublisherAndSubscriber(){
+        if(!hasEstablishedPublisherAndSubscriber){
+            if (publishDiscoverySession != null && subscribeDiscoverySession != null){
+                isPublisher = true;
+                findViewById(R.id.btnConnectPub).setVisibility(View.VISIBLE);
+                String msg = "subscriber.establishingRole";
+                byte[] msgtosend = msg.getBytes();
+                if (publishDiscoverySession != null && peerHandle != null) {
+                    publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
+                } else if(subscribeDiscoverySession != null && peerHandle != null) {
+                    subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
+                }
+            } else if(publishDiscoverySession != null){
+                isPublisher = true;
+            }
+            hasEstablishedPublisherAndSubscriber = true;
+            //subscribeDiscoverySession = null;
+        }
+    }*/
+
 }
