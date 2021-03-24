@@ -12,8 +12,7 @@ import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -48,7 +47,7 @@ public class AppClient implements Runnable{
     @Getter
     private List<ConnectionListener> connectionListeners;
 
-    private String LOG = "LOG-Test-Aware-Client";
+    private String LOG = "LOG-Test-Aware-App-Client";
     @Getter
     private KeyPair keyPair;
 
@@ -61,8 +60,8 @@ public class AppClient implements Runnable{
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
 
-        Thread thread = new Thread(this);
-        thread.start();
+        //Thread thread = new Thread(this);
+       // thread.start();
 
         connectionListeners = new ArrayList<>();
     }
@@ -106,16 +105,11 @@ public class AppClient implements Runnable{
         }
         Runnable sendMessageRunnable = () -> {
             try {
-                Log.d(LOG, "outputstream send message runnable");
-                Log.d(LOG, "outputstream " + message);
+              //  Log.d(LOG, "outputstream send message runnable");
+                Log.d(LOG, "outputstream testhhhhh" + message);
                 outputStream.writeObject(message);
                 outputStream.flush();
-
-                /*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*/
+                //TODO: set view
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.d(LOG, "Exception in Appclient  in sendMessage()");
