@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi;
 import com.example.testaware.activities.ChatActivity;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -23,12 +24,10 @@ import javax.net.ssl.SSLSocket;
 public class ClientHandeler extends Thread{
 
     private String LOG = "LOG-Test-Aware-Client-handeler";
-    private int serverPort;
     private static ObjectInputStream in;
     private static ObjectOutputStream out;
 
-    public ClientHandeler(int serverPort, ObjectInputStream in, ObjectOutputStream out) {
-        this.serverPort = serverPort;
+    public ClientHandeler( ObjectInputStream in, ObjectOutputStream out) {
         this.in = in;
         this.out = out;
     }
@@ -36,20 +35,20 @@ public class ClientHandeler extends Thread{
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void run(){
-        Boolean running = true;
+        boolean running = true;
 
-        while (running) {
+            Object strMessageFromClient = null;
             try {
-                if (in != null) {
-                    String strMessageFromClient = in.readUTF();  //FEIL
+                while (running) {
+                    strMessageFromClient = in.readObject();
                     Log.d(LOG, "Reading message " + strMessageFromClient);
-                    TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
-        }
+            Log.d(LOG, "Reading message " + strMessageFromClient);
+
+
     }
     //TODO: close socket
 

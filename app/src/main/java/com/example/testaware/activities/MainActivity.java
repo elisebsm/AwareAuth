@@ -9,7 +9,6 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -18,7 +17,6 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.net.wifi.aware.AttachCallback;
-import android.net.wifi.aware.DiscoverySession;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
 import android.net.wifi.aware.PeerHandle;
@@ -32,10 +30,7 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Looper;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -43,35 +38,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.testaware.AppServer;
-import com.example.testaware.ClientHandeler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.Server;
 import com.example.testaware.TestChatActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
-import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.Inet6Address;
-import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
@@ -145,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
     private String signedKey;
 
-   // private String role = "subscriber";
+    //private String role = "subscriber";
     private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
@@ -264,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         });*/
 
         //String signedKey = PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
-
+/*
         if(role.equals("publisher")){
             Button startServerButton = findViewById(R.id.btnStartServer);
             startServerButton.setVisibility(View.VISIBLE);
@@ -282,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             Log.d(LOG, "waiting for conn");
 
         }
-
+*/
     }
 
 

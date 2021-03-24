@@ -25,8 +25,7 @@ import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageListAdapter;
 import com.example.testaware.listitems.MessageListItem;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -45,13 +44,12 @@ public class TestChatActivity extends AppCompatActivity {
 
     private Inet6Address peerIpv6;
     private EditText editChatText;
-    private String LOG = "LOG-Test-Aware-Chat-Activity";
+    private String LOG = "LOG-Test-Aware-Test-Chat-Activity";
     private RecyclerView mMessageRecycler;
     public static MessageListAdapter mMessageAdapter;  //endret til test
     public static ArrayList<MessageListItem> messageList;
     private Context context;
-    private DataInputStream inputStream;
-    private DataOutputStream outputStream;
+
     private User user;
     private String myIpvAddr;
     private SSLSocket socket2;
@@ -72,8 +70,8 @@ public class TestChatActivity extends AppCompatActivity {
 
     private AppClient appClient;
     private AppServer appServer;
-    private Client client;
-    private Server server;
+
+
 
     //TODO: change to get dynamic ports
 
@@ -99,12 +97,12 @@ public class TestChatActivity extends AppCompatActivity {
         //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
         //Log.d(LOG, "SERVER: " + peerIpv6);
 
-       //appClient = new AppClient(keyPair, sslContext);
+     //   appClient = new AppClient(keyPair, sslContext); ///dont use this
        // textView.setText("CLIENT");
-       // Log.d(LOG, "CLIENT: " + peerIpv6);
-        //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
-       // Thread thread = new Thread(client);
-        //thread.start();
+      //  Log.d(LOG, "CLIENT: " + peerIpv6);
+
+      //  Thread thread = new Thread(appClient);
+      //  thread.start();
 
 
 
@@ -124,9 +122,9 @@ public class TestChatActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 EditText messageText = findViewById(R.id.eTChatMsg);
                 String messageToSend = messageText.getText().toString();
-                if(client != null){
+                if(appClient != null){
 
-                   client.sendMessage(messageToSend);
+                   appClient.sendMessage(messageToSend);
                 }
                 else{
                     ClientHandeler.setOutputStream(messageToSend);
