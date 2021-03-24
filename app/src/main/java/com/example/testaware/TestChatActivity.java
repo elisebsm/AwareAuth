@@ -3,43 +3,34 @@ package com.example.testaware;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.net.ConnectivityManager;
-import android.net.NetworkCapabilities;
-import android.net.NetworkSpecifier;
-import android.net.wifi.aware.PeerHandle;
-import android.net.wifi.aware.WifiAwareNetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.adapters.MessageListAdapter;
-import com.example.testaware.listitems.MessageListItem;
+import com.example.testaware.adapters.MessageAdapter;
+import com.example.testaware.listeners.SSLContextedObserver;
+import com.example.testaware.models.Contact;
+import com.example.testaware.models.Message;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.lang.ref.WeakReference;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.Socket;
 import java.security.KeyPair;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSocket;
+
+import lombok.Getter;
 
 public class TestChatActivity extends AppCompatActivity {
 
@@ -47,35 +38,38 @@ public class TestChatActivity extends AppCompatActivity {
     private EditText editChatText;
     private String LOG = "LOG-Test-Aware-Chat-Activity";
     private RecyclerView mMessageRecycler;
-    public static MessageListAdapter mMessageAdapter;  //endret til test
-    public static ArrayList<MessageListItem> messageList;
+    public static MessageAdapter mMessageAdapter;
+
+    public  ArrayList<Message> messageList;     // Endret for øystein sin adapter
+   // public static ArrayList<MessageListItem> messageList;
     private Context context;
-    private DataInputStream inputStream;
-    private DataOutputStream outputStream;
     private User user;
     private String myIpvAddr;
-    private SSLSocket socket2;
-    private boolean running;
-    private Message message;
-    private Socket socket;
-
-    private ConnectivityManager connectivityManager;
-    private NetworkSpecifier networkSpecifier;
-    private NetworkCapabilities networkCapabilities;
-    private PeerHandle peerHandle;
-    private WifiAwareNetworkInfo peerAwareInfo;
-
 
 
     private SSLContext sslContext;
     private KeyPair keyPair;
 
+    @Getter
     private AppClient appClient;
-    private AppServer appServer;
-    private Client client;
-    private Server server;
 
-    //TODO: change to get dynamic ports
+    private AppServer appServer;
+
+
+    private ConnectivityManager connectivityManager;
+
+    private static WeakReference<MainActivity> mainActivity;
+    public static void updateActivityMain(MainActivity activity) {
+        mainActivity = new WeakReference<>(activity);
+    }
+
+    private static WeakReference<ClientHandeler> clientHandelerWeakReference;
+    public static void updateActivityClientHandler(ClientHandeler activity) {
+        clientHandelerWeakReference = new WeakReference<>(activity);
+    }
+
+    private Contact contact;
+    String role;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,36 +81,50 @@ public class TestChatActivity extends AppCompatActivity {
 
         myIpvAddr = getLocalIp();
 
-        user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
 
-        this.sslContext = MainActivity.getSslContext();
-        //this.sslContext = IdentityHandler.getSSLContext(this.context);
+        SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
+        this.sslContext = sslContextedObserver.getSslContext();
+        this.connectivityManager = sslContextedObserver.getConnectivityManager();
+
+
         this.keyPair = IdentityHandler.getKeyPair();
         peerIpv6 = MainActivity.getPeerIpv6();
         TextView textView = findViewById(R.id.tvRole);
 
-         textView.setText("SERVER");
-        //AppServer appServer = new AppServer(sslContext, Constants.SERVER_PORT);
-        //Log.d(LOG, "SERVER: " + peerIpv6);
+        if(mainActivity.get().getRole().equals("publisher")){
+            textView.setText("SERVER");
+            role = "Server";
+        } else {
+            appClient = new AppClient(keyPair, sslContext);
+            textView.setText("CLIENT");
+            role = "Client";
+            //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
+            Thread thread = new Thread(appClient);
+            thread.start();
+        }
 
-       //appClient = new AppClient(keyPair, sslContext);
-       // textView.setText("CLIENT");
-       // Log.d(LOG, "CLIENT: " + peerIpv6);
-        //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
-       // Thread thread = new Thread(client);
-        //thread.start();
 
+        this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
 
 
     }
 
     private void setupUI(){
-        editChatText = findViewById(R.id.eTChatMsg);
+       /* editChatText = findViewById(R.id.eTChatMsg);
         messageList = new ArrayList<>();
         mMessageRecycler = findViewById(R.id.recyclerChat);
         mMessageAdapter = new MessageListAdapter(this, messageList);
         mMessageRecycler.setAdapter(mMessageAdapter);
-        mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
+        mMessageRecycler.setLayoutManager(new LinearLayoutManager(this)); */       //ENDRET til Øystein sin adapter
+
+        editChatText = findViewById(R.id.eTChatMsg);
+        messageList = new ArrayList<>();
+
+
+        mMessageAdapter = new MessageAdapter(this, R.layout.other_message, messageList, keyPair);
+        ListView listView = findViewById(R.id.lvMessages);
+        listView.setAdapter(mMessageAdapter);
+
 
         Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
         sendChatMsgbtn.setOnClickListener(v -> {
@@ -124,39 +132,35 @@ public class TestChatActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 EditText messageText = findViewById(R.id.eTChatMsg);
                 String messageToSend = messageText.getText().toString();
-                if(client != null){
-
-                   client.sendMessage(messageToSend);
+                if(appClient != null){
+                   //appClient.sendMessage(messageToSend);
+                    sendMessage(messageToSend);
                 }
                 else{
-                    ClientHandeler.setOutputStream(messageToSend);
+                    /*//clientHandelerWeakReference.sendMessage(messageToSend);
+                    try {
+                        WeakReference<ClientHandeler> clientHandeler = clientHandelerWeakReference;
+                        String [] msg = new String[0];
+                        msg [0] = messageToSend;
+                        clientHandelerWeakReference.getClass().getMethod("sendMessage", msg);
+                        Log.i(LOG, "Send MEssage Client Handler");
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                    }*/
                 }
-                /*catch (NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        }*/
             }
             Log.i(LOG, "Send btn pressed");
-            //}
         });
     }
 
 
-    public static void setChat(String message, String ipv6){
+
+
+    /*public static void setChat(String message, String ipv6){
         MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
-    }
-
-
-    public void notifyMessageAdapter(){
-        runOnUiThread(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.Q)
-            @Override
-            public void run() {
-                ChatActivity.mMessageAdapter.notifyDataSetChanged();
-            }
-        });
-    }
+    }*/
 
 
     public static String getLocalIp() {
@@ -183,24 +187,31 @@ public class TestChatActivity extends AppCompatActivity {
     }
 
 
-
-    private X509Certificate getPeerCertificate() {
-        try {
-            Certificate[] certs = socket2.getSession().getPeerCertificates();
-            if(certs.length > 0 && certs[0] instanceof X509Certificate) {
-                return (X509Certificate) certs[0];
-
-            }
-        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
-
-        }
-
-
-        return null;
-    }
  /*   private X509Certificate chechPeerCertificate(){
             //TODO: chech if peerCert signed by CA, if not send to peerSigner if trusted. Prompt user yes/no. If yes, send to PeerSigner
         return cert;
     }
 */
+
+    private void sendMessage(String msg) {
+        Log.d(LOG, "Sending message: " + msg);
+
+       /* final com.example.testaware.models.Message message;
+        message = new Message(
+                contact.getCertificate().getPublicKey(),
+                keyPair.getPublic(),
+                msg,
+                keyPair.getPrivate());
+        mMessageAdapter.add(message);*/  //endret Nå
+
+
+        //mainActivity.get().getConnectionHandler().sendMessage(message);
+        if(role.equals("Client")){
+            appClient.sendMessage(msg);
+        } else {
+            appServer.sendMessage(msg);
+        }
+
+
+    }
 }

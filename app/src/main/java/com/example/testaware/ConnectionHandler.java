@@ -52,8 +52,8 @@ public class ConnectionHandler {  //add this implements ConnectionListener
         //appClient = new AppClient(keyPair, sslContext);
         //appClient.registerConnectionListener(this);
 
-        Thread thread = new Thread(appServer);
-        thread.start();
+        //Thread thread = new Thread(appServer);
+        //thread.start();
          //TODO initialize wifi aware here?
     }
 

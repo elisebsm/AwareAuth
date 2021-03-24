@@ -1,3 +1,4 @@
+/*
 package com.example.testaware.activities;
 
 import android.content.Context;
@@ -103,11 +104,8 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             this.context = this;
 
-
             myIpvAddr = getLocalIp();
 
-
-            //user = new User("Server", myIpvAddr, true); //TODO: decide who will be server and client
 
             SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
             this.sslContext = sslContextedObserver.getSslContext();
@@ -150,12 +148,14 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
 
 
 
-            /*final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
+            */
+/*final Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
             if (MainActivity.isPublisher()) {
                 startServer();
             } else {
                 initClient();
-            }*/
+            }*//*
+
             Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
             EditText messageText = findViewById(R.id.eTChatMsg);
             sendChatMsgbtn.setOnClickListener(v -> {
@@ -188,7 +188,8 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
             appServer.sendMessage(message);
         }
 
-        /*final Message message;
+        */
+/*final Message message;
         try {
             message = new Message(
                     contact.getCertificate().getPublicKey(),
@@ -202,7 +203,8 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
         } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NoSuchPaddingException | IOException | BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
         }
-*/
+*//*
+
         //MessageListItem messageListItem = new MessageListItem(msg, "ipv6_other_user" );    Endret, kommentert ut
         //messageList.add(messageListItem);                                                      Endret, kommentert ut
         //mMessageAdapter.notifyDataSetChanged();        Endret, kommentert ut
@@ -261,7 +263,8 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
     }
 
 
-             /*private void receiveMessage() {
+             */
+/*private void receiveMessage() {
             Runnable serverTask = new Runnable() {
                 public void run() {
                     running = true;
@@ -288,9 +291,11 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
             };
             Thread serverThread = new Thread(serverTask);
             serverThread.start();
-        }*/
+        }*//*
 
-       /* private void sendMessage(SSLSocket sslSocket) {
+
+       */
+/* private void sendMessage(SSLSocket sslSocket) {
             //
             Runnable serverTask = () -> {
                 String chatMessage = editChatText.getText().toString();
@@ -309,9 +314,11 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
             };
             Thread serverThread = new Thread(serverTask);
             serverThread.start();
-        }*/
+        }*//*
 
 
+
+*/
 /*    private X509Certificate getPeerCertificate() {
         try {
             Certificate[] certs = socket2.getSession().getPeerCertificates();
@@ -325,11 +332,15 @@ public class ChatActivity extends AppCompatActivity implements ConnectionListene
 
 
         return null;
-    }*/
- /*   private X509Certificate chechPeerCertificate(){
+    }*//*
+
+ */
+/*   private X509Certificate chechPeerCertificate(){
             //TODO: chech if peerCert signed by CA, if not send to peerSigner if trusted. Prompt user yes/no. If yes, send to PeerSigner
         return cert;
     }
 
-                          */
+                          *//*
+
 }
+*/

@@ -1,3 +1,4 @@
+/*
 package com.example.testaware;
 
 import android.os.Build;
@@ -71,10 +72,12 @@ public class Client implements Runnable{
                     Log.d(LOG, "Connected to " + inet6Address.getHostName());
                 } else {
                     Log.d(LOG, "Trying to create Socket but inte6Adrres is NULL");
-                   /* sslContext = MainActivity.getSslContext();  //TODO: try this for bux fix? or something similar
+                   */
+/* sslContext = MainActivity.getSslContext();  //TODO: try this for bux fix? or something similar
                     socketFactory = sslContext.getSocketFactory();
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
-                    Log.d(LOG, "Trying again");*/
+                    Log.d(LOG, "Trying again");*//*
+
                 }
 
                 outputStream = new DataOutputStream(sslSocket.getOutputStream());
@@ -144,7 +147,8 @@ public class Client implements Runnable{
         return true;
     }
 
-   /* public void onPacketReceived(ReceivedPacket packet){
+   */
+/* public void onPacketReceived(ReceivedPacket packet){
         Contact from = new Contact(getPeerIdentity());
         for(ConnectionListener connectionListener: connectionListeners){
             connectionListener.onReceivedPacket(from, packet);
@@ -157,5 +161,7 @@ public class Client implements Runnable{
 
     void removeConnectionListener(ConnectionListener listener) {
         connectionListeners.remove(listener);
-    }*/
+    }*//*
+
 }
+*/

@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -31,18 +30,14 @@ import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
-import com.example.testaware.ClientHandeler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.Server;
 import com.example.testaware.TestChatActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
@@ -54,32 +49,12 @@ import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 
-import java.io.Serializable;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+
 import java.net.Inet6Address;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidParameterSpecException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
@@ -150,7 +125,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
     private String signedKey;
 
-   // private String role = "subscriber";
+    @Getter
+    //private String role = "subscriber";
     private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
@@ -188,7 +164,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         tvRole.setText(role);
 
 
-        //this.sslContext = IdentityHandler.getSSLContext(this.context);
         this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
 
@@ -210,25 +185,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
         addPeersToChatList();
-        ChatActivity.updateActivity(this);
+        TestChatActivity.updateActivityMain(this);
         AppServer.updateActivity(this);
-
-
-
-        Button send = findViewById(R.id.btnSend);
-        send.setOnClickListener(view -> {
-            //requestWiFiConnection();
-            /*String msg= "messageToBeSent: ";
-
-            EditText editText = findViewById(R.id.eTMsg);
-            msg += editText.getText().toString();
-            byte[] msgtosend = msg.getBytes();
-            if (publishDiscoverySession != null && peerHandle != null) {
-                publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-            } else if(subscribeDiscoverySession != null && peerHandle != null) {
-                subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-            }*/
-        });
 
 
         if (canAccessLocationFine()) {
@@ -246,18 +204,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         }
 
         //String signedKey = PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
-
-     /*   if(role.equals("publisher")){
-            Button startServerButton = findViewById(R.id.btnStartServer);
-            startServerButton.setVisibility(View.VISIBLE);
-            startServerButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
-                    Log.d(LOG, "SERVER: " + peerIpv6);
-                }
-            });
-        }*/
 
     }
 
@@ -374,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     byte[] msgtosend = "startConnection".getBytes();
                     publishDiscoverySession.sendMessage(peerHandle_, MESSAGE, msgtosend);
 
- //for logging
+
                     if (!otherMacList.contains(macAddress)){
                         otherMacList.add(macAddress);
                         if (!peerHandleList.contains(peerHandle_)){
@@ -382,6 +328,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         }
                         int numOfSubscribers = peerHandleList.size();
                         Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
+
                         if(otherMacList.size()>1){  //Kun for å logge info
                             for (int i = 0; i <otherMacList.size(); i ++){
                                 Log.d(LOG, "otherMacList " + i + " macAddress: " + otherMacList.get(i));
@@ -405,7 +352,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     setOtherIPAddress(message);
                     Log.d(LOG, "setOtherIPAddress "+ message);
                 } else if (message.length > 16) {
-                    /*requestWiFiConnection(peerHandle_, role);
+   /* forsøk på å bestemme hvem som er pub/sub
+
+                    requestWiFiConnection(peerHandle_, role);
 
                     byte[] msgtosend = "startConnection".getBytes();
                     publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);*/
@@ -472,15 +421,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         int numOfSubscribers = peerHandleList.size();
                         Log.d(LOG, "numOfSubscribers" + numOfSubscribers);
 
-                        if(otherMacList.size()>1){  //Kun for å logge info
+   //Kun for å logge info
+                        if(otherMacList.size()>1){
                             for (int i = 0; i <otherMacList.size(); i ++){
                                 Log.d(LOG, "otherMacList " + i + " macAddress: " + otherMacList.get(i));
                                 //byte [] messageOtherMac =  otherMacList.get(i).getBytes();
                                 //publishDiscoverySession.sendMessage(peerHandle, MESSAGE, messageOtherMac);
                             }
                         }
-
-                        if(peerHandleList.size()>1){ //Kun for å logge info
+//Kun for å logge info
+                        if(peerHandleList.size()>1){
                             for (int i = 0; i <peerHandleList.size(); i ++){
                                 Log.d(LOG, "peerHandleList " + i + " peerhandle: " + peerHandleList.get(i));
                                 //byte [] messageOtherMac =  peerHandleList.get(i).getBytes();
@@ -704,45 +654,5 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     public void onServerPacket(AbstractPacket packet) {
 
     }
-
-
-    /*private OnSSLContextChangedListener listener;
-
-
-
-    public void setListener(OnSSLContextChangedListener listener) {
-        this.listener = listener;
-    }
-
-    public SSLContext getSslContext(){
-        return sslContext;
-    }
-
-    public void setSslContext(SSLContext sslContext){
-        this.sslContext = sslContext;
-        if(listener != null){
-            listener.onSSLContextChanged(sslContext);
-        }
-    }*/
-
-    /*    private void establishWhoIsPublisherAndSubscriber(){
-        if(!hasEstablishedPublisherAndSubscriber){
-            if (publishDiscoverySession != null && subscribeDiscoverySession != null){
-                isPublisher = true;
-                findViewById(R.id.btnConnectPub).setVisibility(View.VISIBLE);
-                String msg = "subscriber.establishingRole";
-                byte[] msgtosend = msg.getBytes();
-                if (publishDiscoverySession != null && peerHandle != null) {
-                    publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-                } else if(subscribeDiscoverySession != null && peerHandle != null) {
-                    subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-                }
-            } else if(publishDiscoverySession != null){
-                isPublisher = true;
-            }
-            hasEstablishedPublisherAndSubscriber = true;
-            //subscribeDiscoverySession = null;
-        }
-    }*/
 
 }

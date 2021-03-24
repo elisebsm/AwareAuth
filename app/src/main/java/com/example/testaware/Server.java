@@ -1,3 +1,4 @@
+/*
 package com.example.testaware;
 
 import android.os.Build;
@@ -76,6 +77,7 @@ public class Server {
                     //t.start();
 
                     Log.d(LOG, "Starting new Thread -");
+*/
 /*
                     //TODO: send client hello message
                     while(running){
@@ -86,7 +88,8 @@ public class Server {
                             TestChatActivity.setChat(strMessageFromClient, "ipv6_other_user");
 
                         }
-                    }*/
+                    }*//*
+
                 }
             } catch (IOException e) {
                 Log.d(LOG, Objects.requireNonNull(e.getMessage()));
@@ -104,13 +107,15 @@ public class Server {
         mainActivity = new WeakReference<>(activity);
     }
 
+*/
 /*
     protected void addClient(SSLSocket sslClientSocket){
         ConnectedDevice connectedDevice = new ConnectedDevice(this, sslClientSocket);
         //clients.put(connectedDevice.getUserIdentity().getPublicKey(), connectedDevice);
         //clientProcessingPool.submit(connectedDevice);
     }
-*/
+*//*
+
 
     protected void removeClient(ConnectedDevice connectedDevice){
         if(clients.containsKey(connectedDevice.getUserIdentity().getPublicKey())){
@@ -128,7 +133,8 @@ public class Server {
     }
 
 
-  /*  protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
+  */
+/*  protected void onPacketReceived(ConnectedDevice device, ReceivedPacket packet){
         Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
         for(ConnectionListener listeners: mainActivity.get().getWifiAwareConnectionManager().getAppClient().getConnectionListeners()){
             listeners.onServerPacket(packet);
@@ -146,5 +152,7 @@ public class Server {
                 packetForwardingThred.start();
             }
         }
-    }*/
+    }*//*
+
 }
+*/

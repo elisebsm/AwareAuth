@@ -62,6 +62,8 @@ public class AppServer {
         running = true;
         clients = new ConcurrentHashMap<>();
 
+
+
         Runnable serverTask = () -> {
             running  = true;
             try {
@@ -74,7 +76,9 @@ public class AppServer {
                     Log.d(LOG, "client accepted");
                     inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                     outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
-                    Thread t = new ClientHandeler(serverPort, inputStream, outputStream);
+
+                    ClientHandeler client = new ClientHandeler(serverPort, inputStream, outputStream);
+                    Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
                     /*
@@ -91,7 +95,7 @@ public class AppServer {
                         }
                     }*/
                 }
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
@@ -156,7 +160,7 @@ public class AppServer {
         }
     }*/
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
+   /* @RequiresApi(api = Build.VERSION_CODES.Q)
     public boolean sendMessage(Message message){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
@@ -168,11 +172,33 @@ public class AppServer {
                 outputStream.writeObject(message);
                 outputStream.flush();
 
-                /*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
+                *//*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
                 ChatActivity.messageList.add(chatMsg);
 
                 //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*/
+                //textT.getText().clear();*//*
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.d(LOG, "Exception in Appclient  in sendMessage()");
+                running = false;
+            }
+        };
+        sendService.submit(sendMessageRunnable);
+        return true;
+    }*/
+
+     @RequiresApi(api = Build.VERSION_CODES.Q)
+    public boolean sendMessage(String message){
+        if(outputStream == null){
+            Log.d(LOG, "outputstream is null");
+            return false;
+        }
+        Runnable sendMessageRunnable = () -> {
+            try {
+                Log.d(LOG, "outputstream send message runnable");
+                outputStream.writeObject(message);
+                outputStream.flush();
+
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.d(LOG, "Exception in Appclient  in sendMessage()");
@@ -182,6 +208,7 @@ public class AppServer {
         sendService.submit(sendMessageRunnable);
         return true;
     }
+
 }
 
 

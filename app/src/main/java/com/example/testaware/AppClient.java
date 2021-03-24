@@ -104,8 +104,35 @@ public class AppClient implements Runnable{
     }*/
 
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
+   /* @RequiresApi(api = Build.VERSION_CODES.Q)
     public boolean sendMessage(Message message){
+        if(outputStream == null){
+            Log.d(LOG, "outputstream is null");
+            return false;
+        }
+        Runnable sendMessageRunnable = () -> {
+            try {
+                Log.d(LOG, "outputstream " + message);
+                outputStream.writeObject(message);
+                outputStream.flush();
+
+                *//*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
+                ChatActivity.messageList.add(chatMsg);
+
+                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
+                //textT.getText().clear();*//*
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.d(LOG, "Exception in Appclient  in sendMessage()");
+                running = false;
+            }
+        };
+        sendService.submit(sendMessageRunnable);
+        return true;
+    }*/
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    public boolean sendMessage(String message){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
