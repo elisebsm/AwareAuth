@@ -170,6 +170,11 @@
 </LinearLayout>-->
 
 
+    <Button
+        android:id="@+id/btnReqPeerAuthConn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/Request_Peer_Auth_Conn" />
 
     <LinearLayout
         android:layout_width="wrap_content"

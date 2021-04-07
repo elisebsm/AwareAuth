@@ -1,10 +1,13 @@
-package com.example.testaware;
+package com.example.testaware.offlineAuth;
 
 import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
+import com.example.testaware.ClientHandeler;
+import com.example.testaware.ConnectedClient;
+import com.example.testaware.Constants;
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listitems.MessageListItem;
@@ -53,7 +56,9 @@ public class NoAuthAppServer {
         mainActivity = new WeakReference<>(activity);
     }
 
-    public static boolean userPeerAuthenticated(String inetAddress){
+    public boolean userPeerAuthenticated(String peerIP){
+        AuthenticatedUser user=null;
+        isAuthenticated = VerifyUser.isAuthenticatedUser(peerIP);
         //check text file for inetAddress//MAC
         //if yes, return true
         return true;
@@ -77,7 +82,9 @@ public class NoAuthAppServer {
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
-                    if(userPeerAuthenticated(connectedPeerIP)){
+                    //check if key and ip is in auth list
+                    if (InitPeerAuthConn.setupPeerAuthConn()) {
+
                         //addClient(sslClientSocket);
                         Log.d(LOG, "client accepted");
                         inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
@@ -88,35 +95,16 @@ public class NoAuthAppServer {
                         t.start();
                         Log.d(LOG, "Starting new Thread -");
 
-                        while(running){
-                            if (inputStream != null){
-
-                                //AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
-                                //onPacketReceived(abstractPacket);
-
-                                String strMessageFromClient = String.valueOf(inputStream.readObject());  //FEIL
-                                Log.d(LOG, "Reading message " + strMessageFromClient);
-
-                                MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");
-                                // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
-                            }
-                        }
-
                     }
-                    else{
-                        sslClientSocket.close();
-                    }
-
-
-
                 }
-            }  catch (IOException | ClassNotFoundException e) {
-                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
-                e.printStackTrace();
-                Log.d(LOG, "Exception in AppServer in constructor");
-            }
-            //TODO: close socket
-        };
+
+                }  catch (IOException e) {
+                    Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+                    e.printStackTrace();
+                    Log.d(LOG, "Exception in AppServer in constructor");
+                }
+                //TODO: close socket
+            };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
     }

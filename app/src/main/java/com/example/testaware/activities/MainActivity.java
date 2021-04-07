@@ -30,6 +30,7 @@ import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -38,7 +39,6 @@ import android.widget.Toast;
 import com.example.testaware.AppServer;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.TestChatActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
 import com.example.testaware.listeners.SSLContextedObserver;
@@ -48,10 +48,12 @@ import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
+import com.example.testaware.offlineAuth.PeerSigner;
 
 
 import java.net.Inet6Address;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,6 +105,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private String ipAddr; //other IP
 
     private final int                 MESSAGE                        = 7;
+    private final int                 PUBLIC_KEY                        = 10;
+    private final int                 SIGNED_STRING                        = 44;
     private NetworkCapabilities networkCapabilities;
     private Network network;
 
@@ -125,10 +129,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     private KeyPair keyPair;
     private String signedKey;
+    private PublicKey pubKey;
+    private String signedString;
+    private String receivedSignedString;
+    private String receivedPubKey;
 
     @Getter
-   // private String role = "subscriber";
-    private String role = "publisher";
+    private String role = "subscriber";
+    //private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
 
@@ -158,6 +166,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         peerHandle = null;
 
 
+
+
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
@@ -179,6 +189,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContext, keyPair);
                 //connectionHandler.registerConnectionListener(MainActivity.this);
                 attachToSession();
+
+
             }
         });
         sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
@@ -204,11 +216,41 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             requestPermissions(LOCATION_PERMS_COARSE, LOCATION_REQUEST_COARSE);
         }
 
-        //String signedKey = PeerSigner.peerSign();  //TODO: call this method somewhere else where suitable, called from main just for testing
+        Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
+        reqPeerAuthConnBtn.setOnClickListener(v -> {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                requestPeerAuthConn();
+
+                byte[] msgSignedtosend = ("signedString"+signedString).getBytes();
+                byte[] pubKeyToSend =("pubKey"+ pubKey.toString()).getBytes();
+                if(role == "publisher"){
+                    if (publishDiscoverySession != null && peerHandle != null) {
+
+                        publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
+                        publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
+                    }
+
+
+                }
+                else{
+                    if (subscribeDiscoverySession != null && peerHandle != null) {
+                        subscribeDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
+                        subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
+                    }
+                }
+            }
+        });
 
     }
 
 
+    private void requestPeerAuthConn(){
+        pubKey = keyPair.getPublic();
+        String randomString = "hellbffjklds25444rudfu0bisjofjewiow0t4rh4rf45rt";  //TODO: genreate random for each time
+        signedString = PeerSigner.signString(randomString, keyPair);
+
+    }
 
     /**
      * App Permissions for Coarse Location
@@ -308,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             public void onMessageReceived(PeerHandle peerHandle_, byte[] message) {
                 super.onMessageReceived(peerHandle, message);
                 publishDiscoverySession.sendMessage(peerHandle_, MESSAGE, myMac);
-
+                String messageIn = new String(message);
                 if(message.length == 2) {
                     portToUse = byteToPortInt(message);
                     Log.d(LOG, "subscribe, will use port number "+ portToUse);
@@ -353,6 +395,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     setOtherIPAddress(message);
                     Log.d(LOG, "setOtherIPAddress "+ message);
                 } else if (message.length > 16) {
+
+
    /* forsøk på å bestemme hvem som er pub/sub
 
                     requestWiFiConnection(peerHandle_, role);
@@ -365,6 +409,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         isPublisher = false;
                         hasEstablishedPublisherAndSubscriber = true;
                     }*/
+                }
+
+                else if(messageIn.contains("signedString")) {
+                    receivedSignedString = messageIn.replace("signedString","");
+                    Log.i(LOG, "receveid Signed string: " +receivedSignedString);
+                }
+                else if(messageIn.contains("pubKey")){
+                    receivedPubKey= messageIn.replace("pubKey", "");
+                    Log.i(LOG, "Received pub key" + receivedPubKey);
                 }
                 peerHandle = peerHandle_;
             }
@@ -451,9 +504,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     if(messageIn.contains("startConnection")) {
                         requestWiFiConnection(peerHandle, "subscriber");
                     }
+
                 } else if (messageIn.contains("startConnection")) {
                     Log.d(LOG, "Message IN:" + messageIn);
                         requestWiFiConnection(peerHandle, "subscriber");
+                }
+                else if(messageIn.contains("signedString")) {
+                    receivedSignedString = messageIn.replace("signedString","");
+                }
+                else if(messageIn.contains("pubKey")){
+                    receivedPubKey= messageIn.replace("pubKey", "");
                 }
             }
         }, null);

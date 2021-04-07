@@ -1,28 +1,18 @@
 package com.example.testaware;
 
 import android.os.Build;
-import android.provider.ContactsContract;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import com.example.testaware.activities.TestChatActivity;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
-
-import lombok.Getter;
 
 public class ClientHandeler extends Thread{
 

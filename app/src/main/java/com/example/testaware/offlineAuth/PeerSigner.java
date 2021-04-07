@@ -27,6 +27,7 @@ public class PeerSigner {
     private static String signedKey;
     private static X509Certificate signerCertificate;
     private static X509Certificate peerCertificate;
+    private static String signedString;
 
     public static String peerSign() {
         try {
@@ -66,12 +67,33 @@ public class PeerSigner {
             String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
             signedKey = Base64.getEncoder().encodeToString(signature);
 
-            Boolean valid= VerifyCredentials.verifyCredentials(signedKey, signerCertificate, peerCertificate);
+            Boolean valid= VerifyCredentials.verifyCredentials(signedKey, signerCertificate, peerKey);  //Just for testing
             Log.i(LOG, "Verify is " +valid+ "!!!!!!!");
         } catch (Exception e) {
             // TODO: handle exception
             e.printStackTrace();
         }
 
+    }
+
+    public static String signString(String stringToSign, KeyPair keyPair){
+
+        try{
+        PrivateKey privKey = keyPair.getPrivate();
+        PublicKey pubKey = keyPair.getPublic();
+
+        Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
+        ecdsaSign.initSign(privKey);
+        byte[] bytes = stringToSign.getBytes();
+        ecdsaSign.update(bytes);
+        byte[] signature = ecdsaSign.sign();
+
+        String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
+        signedString = Base64.getEncoder().encodeToString(signature);
+        } catch (Exception e) {
+        // TODO: handle exception
+        e.printStackTrace();
+    }
+        return signedString;
     }
 }

@@ -1,4 +1,4 @@
-package com.example.testaware;
+package com.example.testaware.activities;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -14,6 +14,12 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.testaware.AppClient;
+import com.example.testaware.AppServer;
+import com.example.testaware.ClientHandeler;
+import com.example.testaware.IdentityHandler;
+import com.example.testaware.R;
+import com.example.testaware.User;
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageAdapter;
 import com.example.testaware.listeners.SSLContextedObserver;

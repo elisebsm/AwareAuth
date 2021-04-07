@@ -4,9 +4,11 @@ import android.util.Log;
 
 import com.example.testaware.Constants;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.PublicKey;
@@ -21,10 +23,10 @@ Only used to add verified public key to list, not to verify user in actual conne
 public class VerifyCredentials {
     private static String LOG = "VerifyPeer";
 
-    public static Boolean verifyCredentials(String sigPeerKey, Certificate signerCert, Certificate peerCert){
+    public static boolean verifyCredentials(String sigPeerKey, Certificate signerCert, PublicKey peerPubKey){
 
-        if (verifySignature(sigPeerKey, signerCert, peerCert)&& verifySigner(signerCert)) {
-            addAuthenticatedUserKey(peerCert);
+        if (verifySignature(sigPeerKey, signerCert, peerPubKey) && verifySigner(signerCert)) {
+            addAuthenticatedUserKey(peerPubKey);
             return true;
         }
         else{
@@ -32,13 +34,13 @@ public class VerifyCredentials {
         }
     }
 
-    public static Boolean verifySignature(String sigPeerKey, Certificate signerCert, Certificate peerCert){
+    public static Boolean verifySignature(String sigPeerKey, Certificate signerCert, PublicKey peerPubKey){
         PublicKey signerPubKey = signerCert.getPublicKey();   //public key of n
         Boolean valid=false;
         try{
             Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
             ecdsaSign.initVerify(signerPubKey);       //TODO: put somewhere else for verifying, just for testing
-            PublicKey peerPubKey = peerCert.getPublicKey();
+
             byte[] bytes = peerPubKey.toString().getBytes();  //public key of m--> message
             ecdsaSign.update(bytes);
             byte [] signedPeerKeyBytes = sigPeerKey.getBytes();
@@ -46,7 +48,6 @@ public class VerifyCredentials {
             if (ecdsaSign.verify(signedPeerKeyBytes)) {
                 Log.i(LOG, "valid");
                 valid=true;
-                //TODO: call authetnicatedUser here
             } else {
                 Log.i(LOG, "invalid");
                 valid = false;
@@ -64,26 +65,13 @@ public class VerifyCredentials {
 
     }
 
-    public static void setAuthenticatedUser(PublicKey connectedPeerKey, String connectedPeerIP) {
-        try{
-            BufferedWriter myWriter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/authenticatedUsers.txt"));
-            myWriter.write(connectedPeerKey.toString());
-            myWriter.close();
-            System.out.println("Successfully wrote key to the file.");
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-
-    }
 
 
-    //called if signature is valid aka verify ==true. Only sets key to file. Used before client connects
-    public static void addAuthenticatedUserKey(Certificate peerCert){
+    //called if signature is valid aka verify ==true. Only sets key to file. Used before client connects. LAST STEP
+    public static void addAuthenticatedUserKey(PublicKey key){
         //PublicKey peerPubKey = peerCertificate.getPublicKey();
         try {
-            BufferedWriter myWriter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/authenticateUserKeys.txt") );
-            PublicKey key = peerCert.getPublicKey();
+            BufferedWriter myWriter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/authenticateUserKeys.txt",true) );
             myWriter.write(key.toString());
             myWriter.close();
             System.out.println("Successfully wrote key to the file.");
@@ -93,9 +81,28 @@ public class VerifyCredentials {
         }
 
     }
+    public static boolean checkAuthenticatedUserKey(PublicKey key){
+        //PublicKey peerPubKey = peerCertificate.getPublicKey();
+        boolean isAuth= false;
+        String thisLine=null;
+        try {
+            BufferedReader myReader = new BufferedReader(new FileReader("/data/data/com.example.testaware/authenticateUserKeys.txt" ));
+            while ((thisLine = myReader.readLine()) != null) {
+                if(thisLine==key.toString()){
+                    isAuth=true;
+                }
+            }
+            myReader.close();
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+        return isAuth;
+    }
+
 
     //verify signer cert against root ca
-    public static Boolean verifySigner(Certificate signerCert){//use verify signer cert
+    public static Boolean verifySigner(Certificate signerCert){//use verify signer cert  //TODO: implement this
 
             return true;
     }
