@@ -38,7 +38,7 @@ import javax.net.ssl.SSLSocket;
 import lombok.Getter;
 
 //this class start server on diff port than other server, so one server that accepts connections to clients who dont have certificates (but are authenticated by peer)
-public class NoAuthAppServer {
+public class PeerAuthServer {
 
     private String LOG = "LOG-Test-Aware-No-Auth-App-Server";
     private ObjectInputStream inputStream;
@@ -56,16 +56,9 @@ public class NoAuthAppServer {
         mainActivity = new WeakReference<>(activity);
     }
 
-    public boolean userPeerAuthenticated(String peerIP){
-        AuthenticatedUser user=null;
-        isAuthenticated = VerifyUser.isAuthenticatedUser(peerIP);
-        //check text file for inetAddress//MAC
-        //if yes, return true
-        return true;
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public NoAuthAppServer(SSLContext serverSSLContext, int serverPort, String peerMAC ){  //use SERVER_PORT_NO_AUTH
+    public PeerAuthServer(SSLContext serverSSLContext, int serverPort, String peerMAC , String peerIp, String pubKey){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
         protocol= new String[1];
@@ -83,7 +76,7 @@ public class NoAuthAppServer {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
                     //check if key and ip is in auth list
-                    if (InitPeerAuthConn.setupPeerAuthConn()) {
+                    if (VerifyUser.isAuthenticatedUser(pubKey,peerIp)) {  //not sure if this is nessesary
 
                         //addClient(sslClientSocket);
                         Log.d(LOG, "client accepted");
@@ -96,14 +89,19 @@ public class NoAuthAppServer {
                         Log.d(LOG, "Starting new Thread -");
 
                     }
+                    else{
+                        //stop conn if user not authenticated
+                        sslClientSocket.close();
+                    }
                 }
-
+                 //   serverSocket.close();  //TODO: close socket
                 }  catch (IOException e) {
                     Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                     e.printStackTrace();
                     Log.d(LOG, "Exception in AppServer in constructor");
                 }
-                //TODO: close socket
+
+
             };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();

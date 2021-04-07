@@ -15,7 +15,7 @@ public class VerifyUser {
 
 
     // Used to check key provided and IP of connected client
-    public static boolean isAuthenticatedUser(String peerIP){
+    public static boolean isAuthenticatedUser(String peerIP, String key){
         String thisLine =null;
         AuthenticatedUser user=null;
         boolean cont= true;
@@ -27,7 +27,7 @@ public class VerifyUser {
 
                 user = (AuthenticatedUser) in.readObject();
                 if(user!=null){
-                     if (user.ipAddress == peerIP) {  
+                     if (user.ipAddress == peerIP && user.pubKey==key) {
                          isAuthenticated = true;
                          in.close();
                          fileIn.close();
@@ -49,7 +49,7 @@ public class VerifyUser {
     }
 
 //used to set map key and IP of new users , after challenge response         //TODO: call this somewhere
-    public static void setAuthenticatedUser(PublicKey connectedPeerKey, String connectedPeerIP) {
+    public static void setAuthenticatedUser(String connectedPeerKey, String connectedPeerIP) {
         AuthenticatedUser user= new AuthenticatedUser();
         user.pubKey = connectedPeerKey;
         user.ipAddress = connectedPeerIP;
@@ -65,11 +65,6 @@ public class VerifyUser {
             System.out.println("An error occurred.");
             i.printStackTrace();
         }
-
-    }
-    public void generateChallenge(){                   //TODO: IMPLEMENT THIS
-
-        
 
     }
 

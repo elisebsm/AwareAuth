@@ -12,19 +12,19 @@ public class InitPeerAuthConn {
         this.peerPubKey= peerPubKey;
         this.peerIP=peerIP;
     }
-
+/*
     public static boolean setupPeerAuthConn(){
         boolean isAuthenticated=false;
         if (VerifyCredentials.checkAuthenticatedUserKey(peerPubKey)){     //check if peer has authenticated this user
             //Check if user has already ben authenticated - and know that this Ip corresponds to pub key (user holds private key)
-            if(VerifyUser.isAuthenticatedUser(peerIP)){
+            //if(VerifyUser.isAuthenticatedUser(peerIP)){
                  isAuthenticated=true;//start server
             }
         }
         else{
             //get credentials from peer  //TODO: GET THIS IMPLEMENTED IN MAIN
         }
-        return isAuthenticated;  //if this is true, setup conn
+       // return isAuthenticated;  //if this is true, setup conn
     }
-
+*/
 }

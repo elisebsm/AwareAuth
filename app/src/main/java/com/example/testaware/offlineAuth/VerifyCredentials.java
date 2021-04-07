@@ -11,9 +11,14 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 
 
 /*Implies that user x has gotten public key of m signed by n, and the certificate of n. Picks up this info by picking up broadcast message from n. Use this to add peer authenticated user to list/file
@@ -39,7 +44,7 @@ public class VerifyCredentials {
         Boolean valid=false;
         try{
             Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
-            ecdsaSign.initVerify(signerPubKey);       //TODO: put somewhere else for verifying, just for testing
+            ecdsaSign.initVerify(signerPubKey);
 
             byte[] bytes = peerPubKey.toString().getBytes();  //public key of m--> message
             ecdsaSign.update(bytes);
@@ -105,6 +110,44 @@ public class VerifyCredentials {
     public static Boolean verifySigner(Certificate signerCert){//use verify signer cert  //TODO: implement this
 
             return true;
+    }
+
+    public static PublicKey convertStringToKey(String key){
+        PublicKey pubKey= null;
+        try{
+            byte[] publicBytes = Base64.getDecoder().decode(key);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance("ECDSA");
+            pubKey = keyFactory.generatePublic(keySpec);
+
+        }
+            catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+        }
+        return pubKey;
+    }
+
+    public static boolean verifyString(String message, String signature, String pubKey) {
+        PublicKey peerPublicKey = convertStringToKey(pubKey);
+        Boolean valid=false;
+        try{
+            Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
+            ecdsaSign.initVerify(peerPublicKey);
+            byte[] bytes = message.getBytes();  // message
+            ecdsaSign.update(bytes);
+            byte [] signedMessageBytes = signature.getBytes();
+            Log.i(LOG, "message"+message);
+            if (ecdsaSign.verify(signedMessageBytes)) {
+                Log.i(LOG, "valid");
+                valid=true;
+            }
+
+        }  catch (Exception e) {
+        // TODO: handle exception
+        e.printStackTrace();
+    }
+        return valid;
     }
 
 

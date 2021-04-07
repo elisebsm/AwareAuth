@@ -48,13 +48,17 @@ import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
+import com.example.testaware.offlineAuth.PeerAuthServer;
 import com.example.testaware.offlineAuth.PeerSigner;
+import com.example.testaware.offlineAuth.VerifyCredentials;
+import com.example.testaware.offlineAuth.VerifyUser;
 
 
 import java.net.Inet6Address;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
@@ -128,15 +132,19 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
     private KeyPair keyPair;
-    private String signedKey;
     private PublicKey pubKey;
     private String signedString;
     private String receivedSignedString;
-    private String receivedPubKey;
+    private String receivedPubKey;              //TODO : not variables for all, change for multiple connections
+    private String receivedString;
+    private String randomString;
+    private String peerPublicKey;
+    private boolean signValid;
+
 
     @Getter
     private String role = "subscriber";
-    //private String role = "publisher";
+  //  private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
 
@@ -164,7 +172,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         publishDiscoverySession = null;
         subscribeDiscoverySession = null;
         peerHandle = null;
-
 
 
 
@@ -223,12 +230,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 requestPeerAuthConn();
 
                 byte[] msgSignedtosend = ("signedString"+signedString).getBytes();
-                byte[] pubKeyToSend =("pubKey"+ pubKey.toString()).getBytes();
+                byte[] msgRandomStringtoSend = ("randomString"+randomString).getBytes();
+                String publicKey = "pubKey"+ peerPublicKey;
+                byte[] pubKeyToSend =publicKey.getBytes();
+                Log.i(LOG,"Bytes length key"+  pubKeyToSend.length);
+
                 if(role == "publisher"){
                     if (publishDiscoverySession != null && peerHandle != null) {
 
                         publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
-                        publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
+                        publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
+                        publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);  //TODO: FIX: to many bytes --408 to be exact, limit is 255
                     }
 
 
@@ -236,6 +248,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 else{
                     if (subscribeDiscoverySession != null && peerHandle != null) {
                         subscribeDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
+                        subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
+                        Log.i(LOG,"msg sent!!");
                         subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
                     }
                 }
@@ -244,11 +258,54 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     }
 
+    //just for testing
+    private boolean isPubKeySame(){
+        boolean same = false;
+        String testKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        PublicKey testPubkey = VerifyCredentials.convertStringToKey(testKey);
+      //  String signedString = PeerSigner.signString("hello", KeyPair keyPair);
+        if (keyPair.getPublic()== testPubkey){
+            same= true;
+        }
+        return same;
+
+    }
+
 
     private void requestPeerAuthConn(){
         pubKey = keyPair.getPublic();
-        String randomString = "hellbffjklds25444rudfu0bisjofjewiow0t4rh4rf45rt";  //TODO: genreate random for each time
+        peerPublicKey = Base64.getEncoder().encodeToString(pubKey.getEncoded());
+        randomString = "hellbff";  //TODO: genreate random for each time
         signedString = PeerSigner.signString(randomString, keyPair);
+
+    }
+
+    private void startPeerAuthServer(){
+        boolean userIsAuthenticated=false;
+        signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);  //TODO: fix so it returns true, convert string to pubkey corrrectly
+        Log.d(LOG, "The signature provided is " + signValid);
+        boolean same= isPubKeySame();
+        Log.d(LOG, "Key converted is same" + same);
+
+        String peerIP= getPeerIpv6().toString();
+        if (signValid){
+            userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, receivedPubKey);
+            if (userIsAuthenticated){
+                 //starting no auth app server
+                PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, macAddress,peerIP, receivedPubKey);           //TODO: change to no auth server port
+            }
+            else{
+                boolean credentailsValid= false;
+              //  credentialsValid = VerifyCredentials.verifyCredentials()                           //TODO: add later, get this info from peer
+                if(credentailsValid){
+                    VerifyUser.setAuthenticatedUser(receivedPubKey,peerIP);
+                    PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, macAddress,peerIP, receivedPubKey);
+                }
+            }
+        }
+       else{
+            Log.d(LOG, "Cannot start peer aut, not peer authenticated");
+        }
 
     }
 
@@ -396,6 +453,21 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     Log.d(LOG, "setOtherIPAddress "+ message);
                 } else if (message.length > 16) {
 
+                    if(messageIn.contains("signedString")) {
+                        receivedSignedString = messageIn.replace("signedString","");
+                        Log.d(LOG, "Signed string : " + receivedSignedString);
+                    }
+                    else if(messageIn.contains("randomString")) {
+                        receivedString = messageIn.replace("randomString","");
+                        Log.d(LOG, "random String: " + receivedSignedString);
+
+                    }
+                    else if(messageIn.contains("pubKey")){
+                        receivedPubKey= messageIn.replace("pubKey", "");
+                        signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);
+                        Log.d(LOG, "The signature provided is " + signValid);
+                    }
+
 
    /* forsøk på å bestemme hvem som er pub/sub
 
@@ -411,14 +483,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     }*/
                 }
 
-                else if(messageIn.contains("signedString")) {
-                    receivedSignedString = messageIn.replace("signedString","");
-                    Log.i(LOG, "receveid Signed string: " +receivedSignedString);
-                }
-                else if(messageIn.contains("pubKey")){
-                    receivedPubKey= messageIn.replace("pubKey", "");
-                    Log.i(LOG, "Received pub key" + receivedPubKey);
-                }
+
                 peerHandle = peerHandle_;
             }
         }, null);
@@ -504,17 +569,22 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     if(messageIn.contains("startConnection")) {
                         requestWiFiConnection(peerHandle, "subscriber");
                     }
+                    else if(messageIn.contains("signedString")) { //cverify user has private key
+                        receivedSignedString = messageIn.replace("signedString","");
+                    }
+                    else if(messageIn.contains("randomString")) {
+                        receivedString = messageIn.replace("randomString","");
+                    }
+                    if(messageIn.contains("pubKey")){
+                        receivedPubKey= messageIn.replace("pubKey", "");
+                        startPeerAuthServer();
+                    }
 
                 } else if (messageIn.contains("startConnection")) {
                     Log.d(LOG, "Message IN:" + messageIn);
                         requestWiFiConnection(peerHandle, "subscriber");
                 }
-                else if(messageIn.contains("signedString")) {
-                    receivedSignedString = messageIn.replace("signedString","");
-                }
-                else if(messageIn.contains("pubKey")){
-                    receivedPubKey= messageIn.replace("pubKey", "");
-                }
+
             }
         }, null);
     }
