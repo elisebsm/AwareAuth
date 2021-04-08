@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
@@ -39,17 +38,17 @@ public class ClientHandler extends Thread  {
 
     private SSLSocket sslSocket;
 
-    @Getter
-    private List<ConnectionListener> connectionListeners;
+   // @Getter
+   // private List<ConnectionListener> connectionListeners;
 
 
-    public ClientHandler(ObjectInputStream in, ObjectOutputStream out, SSLSocket sslSocket, List<ConnectionListener> listener)  {
+    public ClientHandler(ObjectInputStream in, ObjectOutputStream out, SSLSocket sslSocket)  {
         this.in = in;
         this.out = out;
         this.sslSocket = sslSocket;
 
         TestChatActivity.updateActivityClientHandler(this);
-        connectionListeners = listener;
+        //   connectionListeners = listener;
         //connectionListeners.add(listener);
     }
 
@@ -160,8 +159,8 @@ public class ClientHandler extends Thread  {
     private void onPacket(Message message) {
         Contact from = new Contact(getServerIdentity());
         Log.d(LOG,   "on packet" + " from " + from.getCommonName());
-        for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(message);
+       // for(ConnectionListener connectionListener : connectionListeners) {
+         //   connectionListener.onPacket(message);
 /*  TORSDAG       for(ConnectionListener connectionListener : connectionListeners) {
             connectionListener.onPacket(from, packet);
         }*/
@@ -169,4 +168,4 @@ public class ClientHandler extends Thread  {
     }
 
 
-}
+

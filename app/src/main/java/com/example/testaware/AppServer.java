@@ -9,7 +9,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.MessageReceivedObserver;
 import com.example.testaware.listeners.OnMessageReceivedListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
@@ -54,7 +54,7 @@ public class AppServer {
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
 
-    private List<ConnectionListener> connectionListeners;
+   // private List<ConnectionListener> connectionListeners;
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -72,7 +72,7 @@ public class AppServer {
         protocol= new String[1];
         protocol [0]= Constants.SUPPORTED_CIPHER_GCM;
 
-        connectionListeners = new ArrayList<>();
+        //connectionListeners = new ArrayList<>();
 
         Runnable serverTask = () -> {
             running  = true;
@@ -91,7 +91,7 @@ public class AppServer {
                     inputStream = new ObjectInputStream(sslClientSocket.getInputStream());
                     outputStream = new ObjectOutputStream(sslClientSocket.getOutputStream());
 
-                    client = new ClientHandler(inputStream, outputStream , sslClientSocket, connectionListeners );
+                    client = new ClientHandler(inputStream, outputStream , sslClientSocket );
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
@@ -155,9 +155,9 @@ public class AppServer {
         running = false;
     }
 
-    public void setListener(ConnectionListener listener){
-        connectionListeners.add(listener);
-    }
+  //  public void setListener(ConnectionListener listener){
+     //   connectionListeners.add(listener);
+  //  }
 
    /* private void onPacketReceived(AbstractPacket packet) {
         Contact from = new Contact(getServerIdentity());

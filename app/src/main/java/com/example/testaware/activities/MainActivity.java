@@ -41,7 +41,7 @@ import com.example.testaware.ClientHandler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.TestChatActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.OnSSLContextChangedListener;
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
@@ -64,7 +64,7 @@ import javax.net.ssl.SSLContext;
 import lombok.Getter;
 
 
-public class MainActivity extends AppCompatActivity implements ConnectionListener {
+public class MainActivity extends AppCompatActivity  {
 
 
     private WifiAwareManager wifiAwareManager;
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             public void onSSLContextChanged(SSLContext sslContext){
                 connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
                 //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContext, keyPair);
-                //connectionHandler.registerConnectionListener(MainActivity.this);
+                //connectionHandler.registerCener(MainActivity.this);
                 attachToSession();
             }
         });
@@ -644,7 +644,7 @@ private AppServer appServer;
         return ((bytes[1] & 0xFF) << 8 | (bytes[0] & 0xFF));
     }
 
-
+/*
     @Override
     public void onConnect() {
 
@@ -664,6 +664,8 @@ private AppServer appServer;
     public void onServerPacket(AbstractPacket packet) {
 
     }
+    */
+
 
     public KeyPair getKeyPair(){
         return keyPair;
