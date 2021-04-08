@@ -144,10 +144,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     @Getter
     private String role = "subscriber";
-  //  private String role = "publisher";
+   // private String role = "publisher";
 
     private String LOG = "LOG-Test-Aware";
 
+    @Getter
+    private String peerAuthenticated ="false";
 
 
     @Getter
@@ -207,6 +209,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         addPeersToChatList();
         TestChatActivity.updateActivityMain(this);
         AppServer.updateActivity(this);
+        PeerAuthServer.updateActivity(this);
 
 
         if (canAccessLocationFine()) {
@@ -240,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
                         publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
                         publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
-                        publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);  //TODO: FIX: to many bytes --408 to be exact, limit is 255
+                        publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
                     }
 
 
@@ -283,17 +286,19 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void startPeerAuthServer(){
         boolean userIsAuthenticated=false;
         signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);  //TODO: fix so it returns true, convert string to pubkey corrrectly
-        Log.d(LOG, "The signature provided is " + signValid);
+        //Log.d(LOG, "The signature provided is " + signValid);
         boolean same= isPubKeySame();
-        Log.d(LOG, "Key converted is same" + same);
+        //Log.d(LOG, "Key converted is same" + same);
         signValid=true;
         String peerIP= peerIpv6.toString();
         if (signValid){
-            userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, receivedPubKey);
-
+            //userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, receivedPubKey);
+            userIsAuthenticated=true;
             if (userIsAuthenticated){
                  //starting no auth app server
-                PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT,  receivedPubKey);           //TODO: change to no auth server port
+                Log.d(LOG, "starting peerauthserver" );
+                peerAuthenticated="true";
+
 
             }
             else{     //use checuserauthenticated also
@@ -466,8 +471,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     }
                     else if(messageIn.contains("pubKey")){
                         receivedPubKey= messageIn.replace("pubKey", "");
-                        signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);
+                       // signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);
                         Log.d(LOG, "The signature provided is " + signValid);
+                        startPeerAuthServer();
                     }
 
 
@@ -659,7 +665,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
                 //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
-              //  AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);        //TODO: unhash, just for testing
+                AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);        //TODO: unhash, just for testing
             }
 
             @Override
@@ -701,6 +707,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void openChat(int position){
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
+        if(peerAuthenticated=="true") {
+            Log.d(LOG, "openChat peer is authenticated");
+            PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);           //TODO: change to no auth server port
+        }
        /* Contact contact = new Contact(IdentityHandler.getCertificate());
         intentChat.putExtra("contact", (Serializable) contact);
         if(role.equals("Subscriber")){

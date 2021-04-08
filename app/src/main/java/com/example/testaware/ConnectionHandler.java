@@ -9,6 +9,7 @@ import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
+import com.example.testaware.offlineAuth.PeerAuthServer;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -36,7 +37,11 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     @Getter
     private AppClient appClient;
 
-   // private WiFiAwareConnectionManager wiFiDirectConnectionManager;
+    @Getter
+    private PeerAuthServer peerAuthServer;
+
+
+    // private WiFiAwareConnectionManager wiFiDirectConnectionManager;
 
     private Map<PublicKey, List<Message>> messages;
 
@@ -74,6 +79,12 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     public void removeConnectionListener(ConnectionListener listener) {
         appClient.removeConnectionListener(listener);
     }
+
+    public void setPeerAuthServer(PeerAuthServer peerAuthServer){
+        this.peerAuthServer= peerAuthServer;
+    }
+
+
 /*
 
     public void sendMessage(Message message) {

@@ -48,9 +48,10 @@ public class PeerAuthServer {
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
-    private boolean isAuthenticated;
+
     @Getter
     private static WeakReference<MainActivity> mainActivity;
+
 
     public static void updateActivity(MainActivity activity) {
         mainActivity = new WeakReference<>(activity);
@@ -70,28 +71,27 @@ public class PeerAuthServer {
                 SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
                 serverSocket.setEnabledCipherSuites(protocol);  // no need for client auth
 
-                Log.d(LOG, "Ciphers supported"+ protocol);
-
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
                     //check if key and ip is in auth list
-                    if (VerifyUser.isAuthenticatedUser(pubKey, connectedPeerIP)) {  //not sure if this is nessesary
-
+                   // if (VerifyUser.isAuthenticatedUser(pubKey, connectedPeerIP)) {  //not sure if this is nessesary
+                    if(true){
                         //addClient(sslClientSocket);
-                        Log.d(LOG, "client accepted");
+                        Log.d(LOG, "Peer auth client accepted");
                         inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                         outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
                         ClientHandeler noAuthClient = new ClientHandeler(inputStream, outputStream);
                         Thread t = new Thread(noAuthClient);
                         t.start();
-                        Log.d(LOG, "Starting new Thread -");
+                        Log.d(LOG, "Starting new peer auth client Thread -");
 
                     }
                     else{
                         //stop conn if user not authenticated
                         sslClientSocket.close();
+                        running =false;
                     }
                 }
                  //   serverSocket.close();  //TODO: close socket

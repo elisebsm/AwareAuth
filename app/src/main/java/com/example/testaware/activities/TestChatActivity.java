@@ -25,6 +25,7 @@ import com.example.testaware.adapters.MessageAdapter;
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
+import com.example.testaware.offlineAuth.PeerAuthServer;
 
 import java.lang.ref.WeakReference;
 
@@ -59,8 +60,8 @@ public class TestChatActivity extends AppCompatActivity {
 
     @Getter
     private AppClient appClient;
-
     private AppServer appServer;
+    private PeerAuthServer peerAuthServer;
 
 
     private ConnectivityManager connectivityManager;
@@ -77,6 +78,7 @@ public class TestChatActivity extends AppCompatActivity {
 
     private Contact contact;
     String role;
+    boolean peerAuthenticated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,7 +114,7 @@ public class TestChatActivity extends AppCompatActivity {
 
 
         this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
-
+        this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
 
     }
 
@@ -213,10 +215,16 @@ public class TestChatActivity extends AppCompatActivity {
 
 
         //mainActivity.get().getConnectionHandler().sendMessage(message);
+
         if(role.equals("Client")){
             appClient.sendMessage(msg);
         } else {
-            appServer.sendMessage(msg);
+            if(mainActivity.get().getPeerAuthenticated().equals("false")) {
+                appServer.sendMessage(msg);
+            }
+            else{
+                peerAuthServer.sendMessage(msg);
+            }
         }
 
 

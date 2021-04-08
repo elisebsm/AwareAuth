@@ -120,8 +120,8 @@ public class VerifyCredentials {
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
             pubKey = keyFactory.generatePublic(keySpec);
-            Log.i(LOG, "String to be converted to key : "+key);
-            Log.i(LOG, "Public key from convertStringToKey: "+pubKey);
+           // Log.i(LOG, "String to be converted to key : "+key);
+           // Log.i(LOG, "Public key from convertStringToKey: "+pubKey);
 
         }
             catch (Exception e) {
@@ -141,7 +141,7 @@ public class VerifyCredentials {
             byte[] bytes = message.getBytes();  // message
             ecdsaSign.update(bytes);
             byte [] signedMessageBytes = signature.getBytes();
-            Log.i(LOG, "message"+message);
+           // Log.i(LOG, "message"+message);
             if (ecdsaSign.verify(signedMessageBytes)) {
                 Log.i(LOG, "valid");
                 valid=true;
