@@ -132,10 +132,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private String signedKey;
 
     @Getter
-    //private String role = "subscriber";
-    //boolean isPublisher = false;
-    private String role = "publisher";
-    boolean isPublisher = true;
+    private String role = "subscriber";
+    boolean isPublisher = false;
+    //private String role = "publisher";
+    //boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
