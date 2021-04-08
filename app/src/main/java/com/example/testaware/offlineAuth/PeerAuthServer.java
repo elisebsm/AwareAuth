@@ -58,7 +58,7 @@ public class PeerAuthServer {
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public PeerAuthServer(SSLContext serverSSLContext, int serverPort, String peerMAC , String peerIp, String pubKey){  //use SERVER_PORT_NO_AUTH
+    public PeerAuthServer(SSLContext serverSSLContext, int serverPort,  String pubKey){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
         protocol= new String[1];
@@ -76,7 +76,7 @@ public class PeerAuthServer {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
                     //check if key and ip is in auth list
-                    if (VerifyUser.isAuthenticatedUser(pubKey,peerIp)) {  //not sure if this is nessesary
+                    if (VerifyUser.isAuthenticatedUser(pubKey, connectedPeerIP)) {  //not sure if this is nessesary
 
                         //addClient(sslClientSocket);
                         Log.d(LOG, "client accepted");

@@ -23,7 +23,7 @@ of user who wants to get authenticated.
 
 public class PeerSigner {
 
-    private static String LOG = "PeerSigner";
+    private static String LOG = "LOG-Test-Aware-Peer-Signer";
     private static String signedKey;
     private static X509Certificate signerCertificate;
     private static X509Certificate peerCertificate;

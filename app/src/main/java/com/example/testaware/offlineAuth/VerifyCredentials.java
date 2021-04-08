@@ -26,7 +26,7 @@ Only used to add verified public key to list, not to verify user in actual conne
 
  */
 public class VerifyCredentials {
-    private static String LOG = "VerifyPeer";
+    private static String LOG = "LOG-Test-Aware-Verify-Credentials";
 
     public static boolean verifyCredentials(String sigPeerKey, Certificate signerCert, PublicKey peerPubKey){
 
@@ -86,14 +86,14 @@ public class VerifyCredentials {
         }
 
     }
-    public static boolean checkAuthenticatedUserKey(PublicKey key){
+    public static boolean checkAuthenticatedUserKey(String key){
         //PublicKey peerPubKey = peerCertificate.getPublicKey();
         boolean isAuth= false;
         String thisLine=null;
         try {
             BufferedReader myReader = new BufferedReader(new FileReader("/data/data/com.example.testaware/authenticateUserKeys.txt" ));
             while ((thisLine = myReader.readLine()) != null) {
-                if(thisLine==key.toString()){
+                if(thisLine==key){
                     isAuth=true;
                 }
             }
@@ -112,13 +112,16 @@ public class VerifyCredentials {
             return true;
     }
 
+    //used for verifying user holds private key to public key
     public static PublicKey convertStringToKey(String key){
         PublicKey pubKey= null;
         try{
             byte[] publicBytes = Base64.getDecoder().decode(key);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
-            KeyFactory keyFactory = KeyFactory.getInstance("ECDSA");
+            KeyFactory keyFactory = KeyFactory.getInstance("EC");
             pubKey = keyFactory.generatePublic(keySpec);
+            Log.i(LOG, "String to be converted to key : "+key);
+            Log.i(LOG, "Public key from convertStringToKey: "+pubKey);
 
         }
             catch (Exception e) {
@@ -126,6 +129,7 @@ public class VerifyCredentials {
                 e.printStackTrace();
         }
         return pubKey;
+
     }
 
     public static boolean verifyString(String message, String signature, String pubKey) {
@@ -148,6 +152,7 @@ public class VerifyCredentials {
         e.printStackTrace();
     }
         return valid;
+
     }
 
 

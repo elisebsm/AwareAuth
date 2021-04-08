@@ -13,7 +13,7 @@ import java.util.HashMap;
 
 public class VerifyUser {
 
-
+    private static String LOG = "LOG-Test-Aware-Verify-User";
     // Used to check key provided and IP of connected client
     public static boolean isAuthenticatedUser(String peerIP, String key){
         String thisLine =null;

@@ -286,20 +286,22 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         Log.d(LOG, "The signature provided is " + signValid);
         boolean same= isPubKeySame();
         Log.d(LOG, "Key converted is same" + same);
-
-        String peerIP= getPeerIpv6().toString();
+        signValid=true;
+        String peerIP= peerIpv6.toString();
         if (signValid){
             userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, receivedPubKey);
+
             if (userIsAuthenticated){
                  //starting no auth app server
-                PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, macAddress,peerIP, receivedPubKey);           //TODO: change to no auth server port
+                PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT,  receivedPubKey);           //TODO: change to no auth server port
+
             }
-            else{
+            else{     //use checuserauthenticated also
                 boolean credentailsValid= false;
-              //  credentialsValid = VerifyCredentials.verifyCredentials()                           //TODO: add later, get this info from peer
+                //credentailsValid = VerifyCredentials.checkAuthenticatedUserKey(receivedPubKey);                       //TODO: add later, get this info from peer
                 if(credentailsValid){
                     VerifyUser.setAuthenticatedUser(receivedPubKey,peerIP);
-                    PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, macAddress,peerIP, receivedPubKey);
+                    PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);
                 }
             }
         }
@@ -657,7 +659,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
                 //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
-                AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+              //  AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);        //TODO: unhash, just for testing
             }
 
             @Override
