@@ -1,15 +1,20 @@
 package com.example.testaware;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
 import android.os.Build;
+
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
+import com.example.testaware.listeners.MessageReceivedObserver;
+import com.example.testaware.listeners.OnMessageReceivedListener;
+import com.example.testaware.listeners.OnSSLContextChangedListener;
+import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.listitems.MessageListItem;
-import com.example.testaware.models.AbstractPacket;
-import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
 
@@ -20,6 +25,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,12 +53,17 @@ public class AppServer {
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
+
+   // private List<ConnectionListener> connectionListeners;
+
     @Getter
     private static WeakReference<MainActivity> mainActivity;
 
     public static void updateActivity(MainActivity activity) {
         mainActivity = new WeakReference<>(activity);
     }
+
+    private ClientHandler client;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, int serverPort){
@@ -59,27 +72,31 @@ public class AppServer {
         protocol= new String[1];
         protocol [0]= Constants.SUPPORTED_CIPHER_GCM;
 
+        //connectionListeners = new ArrayList<>();
+
         Runnable serverTask = () -> {
             running  = true;
             try {
                 SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
                 serverSocket.setEnabledCipherSuites(protocol);
-                Log.d(LOG, "Ciphers supported"+ protocol);
+                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
                 serverSocket.setNeedClientAuth(true);
 
-                while (running) {
+
+               while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     //addClient(sslClientSocket);
                     Log.d(LOG, "client accepted");
-                    inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
-                    outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
+                    // FJERNET BufferedInputStream 06.04
+                    inputStream = new ObjectInputStream(sslClientSocket.getInputStream());
+                    outputStream = new ObjectOutputStream(sslClientSocket.getOutputStream());
 
-                    ClientHandeler client = new ClientHandeler(inputStream, outputStream);
+                    client = new ClientHandler(inputStream, outputStream , sslClientSocket );
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
-/*
-                    while(running){
+
+                  /*  while(running){
                         if (inputStream != null){
 
                             //AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
@@ -93,8 +110,10 @@ public class AppServer {
                         }
                     }
                     */
+
                 }
             }  catch (IOException e) {
+            }  catch (IOException  e) {
                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
@@ -128,13 +147,17 @@ public class AppServer {
         running = false;
     }
 
+  //  public void setListener(ConnectionListener listener){
+     //   connectionListeners.add(listener);
+  //  }
+
    /* private void onPacketReceived(AbstractPacket packet) {
         Contact from = new Contact(getServerIdentity());
         Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
         for(ConnectionListener connectionListener : connectionListeners) {
             connectionListener.onPacket(from, packet);
         }
-    }*/
+    }
 
 
     /*protected void onPacketReceived(ConnectedClient device, AbstractPacket packet){
@@ -187,26 +210,28 @@ public class AppServer {
         return true;
     }*/
 
-     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message){
-        if(outputStream == null){
+
+    public void sendMessage(Message message){
+        client.sendMessage(message);
+       /* if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
         }
         Runnable sendMessageRunnable = () -> {
             try {
-                Log.d(LOG, "outputstream send message runnable");
-                outputStream.writeObject(message);
+                MessagePacket messagePacket = (new MessagePacket(message));
+                Log.d(LOG, "outputstream " + message);
+                outputStream.writeObject(messagePacket);
                 outputStream.flush();
 
             } catch (IOException e) {
                 e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
+                Log.d(LOG, "Exception in AppServer  in sendMessage()");
                 running = false;
             }
         };
         sendService.submit(sendMessageRunnable);
-        return true;
+        return true;*/
     }
 
 

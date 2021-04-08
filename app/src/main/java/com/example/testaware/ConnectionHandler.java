@@ -4,7 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
@@ -46,13 +46,24 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     private Map<PublicKey, List<Message>> messages;
 
     private ArrayList<AbstractPacket> packets;
+    //@Getter
+  //  private List<ConnectionListener> connectionListeners;
 
-    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair){
+    private boolean isPublisher;
+
+    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair, AppServer appServer, boolean isPublisher){
         this.context = context;
         this.sslContext = IdentityHandler.getSSLContext(context);
         this.keyPair = IdentityHandler.getKeyPair();
         this.messages = new HashMap<>();
         this.packets = new ArrayList<>();
+
+        this.appServer = appServer;
+
+       // connectionListeners = new ArrayList<>();
+
+        this.isPublisher = isPublisher;
+
 
         //appClient = new AppClient(keyPair, sslContext);
         //appClient.registerConnectionListener(this);
@@ -61,6 +72,7 @@ public class ConnectionHandler {  //add this implements ConnectionListener
         //thread.start();
          //TODO initialize wifi aware here?
     }
+
 
     public void setAppServer(AppServer appServer){
         this.appServer = appServer;
@@ -71,10 +83,15 @@ public class ConnectionHandler {  //add this implements ConnectionListener
         Thread thread = new Thread(appClient);
         thread.start();
     }
-
+/*
     public void registerConnectionListener(ConnectionListener listener) {
-        appClient.registerConnectionListener(listener);
+        if(isPublisher){
+            appServer.setListener(this);
+        } else {
+            appClient.registerConnectionListener(listener);
+        }
     }
+
 
     public void removeConnectionListener(ConnectionListener listener) {
         appClient.removeConnectionListener(listener);
@@ -84,6 +101,30 @@ public class ConnectionHandler {  //add this implements ConnectionListener
         this.peerAuthServer= peerAuthServer;
     }
 
+
+
+
+
+    @Override
+    public void onConnect() {
+
+    }
+
+    @Override
+    public void onDisconnect() {
+
+    }
+
+    @Override
+    public void onPacket(Message message) {
+
+    }
+
+    @Override
+    public void onServerPacket(AbstractPacket packet) {
+
+    }
+    */
 
 /*
 

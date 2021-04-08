@@ -1,6 +1,7 @@
 package com.example.testaware.activities;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.ConnectivityManager;
 import android.os.Build;
@@ -22,7 +23,9 @@ import com.example.testaware.R;
 import com.example.testaware.User;
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageAdapter;
+import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.SSLContextedObserver;
+import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.offlineAuth.PeerAuthServer;
@@ -71,9 +74,9 @@ public class TestChatActivity extends AppCompatActivity {
         mainActivity = new WeakReference<>(activity);
     }
 
-    private static WeakReference<ClientHandeler> clientHandelerWeakReference;
-    public static void updateActivityClientHandler(ClientHandeler activity) {
-        clientHandelerWeakReference = new WeakReference<>(activity);
+    private static WeakReference<ClientHandler> clientHandlerWeakReference;
+    public static void updateActivityClientHandler(ClientHandler activity) {
+        clientHandlerWeakReference = new WeakReference<>(activity);
     }
 
     private Contact contact;
@@ -86,7 +89,6 @@ public class TestChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         this.context = this;
-        setupUI();
 
         myIpvAddr = getLocalIp();
 
@@ -96,7 +98,7 @@ public class TestChatActivity extends AppCompatActivity {
         this.connectivityManager = sslContextedObserver.getConnectivityManager();
 
 
-        this.keyPair = IdentityHandler.getKeyPair();
+        this.keyPair = mainActivity.get().getKeyPair();
         peerIpv6 = MainActivity.getPeerIpv6();
         TextView textView = findViewById(R.id.tvRole);
 
@@ -105,6 +107,7 @@ public class TestChatActivity extends AppCompatActivity {
             role = "Server";
         } else {
             appClient = new AppClient(keyPair, sslContext);
+            mainActivity.get().getConnectionHandler().setAppClient(appClient);
             textView.setText("CLIENT");
             role = "Client";
             //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
@@ -115,6 +118,13 @@ public class TestChatActivity extends AppCompatActivity {
 
         this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
         this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
+
+        Intent intent = getIntent();
+        contact = (Contact) intent.getSerializableExtra("contact");
+        setupUI();
+        /* KOMMENTERT UT 06.04
+        mainActivity.get().getConnectionHandler().registerConnectionListener(this); */
+
 
     }
 
@@ -141,11 +151,14 @@ public class TestChatActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 EditText messageText = findViewById(R.id.eTChatMsg);
                 String messageToSend = messageText.getText().toString();
+                sendMessage(messageToSend);
+                messageText.getText().clear();
                 if(appClient != null){
                    //appClient.sendMessage(messageToSend);
-                    sendMessage(messageToSend);
+                    //sendMessage(messageToSend);
                 }
                 else{
+                    //sendMessage(messageToSend);
                     /*//clientHandelerWeakReference.sendMessage(messageToSend);
                     try {
                         WeakReference<ClientHandeler> clientHandeler = clientHandelerWeakReference;
@@ -165,11 +178,11 @@ public class TestChatActivity extends AppCompatActivity {
 
 
 
-    /*public static void setChat(String message, String ipv6){
-        MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
-        messageList.add(chatMsg);
-        mMessageAdapter.notifyDataSetChanged();
-    }*/
+    public static void setChat(Message message){
+        //MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
+        //messageList.add(chatMsg);
+        mMessageAdapter.add(message);
+    }
 
 
     public static String getLocalIp() {
@@ -205,20 +218,20 @@ public class TestChatActivity extends AppCompatActivity {
     private void sendMessage(String msg) {
         Log.d(LOG, "Sending message: " + msg);
 
-       /* final com.example.testaware.models.Message message;
+        final Message message;
         message = new Message(
                 contact.getCertificate().getPublicKey(),
                 keyPair.getPublic(),
                 msg,
                 keyPair.getPrivate());
-        mMessageAdapter.add(message);*/  //endret Nå
-
+        mMessageAdapter.add(message);  //endret Nå
 
         //mainActivity.get().getConnectionHandler().sendMessage(message);
 
         if(role.equals("Client")){
-            appClient.sendMessage(msg);
+            appClient.sendMessage(message);
         } else {
+            appServer.sendMessage(message);
             if(mainActivity.get().getPeerAuthenticated().equals("false")) {
                 appServer.sendMessage(msg);
             }
@@ -227,6 +240,30 @@ public class TestChatActivity extends AppCompatActivity {
             }
         }
 
+    }
+
+    /*
+    KOMMENTERT UT 06.04
+    @Override
+    public void onConnect() {
 
     }
+
+    @Override
+    public void onDisconnect() {
+
+    }
+
+    @Override
+    public void onPacket(Message message) {
+        Log.d(LOG, "onPacket in ChatAct");
+
+    }
+
+    @Override
+    public void onServerPacket(AbstractPacket packet) {
+
+    }
+*/
+
 }
