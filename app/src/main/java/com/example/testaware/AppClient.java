@@ -2,22 +2,21 @@ package com.example.testaware;
 
 
 import android.os.Build;
-import android.os.SystemClock;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.listeners.ConnectionListener;
-import com.example.testaware.listitems.MessageListItem;
+import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -32,8 +31,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.net.ssl.HandshakeCompletedEvent;
-import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
@@ -63,6 +60,7 @@ public class AppClient implements Runnable{
 
     private int port;
 
+
     public AppClient(KeyPair keyPair, SSLContext sslContext){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
@@ -88,7 +86,124 @@ public class AppClient implements Runnable{
         return null;
     }
 
-    /*boolean send(AbstractPacket packet) {
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    public boolean sendMessage(Message message){
+        if(outputStream == null){
+            Log.d(LOG, "outputstream is null");
+            return false;
+        }
+        Runnable sendMessageRunnable = () -> {
+            try {
+                MessagePacket messagePacket = (new MessagePacket(message));
+                Log.d(LOG, "outputstream " + message);
+                outputStream.writeObject(messagePacket);
+                outputStream.flush();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.d(LOG, "Exception in Appclient  in sendMessage()");
+                running = false;
+            }
+        };
+        sendService.submit(sendMessageRunnable);
+        return true;
+    }
+
+
+    private void onPacket(AbstractPacket packet) {
+        Contact from = new Contact(getServerIdentity());
+        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
+ /* TORSDAG      for(ConnectionListener connectionListener : connectionListeners) {
+            connectionListener.onPacket(from, packet);
+        }*/
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    @Override
+    public void run() {
+        running = true;
+        sslSocket = null;
+
+        this.port = Constants.SERVER_PORT;
+
+        SSLSocketFactory socketFactory = sslContext.getSocketFactory();
+        try {
+            while(running){
+                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+
+
+            for(ConnectionListener listener: connectionListeners){
+                listener.onConnect();
+            }
+            outputStream = new ObjectOutputStream(sslSocket.getOutputStream());
+
+
+            inputStream = new ObjectInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
+                // SSLException: Read error: ssl=0x7c46091508: I/O error during system call, Software caused connection abort
+                //outputStream.writeU("clientHello");
+             outputStream.flush();
+
+             while(running){
+                 if (inputStream != null){
+                     Log.d(LOG, "Before reading object");
+                     MessagePacket messagePacketTry1 = (MessagePacket) inputStream.readObject();
+
+                     AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
+                     Log.d(LOG, "Object read");
+
+                     MessagePacket messagePacket = (MessagePacket) abstractPacket;
+                     Message message = messagePacket.getMessage() ;
+
+                     new Handler(Looper.getMainLooper()).post(()-> {
+                         TestChatActivity.setChat(message);
+
+                     });
+                 }
+             }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            Log.d(LOG, "Exception in Appclient  in run()");
+            for (ConnectionListener connectionListener: connectionListeners){
+                connectionListener.onDisconnect();
+            }
+            if(sslSocket != null){
+                try {
+                    sslSocket.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private X509Certificate getPeerIdentity()  {
+        Certificate[] certificates = new Certificate[0];
+        try {
+            certificates = sslSocket.getSession().getPeerCertificates();
+        } catch (SSLPeerUnverifiedException e) {
+            e.printStackTrace();
+        }
+        if (certificates.length > 0 && certificates[0] instanceof X509Certificate){
+            return (X509Certificate) certificates[0];
+        }
+        return null;
+    }
+
+
+
+    void registerConnectionListener(ConnectionListener listener) {
+        connectionListeners.add(listener);
+    }
+
+    void removeConnectionListener(ConnectionListener listener) {
+        connectionListeners.remove(listener);
+    }
+
+
+      /*boolean send(AbstractPacket packet) {
         if (outputStream == null) return false;
         Runnable runnable = () -> {
             try {
@@ -132,113 +247,6 @@ public class AppClient implements Runnable{
         return true;
     }*/
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream " + message);
-                outputStream.writeObject(message);
-                outputStream.flush();
-                //TODO: set view
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
-    }
-
-
-    private void onPacketReceived(AbstractPacket packet) {
-        Contact from = new Contact(getServerIdentity());
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(from, packet);
-        }
-    }
-
-
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    @Override
-    public void run() {
-        running = true;
-        sslSocket = null;
-
-        this.port = Constants.SERVER_PORT;
-
-        SSLSocketFactory socketFactory = sslContext.getSocketFactory();
-        try {
-            while(running){
-                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
-
-            for(ConnectionListener listener: connectionListeners){
-                listener.onConnect();
-            }
-                outputStream = new ObjectOutputStream(sslSocket.getOutputStream());
-                inputStream = new ObjectInputStream(new BufferedInputStream (sslSocket.getInputStream())); //FEIL java.io.EOFException
-                outputStream.writeUTF("clientHello");
-                outputStream.flush();
-
-                while(running){
-                    if (inputStream != null){
-
-                        AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
-                        onPacketReceived(abstractPacket);
-
-
-                        String strMessageFromClient = (String) inputStream.readObject();   //FEIL
-                        Log.d(LOG, "Reading message " + strMessageFromClient);
-                        //ChatActivity.setChat(strMessageFromClient);
-                        AbstractPacket receivedPacket = (AbstractPacket) inputStream.readObject();
-                        onPacketReceived(receivedPacket);
-                    }
-                }
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            Log.d(LOG, "Exception in Appclient  in run()");
-            for (ConnectionListener connectionListener: connectionListeners){
-                connectionListener.onDisconnect();
-            }
-            if(sslSocket != null){
-                try {
-                    sslSocket.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-                //SystemClock.sleep(2000);
-            }
-        }
-    }
-
-    private X509Certificate getPeerIdentity()  {
-        Certificate[] certificates = new Certificate[0];
-        try {
-            certificates = sslSocket.getSession().getPeerCertificates();
-        } catch (SSLPeerUnverifiedException e) {
-            e.printStackTrace();
-        }
-        if (certificates.length > 0 && certificates[0] instanceof X509Certificate){
-            return (X509Certificate) certificates[0];
-        }
-        return null;
-    }
-
-
-
-    void registerConnectionListener(ConnectionListener listener) {
-        connectionListeners.add(listener);
-    }
-
-    void removeConnectionListener(ConnectionListener listener) {
-        connectionListeners.remove(listener);
-    }
 }
 
 

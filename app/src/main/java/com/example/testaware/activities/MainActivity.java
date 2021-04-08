@@ -16,6 +16,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.net.wifi.aware.AttachCallback;
+import android.net.wifi.aware.Characteristics;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
 import android.net.wifi.aware.PeerHandle;
@@ -36,6 +37,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.testaware.AppServer;
+import com.example.testaware.ClientHandler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.TestChatActivity;
@@ -48,8 +50,10 @@ import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
+import com.example.testaware.models.Message;
 
 
+import java.io.Serializable;
 import java.net.Inet6Address;
 import java.security.KeyPair;
 import java.util.ArrayList;
@@ -108,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     private WifiAwareNetworkInfo peerAwareInfo;
 
+    //@Getter
     private static Inet6Address peerIpv6 ;
     private int peerPort;
 
@@ -127,8 +132,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private String signedKey;
 
     @Getter
-   // private String role = "subscriber";
+    //private String role = "subscriber";
+    //boolean isPublisher = false;
     private String role = "publisher";
+    boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
@@ -167,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
         this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
+        Characteristics networkList = wifiAwareManager.getCharacteristics();
 
         context = this;
 
@@ -176,7 +184,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             @Override
             public void onSSLContextChanged(SSLContext sslContext){
                 connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContext, keyPair);
+                //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContext, keyPair);
                 //connectionHandler.registerConnectionListener(MainActivity.this);
                 attachToSession();
             }
@@ -493,7 +501,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
 
-
+@Getter
+private AppServer appServer;
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void requestWiFiConnection(PeerHandle peerHandle, String role) {
         Log.d(LOG, "requestWiFiConnection");
@@ -527,7 +536,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
                 //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
-                AppServer appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+                appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+
+                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
+
             }
 
             @Override
@@ -569,12 +581,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void openChat(int position){
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
-       /* Contact contact = new Contact(IdentityHandler.getCertificate());
+        Contact contact = new Contact(IdentityHandler.getCertificate());
         intentChat.putExtra("contact", (Serializable) contact);
-        if(role.equals("Subscriber")){
 
-            connectionHandler.setAppClient(new AppClient(keyPair, sslContextedObserver.getSslContext()));
-        }   KOMMENTERT Tirsdag*/
         startActivity(intentChat);
     }
 
@@ -647,13 +656,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
     @Override
-    public void onPacket(Contact contact, AbstractPacket packet) {
+    public void onPacket(Message message) {
 
     }
 
     @Override
     public void onServerPacket(AbstractPacket packet) {
 
+    }
+
+    public KeyPair getKeyPair(){
+        return keyPair;
     }
 
 }

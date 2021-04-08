@@ -22,7 +22,7 @@ import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
 
-public class ConnectionHandler {  //add this implements ConnectionListener
+public class ConnectionHandler implements ConnectionListener {  //add this implements ConnectionListener
 
     private String LOG = "LOG-Test-Aware-Connection-Handler";
 
@@ -41,13 +41,24 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     private Map<PublicKey, List<Message>> messages;
 
     private ArrayList<AbstractPacket> packets;
+    @Getter
+    private List<ConnectionListener> connectionListeners;
 
-    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair){
+    private boolean isPublisher;
+
+    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair, AppServer appServer, boolean isPublisher){
         this.context = context;
         this.sslContext = IdentityHandler.getSSLContext(context);
         this.keyPair = IdentityHandler.getKeyPair();
         this.messages = new HashMap<>();
         this.packets = new ArrayList<>();
+
+        this.appServer = appServer;
+
+        connectionListeners = new ArrayList<>();
+
+        this.isPublisher = isPublisher;
+
 
         //appClient = new AppClient(keyPair, sslContext);
         //appClient.registerConnectionListener(this);
@@ -56,6 +67,7 @@ public class ConnectionHandler {  //add this implements ConnectionListener
         //thread.start();
          //TODO initialize wifi aware here?
     }
+
 
     public void setAppServer(AppServer appServer){
         this.appServer = appServer;
@@ -68,11 +80,36 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     }
 
     public void registerConnectionListener(ConnectionListener listener) {
-        appClient.registerConnectionListener(listener);
+        if(isPublisher){
+            appServer.setListener(this);
+        } else {
+            appClient.registerConnectionListener(listener);
+        }
     }
+
 
     public void removeConnectionListener(ConnectionListener listener) {
         appClient.removeConnectionListener(listener);
+    }
+
+    @Override
+    public void onConnect() {
+
+    }
+
+    @Override
+    public void onDisconnect() {
+
+    }
+
+    @Override
+    public void onPacket(Message message) {
+
+    }
+
+    @Override
+    public void onServerPacket(AbstractPacket packet) {
+
     }
 /*
 
