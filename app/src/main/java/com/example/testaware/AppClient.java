@@ -18,6 +18,8 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -45,8 +47,8 @@ public class AppClient implements Runnable{
     private SSLSocket sslSocket;
     private SSLContext sslContext;
 
-    private ObjectInputStream inputStream;
-    private ObjectOutputStream outputStream;
+    private DataInputStream inputStream;
+    private DataOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
     @Getter
@@ -88,16 +90,16 @@ public class AppClient implements Runnable{
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(Message message){
+    public boolean sendMessage(String message){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
         }
         Runnable sendMessageRunnable = () -> {
             try {
-                MessagePacket messagePacket = (new MessagePacket(message));
+                //MessagePacket messagePacket = (new MessagePacket(message));
                 Log.d(LOG, "outputstream " + message);
-                outputStream.writeObject(messagePacket);
+                outputStream.writeUTF(message);
                 outputStream.flush();
 
             } catch (IOException e) {
@@ -137,10 +139,10 @@ public class AppClient implements Runnable{
             for(ConnectionListener listener: connectionListeners){
                 listener.onConnect();
             }
-            outputStream = new ObjectOutputStream(sslSocket.getOutputStream());
+            outputStream = new DataOutputStream(sslSocket.getOutputStream());
 
 
-            inputStream = new ObjectInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
+            inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
                 // SSLException: Read error: ssl=0x7c46091508: I/O error during system call, Software caused connection abort
                 //outputStream.writeU("clientHello");
              outputStream.flush();
@@ -148,13 +150,13 @@ public class AppClient implements Runnable{
              while(running){
                  if (inputStream != null){
                      Log.d(LOG, "Before reading object");
-                     MessagePacket messagePacketTry1 = (MessagePacket) inputStream.readObject();
 
-                     AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
+
+                     String message =  inputStream.readUTF();
                      Log.d(LOG, "Object read");
 
-                     MessagePacket messagePacket = (MessagePacket) abstractPacket;
-                     Message message = messagePacket.getMessage() ;
+                     //MessagePacket messagePacket = (MessagePacket) abstractPacket;
+                     //Message message = messagePacket.getMessage() ;
 
                      new Handler(Looper.getMainLooper()).post(()-> {
                          TestChatActivity.setChat(message);
@@ -163,7 +165,7 @@ public class AppClient implements Runnable{
                  }
              }
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException  e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
             for (ConnectionListener connectionListener: connectionListeners){

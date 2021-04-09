@@ -11,6 +11,8 @@ import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -32,8 +34,8 @@ import lombok.Getter;
 public class ClientHandler extends Thread  {
 
     private String LOG = "LOG-Test-Aware-Client-handler";
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
+    private DataInputStream in;
+    private DataOutputStream out;
 
     private boolean running;
 
@@ -43,7 +45,7 @@ public class ClientHandler extends Thread  {
     private List<ConnectionListener> connectionListeners;
 
 
-    public ClientHandler(ObjectInputStream in, ObjectOutputStream out, SSLSocket sslSocket, List<ConnectionListener> listener)  {
+    public ClientHandler(DataInputStream in, DataOutputStream out, SSLSocket sslSocket, List<ConnectionListener> listener)  {
         this.in = in;
         this.out = out;
         this.sslSocket = sslSocket;
@@ -62,20 +64,21 @@ public class ClientHandler extends Thread  {
                  Log.d(LOG, "inputstream ClientHandler");
 
 
-                 AbstractPacket abstractPacket = (AbstractPacket) in.readObject();
+                 /*AbstractPacket abstractPacket = (AbstractPacket) in.readObject();
                  MessagePacket messagePacket = (MessagePacket) abstractPacket;
                  Message message = messagePacket.getMessage() ;
-
-                 Log.d(LOG, message.toString());
                  String plainText = message.getPlaintext(IdentityHandler.getKeyPair().getPrivate());
-                 Log.d(LOG, "Plaintext:" +  plainText);
-                 onPacket(message);
+                 Log.d(LOG, "Plaintext:" +  plainText);*/
+
+                 String message = in.readUTF();
+                 Log.d(LOG, message);
+
                  new Handler(Looper.getMainLooper()).post(()-> {
                      TestChatActivity.setChat(message);
                  });
             }
 
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
              e.printStackTrace();
          }
     }
@@ -95,16 +98,20 @@ public class ClientHandler extends Thread  {
 
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
-    public boolean sendMessage(Message message){
+    public boolean sendMessage(String message){
         if(out == null){
             Log.d(LOG, "outputstream is null");
             return false;
         }
         Runnable sendMessageRunnable = () -> {
             try {
-                MessagePacket messagePacket = (new MessagePacket(message));
+                /*MessagePacket messagePacket = (new MessagePacket(message));
                 Log.d(LOG, "outputstream " + message);
                 out.writeObject(messagePacket);
+                out.flush();
+                Log.d(LOG, "I just flushed");*/
+
+                out.writeUTF(message);
                 out.flush();
 
             } catch (IOException e) {

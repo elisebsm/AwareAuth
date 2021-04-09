@@ -13,12 +13,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageAdapter;
+import com.example.testaware.adapters.MessageListAdapter;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.SSLContextedObserver;
+import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
@@ -42,10 +45,10 @@ public class TestChatActivity extends AppCompatActivity {
     private EditText editChatText;
     private String LOG = "LOG-Test-Aware-Test-Chat-Activity";
     private RecyclerView mMessageRecycler;
-    public static MessageAdapter mMessageAdapter;
+    public static MessageListAdapter mMessageAdapter;
 
-    public  ArrayList<Message> messageList;     // Endret for øystein sin adapter
-   // public static ArrayList<MessageListItem> messageList;
+    //public  ArrayList<Message> messageList;     // øystein sin adapter
+   public static ArrayList<MessageListItem> messageList;
     private Context context;
     private User user;
     private String myIpvAddr;
@@ -121,20 +124,21 @@ public class TestChatActivity extends AppCompatActivity {
     }
 
     private void setupUI(){
-       /* editChatText = findViewById(R.id.eTChatMsg);
-        messageList = new ArrayList<>();
-        mMessageRecycler = findViewById(R.id.recyclerChat);
-        mMessageAdapter = new MessageListAdapter(this, messageList);
-        mMessageRecycler.setAdapter(mMessageAdapter);
-        mMessageRecycler.setLayoutManager(new LinearLayoutManager(this)); */       //ENDRET til Øystein sin adapter
-
         editChatText = findViewById(R.id.eTChatMsg);
         messageList = new ArrayList<>();
+        mMessageRecycler = findViewById(R.id.recyclerChat);
+        editChatText = findViewById(R.id.eTChatMsg);
+        messageList = new ArrayList<>();
+        mMessageAdapter = new MessageListAdapter(this, messageList);
+        mMessageRecycler.setAdapter(mMessageAdapter);
+        mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
 
 
-        mMessageAdapter = new MessageAdapter(this, R.layout.other_message, messageList, keyPair);
+
+
+       /* mMessageAdapter = new MessageAdapter(this, R.layout.other_message, messageList, keyPair);
         ListView listView = findViewById(R.id.lvMessages);
-        listView.setAdapter(mMessageAdapter);
+        listView.setAdapter(mMessageAdapter); */
 
 
         Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
@@ -170,10 +174,11 @@ public class TestChatActivity extends AppCompatActivity {
 
 
 
-    public static void setChat(Message message){
-        //MessageListItem chatMsg = new MessageListItem(message, ipv6);    //TODO: GET USERNAME FROM CHATLISTITEM
-        //messageList.add(chatMsg);
-        mMessageAdapter.add(message);
+    public static void setChat(String message){
+        MessageListItem chatMsg = new MessageListItem(message, "Elise");    //TODO: GET USERNAME FROM CHATLISTITEM
+        messageList.add(chatMsg);
+        mMessageAdapter.notifyDataSetChanged();
+        //mMessageAdapter.add(message);
     }
 
 
@@ -209,20 +214,23 @@ public class TestChatActivity extends AppCompatActivity {
 
     private void sendMessage(String msg) {
         Log.d(LOG, "Sending message: " + msg);
-
-        final Message message;
+        MessageListItem chatMsg = new MessageListItem(msg, "Deg");    //TODO: GET USERNAME FROM CHATLISTITEM
+        messageList.add(chatMsg);
+        mMessageAdapter.notifyDataSetChanged();
+       /* final Message message;
         message = new Message(
                 contact.getCertificate().getPublicKey(),
                 keyPair.getPublic(),
                 msg,
                 keyPair.getPrivate());
-        mMessageAdapter.add(message);  //endret Nå
+        mMessageAdapter.add(message);  */
+
 
         //mainActivity.get().getConnectionHandler().sendMessage(message);
         if(role.equals("Client")){
-            appClient.sendMessage(message);
+            appClient.sendMessage(msg);
         } else {
-            appServer.sendMessage(message);
+            appServer.sendMessage(msg);
         }
 
     }
