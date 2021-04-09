@@ -20,6 +20,8 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -46,8 +48,12 @@ import lombok.Getter;
 public class AppServer {
 
     private String LOG = "LOG-Test-Aware-App-Server";
-    private ObjectInputStream inputStream;
-    private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
+    //private ObjectInputStream inputStream;
+    //private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
+
+    private DataInputStream inputStream;
+    private DataOutputStream outputStream;
+
     private boolean running;
     private Map<PublicKey, ConnectedClient> clients;
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
@@ -88,8 +94,8 @@ public class AppServer {
                     //addClient(sslClientSocket);
                     Log.d(LOG, "client accepted");
                     // FJERNET BufferedInputStream 06.04
-                    inputStream = new ObjectInputStream(sslClientSocket.getInputStream());
-                    outputStream = new ObjectOutputStream(sslClientSocket.getOutputStream());
+                    inputStream = new DataInputStream(sslClientSocket.getInputStream());
+                    outputStream = new DataOutputStream(sslClientSocket.getOutputStream());
 
                     client = new ClientHandler(inputStream, outputStream , sslClientSocket );
                     Thread t = new Thread(client);
@@ -195,7 +201,7 @@ public class AppServer {
     }*/
 
 
-    public void sendMessage(Message message){
+    public void sendMessage(String message){
         client.sendMessage(message);
        /* if(outputStream == null){
             Log.d(LOG, "outputstream is null");

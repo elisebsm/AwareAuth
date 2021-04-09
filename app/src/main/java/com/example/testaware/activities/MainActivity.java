@@ -650,6 +650,7 @@ public class MainActivity extends AppCompatActivity  {
 
 @Getter
 private AppServer appServer;
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void requestWiFiConnection(PeerHandle peerHandle, String role) {
         Log.d(LOG, "requestWiFiConnection");
