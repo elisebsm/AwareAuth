@@ -9,7 +9,8 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+import com.example.testaware.activities.TestChatActivity;
+
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -49,8 +50,8 @@ public class AppClient implements Runnable{
     private ObjectOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
-    @Getter
-    private List<ConnectionListener> connectionListeners;
+ //   @Getter
+   // private List<ConnectionListener> connectionListeners;
 
     private String LOG = "LOG-Test-Aware-Client";
     @Getter
@@ -69,7 +70,7 @@ public class AppClient implements Runnable{
         //Thread thread = new Thread(this);
         //thread.start();
 
-        connectionListeners = new ArrayList<>();
+       // connectionListeners = new ArrayList<>();
     }
 
 
@@ -134,9 +135,9 @@ public class AppClient implements Runnable{
                 sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
 
 
-            for(ConnectionListener listener: connectionListeners){
-                listener.onConnect();
-            }
+          //  for(ConnectionListener listener: connectionListeners){
+            //    listener.onConnect();
+            //}
             outputStream = new ObjectOutputStream(sslSocket.getOutputStream());
 
 
@@ -166,9 +167,9 @@ public class AppClient implements Runnable{
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
-            for (ConnectionListener connectionListener: connectionListeners){
-                connectionListener.onDisconnect();
-            }
+           // for (ConnectionListener connectionListener: connectionListeners){
+             //   connectionListener.onDisconnect();
+           // }
             if(sslSocket != null){
                 try {
                     sslSocket.close();
@@ -192,7 +193,7 @@ public class AppClient implements Runnable{
         return null;
     }
 
-
+/*
 
     void registerConnectionListener(ConnectionListener listener) {
         connectionListeners.add(listener);
@@ -203,7 +204,7 @@ public class AppClient implements Runnable{
     }
 
 
-      /*boolean send(AbstractPacket packet) {
+      boolean send(AbstractPacket packet) {
         if (outputStream == null) return false;
         Runnable runnable = () -> {
             try {

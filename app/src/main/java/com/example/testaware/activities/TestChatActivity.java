@@ -17,15 +17,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.testaware.AppClient;
 import com.example.testaware.AppServer;
-import com.example.testaware.ClientHandeler;
-import com.example.testaware.IdentityHandler;
+import com.example.testaware.ClientHandler;
 import com.example.testaware.R;
 import com.example.testaware.User;
-import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageAdapter;
-import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.SSLContextedObserver;
-import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.offlineAuth.PeerAuthServer;
@@ -108,11 +104,14 @@ public class TestChatActivity extends AppCompatActivity {
         } else {
             appClient = new AppClient(keyPair, sslContext);
             mainActivity.get().getConnectionHandler().setAppClient(appClient);
+
             textView.setText("CLIENT");
             role = "Client";
             //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
             Thread thread = new Thread(appClient);
             thread.start();
+
+
         }
 
 
@@ -209,11 +208,7 @@ public class TestChatActivity extends AppCompatActivity {
     }
 
 
- /*   private X509Certificate chechPeerCertificate(){
-            //TODO: chech if peerCert signed by CA, if not send to peerSigner if trusted. Prompt user yes/no. If yes, send to PeerSigner
-        return cert;
-    }
-*/
+
 
     private void sendMessage(String msg) {
         Log.d(LOG, "Sending message: " + msg);
@@ -231,13 +226,14 @@ public class TestChatActivity extends AppCompatActivity {
         if(role.equals("Client")){
             appClient.sendMessage(message);
         } else {
-            appServer.sendMessage(message);
-            if(mainActivity.get().getPeerAuthenticated().equals("false")) {
-                appServer.sendMessage(msg);
+
+            if(mainActivity.get().getPeerAuthenticated().equals("true") ) {
+                peerAuthServer.sendMessage(message);
+
             }
-            else{
-                peerAuthServer.sendMessage(msg);
-            }
+            else {
+                appServer.sendMessage(message);
+            }  //Also check if user is not autenticated at all
         }
 
     }

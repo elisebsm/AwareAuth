@@ -5,11 +5,12 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import com.example.testaware.ClientHandeler;
+
+import com.example.testaware.ClientHandler;
 import com.example.testaware.ConnectedClient;
 import com.example.testaware.Constants;
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -48,6 +49,8 @@ public class PeerAuthServer {
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
+    private ClientHandler noAuthClient;
+
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -82,7 +85,7 @@ public class PeerAuthServer {
                         inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                         outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
-                        ClientHandeler noAuthClient = new ClientHandeler(inputStream, outputStream);
+                        noAuthClient = new ClientHandler(inputStream, outputStream,sslClientSocket);
                         Thread t = new Thread(noAuthClient);
                         t.start();
                         Log.d(LOG, "Starting new peer auth client Thread -");
@@ -130,85 +133,11 @@ public class PeerAuthServer {
         running = false;
     }
 
-   /* private void onPacketReceived(AbstractPacket packet) {
-        Contact from = new Contact(getServerIdentity());
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(from, packet);
-        }
-    }*/
 
 
-    /*protected void onPacketReceived(ConnectedClient device, AbstractPacket packet){
-        Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        mainActivity.get().getConnectionHandler().getAppClient().getConnectionListeners();
+    public void sendMessage(Message message){
+        noAuthClient.sendMessage(message);
 
-        for(ConnectionListener listeners: mainActivity.get().getConnectionHandler().getAppClient().getConnectionListeners()){
-            listeners.onServerPacket(packet);
-        }
-
-        if (packet instanceof MessagePacket) {
-            PublicKey to = ((MessagePacket)packet).getMessage().getTo(); // henter ut public key av meldingen dersom det er av type MessagePacket
-
-            if(clients.containsKey(to)){
-                ConnectedClient toClient = clients.get(to); // sjekker med listen av klienter for å finne match på public key
-                Runnable packetForwardingTask = () -> {
-                    toClient.send(packet);  // pakken sendes til klienten
-                };
-                Thread packetForwardingThred = new Thread(packetForwardingTask);
-                packetForwardingThred.start();
-            }
-        }
-    }*/
-
-   /* @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(Message message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream send message runnable");
-                outputStream.writeObject(message);
-                outputStream.flush();
-
-                *//*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*//*
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
-    }*/
-
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream send message runnable");
-                outputStream.writeObject(message);
-                outputStream.flush();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
     }
 
 

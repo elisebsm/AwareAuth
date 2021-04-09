@@ -51,14 +51,20 @@ public class ConnectionHandler {  //add this implements ConnectionListener
 
     private boolean isPublisher;
 
-    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair, AppServer appServer, boolean isPublisher){
+    public ConnectionHandler (Context context, SSLContext sslContext, KeyPair keyPair, AppServer appServer, boolean isPublisher, String peerAuthenticated, PeerAuthServer peerAuthServer){
         this.context = context;
         this.sslContext = IdentityHandler.getSSLContext(context);
         this.keyPair = IdentityHandler.getKeyPair();
         this.messages = new HashMap<>();
         this.packets = new ArrayList<>();
 
-        this.appServer = appServer;
+        if (peerAuthenticated=="true"){
+            this.peerAuthServer=peerAuthServer;
+        }else{
+            this.appServer = appServer;
+        }
+
+
 
        // connectionListeners = new ArrayList<>();
 
@@ -82,6 +88,10 @@ public class ConnectionHandler {  //add this implements ConnectionListener
         this.appClient = appClient;
         Thread thread = new Thread(appClient);
         thread.start();
+    }
+
+    public void setPeerAuthServer(PeerAuthServer peerAuthServer){
+        this.peerAuthServer=peerAuthServer;
     }
 /*
     public void registerConnectionListener(ConnectionListener listener) {

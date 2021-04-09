@@ -95,26 +95,9 @@ public class AppServer {
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
-
-                  /*  while(running){
-                        if (inputStream != null){
-
-                            //AbstractPacket abstractPacket = (AbstractPacket) inputStream.readObject();
-                            //onPacketReceived(abstractPacket);
-
-                            String strMessageFromClient = String.valueOf(inputStream.readObject());  //FEIL
-                            Log.d(LOG, "Reading message " + strMessageFromClient);
-
-                            MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");
-                           // MessageListItem chatMsg = new MessageListItem(strMessageFromClient, "ipv6_other_user");    //TODO: GET USERNAME FROM CHATLISTITEM
-                        }
-                    }
-                    */
-
-                }
-            }  catch (IOException e) {
+               }
             }  catch (IOException  e) {
-               Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
@@ -123,6 +106,7 @@ public class AppServer {
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
     }
+
 
 
     protected void addClient(SSLSocket sslClientSocket){

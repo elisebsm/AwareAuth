@@ -41,9 +41,8 @@ import com.example.testaware.AppServer;
 import com.example.testaware.ClientHandler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.TestChatActivity;
+import com.example.testaware.activities.TestChatActivity;
 
-import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
@@ -150,15 +149,18 @@ public class MainActivity extends AppCompatActivity  {
 
 
     @Getter
-    private String role = "subscriber";
-    boolean isPublisher = false;
-    //private String role = "publisher";
-    //boolean isPublisher = true;
+   // private String role = "subscriber";
+   // boolean isPublisher = false;
+    private String role = "publisher";
+    boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
     @Getter
     private String peerAuthenticated ="false";
+
+    @Getter
+    private PeerAuthServer peerAuthServer;
 
 
     @Getter
@@ -218,7 +220,7 @@ public class MainActivity extends AppCompatActivity  {
 
         addPeersToChatList();
         TestChatActivity.updateActivityMain(this);
-        AppServer.updateActivity(this);
+       // AppServer.updateActivity(this);
         PeerAuthServer.updateActivity(this);
 
 
@@ -264,6 +266,7 @@ public class MainActivity extends AppCompatActivity  {
                         subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
                         Log.i(LOG,"msg sent!!");
                         subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
+                        connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
                     }
                 }
             }
@@ -305,9 +308,13 @@ public class MainActivity extends AppCompatActivity  {
             //userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, receivedPubKey);
             userIsAuthenticated=true;
             if (userIsAuthenticated){
-                 //starting no auth app server
-                Log.d(LOG, "starting peerauthserver" );
                 peerAuthenticated="true";
+                Log.d(LOG, "starting peerauthserver" );
+                if(role=="publisher"){
+                    peerAuthServer  = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);           //TODO: change to no auth server port
+                }
+                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
+
 
 
             }
@@ -316,7 +323,7 @@ public class MainActivity extends AppCompatActivity  {
                 //credentailsValid = VerifyCredentials.checkAuthenticatedUserKey(receivedPubKey);                       //TODO: add later, get this info from peer
                 if(credentailsValid){
                     VerifyUser.setAuthenticatedUser(receivedPubKey,peerIP);
-                    PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);
+                    peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);
                 }
             }
         }
@@ -675,10 +682,8 @@ private AppServer appServer;
                 super.onAvailable(network);
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
-                //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
-                appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
-
-                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
+              //  appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+               // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher, peerAuthenticated, null );
 
             }
 
@@ -718,45 +723,38 @@ private AppServer appServer;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private void openChat(int position){
+    private void openChat(int position) {
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
-        if(peerAuthenticated=="true") {
-            Log.d(LOG, "openChat peer is authenticated");
-            PeerAuthServer peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);           //TODO: change to no auth server port
-        }
-       /* Contact contact = new Contact(IdentityHandler.getCertificate());
         Contact contact = new Contact(IdentityHandler.getCertificate());
         intentChat.putExtra("contact", (Serializable) contact);
-
         startActivity(intentChat);
     }
 
 
-   public static Inet6Address getPeerIpv6() {
-        return peerIpv6;
-    }
+        public static Inet6Address getPeerIpv6() {
+            return peerIpv6;
+        }
 
 
-    private boolean canAccessLocationFine() {
-        return(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION));
-    }
+        private boolean canAccessLocationFine() {
+            return(hasPermission(Manifest.permission.ACCESS_FINE_LOCATION));
+        }
 
 
-    private boolean canAccessLocationCoarse() {
-        return(hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION));
-    }
+        private boolean canAccessLocationCoarse() {
+            return(hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION));
+        }
 
 
-    private boolean hasPermission(String perm) {
-        return(PackageManager.PERMISSION_GRANTED==checkSelfPermission(perm));
-    }
+        private boolean hasPermission(String perm) {
+            return(PackageManager.PERMISSION_GRANTED==checkSelfPermission(perm));
+        }
 
-
-    /**
-     * Helper to set the status field.
-     */
-    private void setMessage(byte[] msg) {
+        /**
+        * Helper to set the status field.
+        */
+        private void setMessage(byte[] msg) {
         String outmsg = new String(msg).replace("messageToBeSent: ","");
         EditText editText = findViewById(R.id.eTMsg);
         editText.setText(outmsg);
