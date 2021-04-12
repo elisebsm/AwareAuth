@@ -51,6 +51,7 @@ import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
+import com.example.testaware.offlineAuth.Decoder;
 import com.example.testaware.offlineAuth.PeerAuthServer;
 import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyCredentials;
@@ -58,10 +59,16 @@ import com.example.testaware.offlineAuth.VerifyUser;
 import com.example.testaware.models.Message;
 
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.Inet6Address;
+import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -149,10 +156,10 @@ public class MainActivity extends AppCompatActivity  {
 
 
     @Getter
-   // private String role = "subscriber";
-   // boolean isPublisher = false;
-    private String role = "publisher";
-    boolean isPublisher = true;
+    private String role = "subscriber";
+    boolean isPublisher = false;
+  //  private String role = "publisher";
+   // boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
@@ -220,7 +227,7 @@ public class MainActivity extends AppCompatActivity  {
 
         addPeersToChatList();
         TestChatActivity.updateActivityMain(this);
-       // AppServer.updateActivity(this);
+        AppServer.updateActivity(this);
         PeerAuthServer.updateActivity(this);
 
 
@@ -256,6 +263,7 @@ public class MainActivity extends AppCompatActivity  {
                         publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
                         publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
                         publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
+                        //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
                     }
 
 
@@ -264,61 +272,45 @@ public class MainActivity extends AppCompatActivity  {
                     if (subscribeDiscoverySession != null && peerHandle != null) {
                         subscribeDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
                         subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
-                        Log.i(LOG,"msg sent!!");
                         subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
                         connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
                     }
                 }
             }
         });
-
     }
-
-    //just for testing
-    private boolean isPubKeySame(){
-        boolean same = false;
-        String testKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
-        PublicKey testPubkey = VerifyCredentials.convertStringToKey(testKey);
-      //  String signedString = PeerSigner.signString("hello", KeyPair keyPair);
-        if (keyPair.getPublic()== testPubkey){
-            same= true;
-        }
-        return same;
-
-    }
-
-
+    //Performed by client
     private void requestPeerAuthConn(){
-        pubKey = keyPair.getPublic();
-        peerPublicKey = Base64.getEncoder().encodeToString(pubKey.getEncoded());
+        pubKey = keyPair.getPublic();   //public key of the one requesting conn
+        peerPublicKey = Base64.getEncoder().encodeToString(pubKey.getEncoded());    //Base64 encoded to string
         randomString = "hellbff";  //TODO: genreate random for each time
-        signedString = PeerSigner.signString(randomString, keyPair);
+        signedString = PeerSigner.signString(randomString, keyPair);            //Base64 encoded to string
 
     }
 
+    //performed by server     
     private void startPeerAuthServer(){
         boolean userIsAuthenticated=false;
-        signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);  //TODO: fix so it returns true, convert string to pubkey corrrectly
-        //Log.d(LOG, "The signature provided is " + signValid);
-        boolean same= isPubKeySame();
-        //Log.d(LOG, "Key converted is same" + same);
-        signValid=true;
+        PublicKey clientPubKey = Decoder.getPubKeyGenerated(receivedPubKey);
+
+        signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, clientPubKey);
+
         String peerIP= peerIpv6.toString();
         if (signValid){
-            //userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, receivedPubKey);
-            userIsAuthenticated=true;
+            VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());                     //TODO: REMOVE JUST FOR TESTING
+            userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, clientPubKey.toString());
+
+            //if user with ip has connected before
             if (userIsAuthenticated){
-                peerAuthenticated="true";
+                peerAuthenticated="true"; 
                 Log.d(LOG, "starting peerauthserver" );
                 if(role=="publisher"){
-                    peerAuthServer  = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);           //TODO: change to no auth server port
+                    peerAuthServer  = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);           //TODO: change to no auth server port ?
                 }
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
-
-
-
             }
-            else{     //use checuserauthenticated also
+            else{
+                Log.d(LOG, "User not authenticated" );
                 boolean credentailsValid= false;
                 //credentailsValid = VerifyCredentials.checkAuthenticatedUserKey(receivedPubKey);                       //TODO: add later, get this info from peer
                 if(credentailsValid){
@@ -332,6 +324,7 @@ public class MainActivity extends AppCompatActivity  {
         }
 
     }
+
 
     /**
      * App Permissions for Coarse Location
@@ -483,13 +476,11 @@ public class MainActivity extends AppCompatActivity  {
                     }
                     else if(messageIn.contains("randomString")) {
                         receivedString = messageIn.replace("randomString","");
-                        Log.d(LOG, "random String: " + receivedSignedString);
+                        Log.d(LOG, "random String: " + receivedString);
 
                     }
                     else if(messageIn.contains("pubKey")){
                         receivedPubKey= messageIn.replace("pubKey", "");
-                       // signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, receivedPubKey);
-                        Log.d(LOG, "The signature provided is " + signValid);
                         startPeerAuthServer();
                     }
 
@@ -684,7 +675,7 @@ private AppServer appServer;
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
               //  appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
-               // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher, peerAuthenticated, null );
+                //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher, peerAuthenticated, null );
 
             }
 

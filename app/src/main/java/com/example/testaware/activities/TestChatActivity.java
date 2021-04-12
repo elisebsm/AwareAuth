@@ -15,8 +15,11 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.testaware.adapters.MessageAdapter;
-import com.example.testaware.activities.MainActivity;
+
+import com.example.testaware.AppClient;
+import com.example.testaware.AppServer;
+import com.example.testaware.ClientHandler;
+import com.example.testaware.User;
 //import com.example.testaware.adapters.MessageAdapter;
 import com.example.testaware.adapters.MessageListAdapter;
 import com.example.testaware.listeners.SSLContextedObserver;
@@ -27,7 +30,7 @@ import com.example.testaware.models.Message;
 import com.example.testaware.offlineAuth.PeerAuthServer;
 
 import java.lang.ref.WeakReference;
-
+import com.example.testaware.R;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -110,6 +113,7 @@ public class TestChatActivity extends AppCompatActivity {
             //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
             Thread thread = new Thread(appClient);
             thread.start();
+
         }
 
 
@@ -121,7 +125,6 @@ public class TestChatActivity extends AppCompatActivity {
         setupUI();
         /* KOMMENTERT UT 06.04
         mainActivity.get().getConnectionHandler().registerConnectionListener(this); */
-
 
     }
 
@@ -229,6 +232,7 @@ public class TestChatActivity extends AppCompatActivity {
             appClient.sendMessage(msg);
         } else {
             if(mainActivity.get().getPeerAuthenticated().equals("true") ) {
+                Log.d(LOG, "Sending message from peerAuthServer" + msg);
                 peerAuthServer.sendMessage(msg);
 
             }

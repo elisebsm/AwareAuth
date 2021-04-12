@@ -139,14 +139,13 @@ public class AppClient implements Runnable{
 
           //  for(ConnectionListener listener: connectionListeners){
             //    listener.onConnect();
-            //}
-            outputStream = new DataOutputStream(sslSocket.getOutputStream());
+                outputStream = new DataOutputStream(sslSocket.getOutputStream());
 
 
-            inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
+                inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
                 // SSLException: Read error: ssl=0x7c46091508: I/O error during system call, Software caused connection abort
                 //outputStream.writeU("clientHello");
-             outputStream.flush();
+                outputStream.flush();
 
              while(running){
                  if (inputStream != null){

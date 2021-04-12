@@ -19,6 +19,8 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -42,8 +44,8 @@ import lombok.Getter;
 public class PeerAuthServer {
 
     private String LOG = "LOG-Test-Aware-No-Auth-App-Server";
-    private ObjectInputStream inputStream;
-    private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
+    private DataInputStream inputStream;
+    private DataOutputStream outputStream;   //TODO: use so client can also send messages
     private boolean running;
     private Map<PublicKey, ConnectedClient> clients;
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
@@ -82,8 +84,8 @@ public class PeerAuthServer {
                     if(true){
                         //addClient(sslClientSocket);
                         Log.d(LOG, "Peer auth client accepted");
-                        inputStream = new ObjectInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
-                        outputStream = new ObjectOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
+                        inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
+                        outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
                         noAuthClient = new ClientHandler(inputStream, outputStream,sslClientSocket);
                         Thread t = new Thread(noAuthClient);
@@ -135,7 +137,7 @@ public class PeerAuthServer {
 
 
 
-    public void sendMessage(Message message){
+    public void sendMessage(String message){
         noAuthClient.sendMessage(message);
 
     }

@@ -1,5 +1,7 @@
 package com.example.testaware.offlineAuth;
 
+import android.util.Log;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,17 +29,18 @@ public class VerifyUser {
 
                 user = (AuthenticatedUser) in.readObject();
                 if(user!=null){
-                     if (user.ipAddress == peerIP && user.pubKey==key) {
+                     if (user.ipAddress.equals(peerIP) && user.pubKey.equals(key)) {
                          isAuthenticated = true;
                          in.close();
                          fileIn.close();
-                         System.out.println("Successfully read key and ip to the file.");
+                         Log.i(LOG, "Successfully read key and ip to the file.");
                          cont= false;
                     }
                 } else {
                     in.close();
                     fileIn.close();
                     System.out.println("User not authenticated");
+                    Log.i(LOG, "User not authenticated");
                     cont = false;
                 }
             } catch (IOException | ClassNotFoundException e) {
@@ -49,7 +52,7 @@ public class VerifyUser {
     }
 
 //used to set map key and IP of new users , after challenge response         //TODO: call this somewhere
-    public static void setAuthenticatedUser(String connectedPeerKey, String connectedPeerIP) {
+    public static void setAuthenticatedUser( String connectedPeerIP,String connectedPeerKey) {
         AuthenticatedUser user= new AuthenticatedUser();
         user.pubKey = connectedPeerKey;
         user.ipAddress = connectedPeerIP;
@@ -60,7 +63,7 @@ public class VerifyUser {
             out.writeObject(user);
             out.close();
             fileOut.close();
-            System.out.println("Successfully wrote key and ipaddr to the file.");
+            Log.i(LOG, "Successfully wrote key and ipaddr to the file.");
         } catch (IOException i) {
             System.out.println("An error occurred.");
             i.printStackTrace();

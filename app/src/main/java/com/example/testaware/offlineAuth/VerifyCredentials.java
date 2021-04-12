@@ -40,17 +40,18 @@ public class VerifyCredentials {
     }
 
     public static Boolean verifySignature(String sigPeerKey, Certificate signerCert, PublicKey peerPubKey){
+        byte[] decodedSignature = Base64.getDecoder().decode(sigPeerKey);
         PublicKey signerPubKey = signerCert.getPublicKey();   //public key of n
-        Boolean valid=false;
+        boolean valid=false;
         try{
             Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
             ecdsaSign.initVerify(signerPubKey);
-
+           
             byte[] bytes = peerPubKey.toString().getBytes();  //public key of m--> message
             ecdsaSign.update(bytes);
-            byte [] signedPeerKeyBytes = sigPeerKey.getBytes();
 
-            if (ecdsaSign.verify(signedPeerKeyBytes)) {
+
+            if (ecdsaSign.verify(decodedSignature)) {
                 Log.i(LOG, "valid");
                 valid=true;
             } else {
@@ -112,39 +113,19 @@ public class VerifyCredentials {
             return true;
     }
 
-    //used for verifying user holds private key to public key
-    public static PublicKey convertStringToKey(String key){
-        PublicKey pubKey= null;
-        try{
-            byte[] publicBytes = Base64.getDecoder().decode(key);
-            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
-            KeyFactory keyFactory = KeyFactory.getInstance("EC");
-            pubKey = keyFactory.generatePublic(keySpec);
-           // Log.i(LOG, "String to be converted to key : "+key);
-           // Log.i(LOG, "Public key from convertStringToKey: "+pubKey);
-
-        }
-            catch (Exception e) {
-                // TODO: handle exception
-                e.printStackTrace();
-        }
-        return pubKey;
-
-    }
-
-    public static boolean verifyString(String message, String signature, String pubKey) {
-        PublicKey peerPublicKey = convertStringToKey(pubKey);
-        Boolean valid=false;
+    public static boolean verifyString(String message, String signature, PublicKey pubKey) {
+        byte[] decodedSignature = Base64.getDecoder().decode(signature);
+        boolean valid=false;
         try{
             Signature ecdsaSign = Signature.getInstance("SHA256withECDSA");
-            ecdsaSign.initVerify(peerPublicKey);
+            ecdsaSign.initVerify(pubKey);
             byte[] bytes = message.getBytes();  // message
             ecdsaSign.update(bytes);
-            byte [] signedMessageBytes = signature.getBytes();
-           // Log.i(LOG, "message"+message);
-            if (ecdsaSign.verify(signedMessageBytes)) {
-                Log.i(LOG, "valid");
+            if (ecdsaSign.verify(decodedSignature)) {
+                Log.i(LOG, "Signed string is valid!!!!!!!!");
                 valid=true;
+            } else{
+                Log.i(LOG, "Signed string isnot valid");
             }
 
         }  catch (Exception e) {
