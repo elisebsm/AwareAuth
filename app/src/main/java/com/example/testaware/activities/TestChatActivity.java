@@ -106,7 +106,7 @@ public class TestChatActivity extends AppCompatActivity {
             role = "Server";
         } else {
             appClient = new AppClient(keyPair, sslContext);
-            mainActivity.get().getConnectionHandler().setAppClient(appClient);
+//            mainActivity.get().getConnectionHandler().setAppClient(appClient);
 
             textView.setText("CLIENT");
             role = "Client";
@@ -117,8 +117,8 @@ public class TestChatActivity extends AppCompatActivity {
         }
 
 
-        this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
-        this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
+       // this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
+        //this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
 
         Intent intent = getIntent();
         contact = (Contact) intent.getSerializableExtra("contact");

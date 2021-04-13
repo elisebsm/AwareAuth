@@ -270,14 +270,14 @@ public class MainActivity extends AppCompatActivity  {
          reqPeerAuthCredentials.setOnClickListener(v -> {
 
              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-
-                 String publicKey = "pubKeyToBeSigned"+ Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+                 String encodedPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+                 String publicKey = "pubKeyToBeSigned"+ encodedPubKeyToSend;
                  byte[] pubKeyToSend =publicKey.getBytes();
 
                   if (subscribeDiscoverySession != null && peerHandle != null) {
                       subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
                   }
-                  if (subscribeDiscoverySession != null && peerHandle != null) {
+                  if (publishDiscoverySession != null && peerHandle != null) {
                      publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
                   }
 
@@ -286,15 +286,15 @@ public class MainActivity extends AppCompatActivity  {
 
 
     }
-
-    private void setDialogBox(){
+/*
+    private void setDialogBox(String keyReceived){
 
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 switch (which){
                 case DialogInterface.BUTTON_POSITIVE:
-                    authenticatePeer(receivedPubKeyToBeSigned);
+                    authenticatePeer(keyReceived);
                     break;
 
                 case DialogInterface.BUTTON_NEGATIVE:
@@ -309,10 +309,10 @@ public class MainActivity extends AppCompatActivity  {
             .setNegativeButton("No", dialogClickListener).show();
 
     }
-
+*/
     private void authenticatePeer(String key){            //TODO: verify signature of m ?
        PublicKey peerPubKey = Decoder.getPubKeyGenerated(key);
-       String signedKey= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());               //TODO: broadcast this somehow, or peerClient send this to user who want to authenticate to
+       String signedKey= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());               //TODO: broadcast this somehow,or save to file
        VerifyCredentials.addAuthenticatedUserKey(peerPubKey);
        VerifyUser.setAuthenticatedUser(peerIpv6.toString(),peerPubKey.toString());
 
@@ -497,7 +497,7 @@ public class MainActivity extends AppCompatActivity  {
                     }
                      else if(messageIn.contains("pubKeyToBeSigned")){
                          receivedPubKeyToBeSigned= messageIn.replace("pubKeyToBeSigned", "");
-                         setDialogBox();
+                         authenticate
                      }
    /* forsøk på å bestemme hvem som er pub/sub
 
@@ -611,7 +611,7 @@ public class MainActivity extends AppCompatActivity  {
                     }
                     else if(messageIn.contains("pubKeyToBeSigned")){
                         receivedPubKeyToBeSigned= messageIn.replace("pubKeyToBeSigned", "");
-                        setDialogBox();
+                        setDialogBox(receivedPubKeyToBeSigned);
 
                     }
 
