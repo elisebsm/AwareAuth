@@ -180,7 +180,7 @@
         android:id="@+id/btnReqPeerAuthCredentials"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Button" />
+        android:text="@string/Request_Peer_Auth_Credentials" />
 
     <LinearLayout
         android:layout_width="wrap_content"

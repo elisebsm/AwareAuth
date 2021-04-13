@@ -2,11 +2,13 @@ package com.example.testaware.activities;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -129,6 +131,8 @@ public class MainActivity extends AppCompatActivity  {
 
     private static final int MY_PERMISSION_EXTERNAL_REQUEST_CODE = 99;
 
+    private String receivedPubKeyToBeSigned;
+
     private KeyPair keyPair;
     private String signedStringToSend;
     private String encPubKeyToSend;
@@ -242,7 +246,6 @@ public class MainActivity extends AppCompatActivity  {
                 byte[] msgRandomStringtoSend = ("randomString"+randomStringToSend).getBytes();
                 String publicKey = "pubKey"+ encPubKeyToSend;
                 byte[] pubKeyToSend =publicKey.getBytes();
-                Log.i(LOG,"Bytes length key"+  pubKeyToSend.length);
 
                 if(role == "publisher"){
                     if (publishDiscoverySession != null && peerHandle != null) {
@@ -262,6 +265,58 @@ public class MainActivity extends AppCompatActivity  {
                 }
             }
         });
+
+         Button reqPeerAuthCredentials = findViewById(R.id.btnReqPeerAuthCredentials);
+         reqPeerAuthCredentials.setOnClickListener(v -> {
+
+             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+                 String publicKey = "pubKeyToBeSigned"+ Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+                 byte[] pubKeyToSend =publicKey.getBytes();
+
+                  if (subscribeDiscoverySession != null && peerHandle != null) {
+                      subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
+                  }
+                  if (subscribeDiscoverySession != null && peerHandle != null) {
+                     publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
+                  }
+
+             }
+         });
+
+
+    }
+
+    private void setDialogBox(){
+
+        DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                switch (which){
+                case DialogInterface.BUTTON_POSITIVE:
+                    authenticatePeer(receivedPubKeyToBeSigned);
+                    break;
+
+                case DialogInterface.BUTTON_NEGATIVE:
+                    Log.i(LOG,"Dont want ot peer authenticate user");
+                    break;
+                }
+            }
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage("Are you sure?").setPositiveButton("Yes", dialogClickListener)
+            .setNegativeButton("No", dialogClickListener).show();
+
+    }
+
+    private void authenticatePeer(String key){            //TODO: verify signature of m ?
+       PublicKey peerPubKey = Decoder.getPubKeyGenerated(key);
+       String signedKey= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());               //TODO: broadcast this somehow, or peerClient send this to user who want to authenticate to
+       VerifyCredentials.addAuthenticatedUserKey(peerPubKey);
+       VerifyUser.setAuthenticatedUser(peerIpv6.toString(),peerPubKey.toString());
+
+
     }
     //Performed by client
     private void requestPeerAuthConn(){
@@ -440,8 +495,10 @@ public class MainActivity extends AppCompatActivity  {
                         receivedPubKey= messageIn.replace("pubKey", "");
                         startPeerAuthServer(receivedPubKey);
                     }
-
-
+                     else if(messageIn.contains("pubKeyToBeSigned")){
+                         receivedPubKeyToBeSigned= messageIn.replace("pubKeyToBeSigned", "");
+                         setDialogBox();
+                     }
    /* forsøk på å bestemme hvem som er pub/sub
 
                     requestWiFiConnection(peerHandle_, role);
@@ -551,6 +608,11 @@ public class MainActivity extends AppCompatActivity  {
                     if(messageIn.contains("pubKey")){
                         receivedPubKey= messageIn.replace("pubKey", "");
                         startPeerAuthServer(receivedPubKey);
+                    }
+                    else if(messageIn.contains("pubKeyToBeSigned")){
+                        receivedPubKeyToBeSigned= messageIn.replace("pubKeyToBeSigned", "");
+                        setDialogBox();
+
                     }
 
                 } else if (messageIn.contains("startConnection")) {

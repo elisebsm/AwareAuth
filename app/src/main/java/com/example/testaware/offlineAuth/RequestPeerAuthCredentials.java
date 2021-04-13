@@ -4,4 +4,8 @@ package com.example.testaware.offlineAuth;
 public class RequestPeerAuthCredentials {
 
 
+
+
+
+
 }

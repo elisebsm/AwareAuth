@@ -8,7 +8,7 @@ public class InitPeerAuthConn {
     private static boolean userIsAuthenticated;
     private static String LOG = "LOG-Test-Aware-InitPeerAuthConn";
 
-
+//TODO: remember to verify signer also - check root cert against cert of signer- or not
     public static boolean checkPeerAuthCredentials(String receivedString, String signature, PublicKey clientPubKey, String peerIP){
         userIsAuthenticated=false;
 

@@ -25,23 +25,19 @@ public class PeerSigner {
 
     private static String LOG = "LOG-Test-Aware-Peer-Signer";
     private static String signedKey;
-    private static X509Certificate signerCertificate;
     private static X509Certificate peerCertificate;
     private static String signedString;
 
-    public static String peerSign() {
+    public static String peerSign(KeyPair signerKeyPair, PublicKey peerPubKey) {
         try {
 
-        signerCertificate= IdentityHandler.getCertificate();
-        KeyPair signerKeyPair= IdentityHandler.getKeyPair();
-
-        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        File caFile = new File("/data/data/com.example.testaware/client2.pem");  //TODO: take in peer pem file received from peer, or get public key from peer
-        InputStream inputStreamCertificate = null; //TODO close stream
-        inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
-        peerCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
-        String alias = peerCertificate.getSubjectX500Principal().getName();
-        PublicKey peerPubKey= peerCertificate.getPublicKey();
+        //CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+       // File caFile = new File("/data/data/com.example.testaware/client2.pem");  //TODO: take in peer pem file received from peer, or get public key from peer
+       // InputStream inputStreamCertificate = null; //TODO close stream
+      //  inputStreamCertificate = new BufferedInputStream(new FileInputStream(caFile));
+       // peerCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStreamCertificate);
+       // String alias = peerCertificate.getSubjectX500Principal().getName();
+       // PublicKey peerPubKey= peerCertificate.getPublicKey();
 
         signPeerKey(peerPubKey, signerKeyPair);
 
