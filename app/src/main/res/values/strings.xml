@@ -8,5 +8,6 @@
     <string name="My_message">This my Message</string>
     <string name="Btn_send_msg">Send</string>
     <string name="Request_Peer_Auth_Conn">Request peer Auth Connection</string>
+    <string name="Request_Peer_Auth_Credentials">Request Peer Authentication</string>
 
 </resources>

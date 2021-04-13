@@ -41,8 +41,6 @@ import com.example.testaware.AppServer;
 import com.example.testaware.ClientHandler;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
-import com.example.testaware.activities.TestChatActivity;
-
 import com.example.testaware.listeners.OnSSLContextChangedListener;
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
@@ -52,31 +50,21 @@ import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
 import com.example.testaware.offlineAuth.Decoder;
+import com.example.testaware.offlineAuth.InitPeerAuthConn;
 import com.example.testaware.offlineAuth.PeerAuthServer;
 import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyCredentials;
 import com.example.testaware.offlineAuth.VerifyUser;
 import com.example.testaware.models.Message;
-
-
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.Inet6Address;
-import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.EncodedKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-
 import javax.net.ssl.SSLContext;
-
 import lombok.Getter;
-
 
 public class MainActivity extends AppCompatActivity  {
 
@@ -102,11 +90,9 @@ public class MainActivity extends AppCompatActivity  {
     private byte[] portOnSystem;
     private int  portToUse;
 
-    private byte[] myIP;
-    private byte[] otherIP;
-    private byte[] msgtosend;
-
     private byte[]                    otherMac;
+    private byte[] otherIP;
+
     private PeerHandle peerHandle;
     private byte[] myMac;
 
@@ -143,23 +129,24 @@ public class MainActivity extends AppCompatActivity  {
 
     private static final int MY_PERMISSION_EXTERNAL_REQUEST_CODE = 99;
 
-
     private KeyPair keyPair;
-    private PublicKey pubKey;
-    private String signedString;
+    private String signedStringToSend;
+    private String encPubKeyToSend;
+    private String randomStringToSend;
+
     private String receivedSignedString;
     private String receivedPubKey;              //TODO : not variables for all, change for multiple connections
     private String receivedString;
-    private String randomString;
-    private String peerPublicKey;
-    private boolean signValid;
+
+
+
 
 
     @Getter
-    private String role = "subscriber";
-    boolean isPublisher = false;
-  //  private String role = "publisher";
-   // boolean isPublisher = true;
+   // private String role = "subscriber";
+   // boolean isPublisher = false;
+    private String role = "publisher";
+    boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
@@ -251,22 +238,19 @@ public class MainActivity extends AppCompatActivity  {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 requestPeerAuthConn();
 
-                byte[] msgSignedtosend = ("signedString"+signedString).getBytes();
-                byte[] msgRandomStringtoSend = ("randomString"+randomString).getBytes();
-                String publicKey = "pubKey"+ peerPublicKey;
+                byte[] msgSignedtosend = ("signedString"+signedStringToSend).getBytes();
+                byte[] msgRandomStringtoSend = ("randomString"+randomStringToSend).getBytes();
+                String publicKey = "pubKey"+ encPubKeyToSend;
                 byte[] pubKeyToSend =publicKey.getBytes();
                 Log.i(LOG,"Bytes length key"+  pubKeyToSend.length);
 
                 if(role == "publisher"){
                     if (publishDiscoverySession != null && peerHandle != null) {
-
                         publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
                         publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
                         publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
                         //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
                     }
-
-
                 }
                 else{
                     if (subscribeDiscoverySession != null && peerHandle != null) {
@@ -281,50 +265,23 @@ public class MainActivity extends AppCompatActivity  {
     }
     //Performed by client
     private void requestPeerAuthConn(){
-        pubKey = keyPair.getPublic();   //public key of the one requesting conn
-        peerPublicKey = Base64.getEncoder().encodeToString(pubKey.getEncoded());    //Base64 encoded to string
-        randomString = "hellbff";  //TODO: genreate random for each time
-        signedString = PeerSigner.signString(randomString, keyPair);            //Base64 encoded to string
+        encPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        randomStringToSend = "hellbff";  //TODO: genreate random for each time
+        signedStringToSend = PeerSigner.signString(randomStringToSend, keyPair);
 
     }
 
-    //performed by server     
-    private void startPeerAuthServer(){
-        boolean userIsAuthenticated=false;
-        PublicKey clientPubKey = Decoder.getPubKeyGenerated(receivedPubKey);
-
-        signValid = VerifyCredentials.verifyString(receivedString, receivedSignedString, clientPubKey);
-
-        String peerIP= peerIpv6.toString();
-        if (signValid){
-            VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());                     //TODO: REMOVE JUST FOR TESTING
-            userIsAuthenticated= VerifyUser.isAuthenticatedUser(peerIP, clientPubKey.toString());
-
-            //if user with ip has connected before
-            if (userIsAuthenticated){
-                peerAuthenticated="true"; 
-                Log.d(LOG, "starting peerauthserver" );
-                if(role=="publisher"){
-                    peerAuthServer  = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);           //TODO: change to no auth server port ?
-                }
-                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
+    private void startPeerAuthServer(String key) {
+        PublicKey clientPubKey = Decoder.getPubKeyGenerated(key);
+        boolean userIsAuthenticated = InitPeerAuthConn.checkPeerAuthCredentials(receivedString, receivedSignedString, clientPubKey, peerIpv6.toString());
+        if (userIsAuthenticated) {
+            peerAuthenticated="true";
+            if (role == "publisher") {
+                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, clientPubKey.toString());           //TODO: change to no auth server port ?
             }
-            else{
-                Log.d(LOG, "User not authenticated" );
-                boolean credentailsValid= false;
-                //credentailsValid = VerifyCredentials.checkAuthenticatedUserKey(receivedPubKey);                       //TODO: add later, get this info from peer
-                if(credentailsValid){
-                    VerifyUser.setAuthenticatedUser(receivedPubKey,peerIP);
-                    peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, receivedPubKey);
-                }
-            }
+            connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
         }
-       else{
-            Log.d(LOG, "Cannot start peer aut, not peer authenticated");
-        }
-
     }
-
 
     /**
      * App Permissions for Coarse Location
@@ -481,7 +438,7 @@ public class MainActivity extends AppCompatActivity  {
                     }
                     else if(messageIn.contains("pubKey")){
                         receivedPubKey= messageIn.replace("pubKey", "");
-                        startPeerAuthServer();
+                        startPeerAuthServer(receivedPubKey);
                     }
 
 
@@ -593,7 +550,7 @@ public class MainActivity extends AppCompatActivity  {
                     }
                     if(messageIn.contains("pubKey")){
                         receivedPubKey= messageIn.replace("pubKey", "");
-                        startPeerAuthServer();
+                        startPeerAuthServer(receivedPubKey);
                     }
 
                 } else if (messageIn.contains("startConnection")) {
@@ -674,8 +631,11 @@ private AppServer appServer;
                 super.onAvailable(network);
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
-              //  appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
-                //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher, peerAuthenticated, null );
+                if(role=="publisher"){
+                //    appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+                }
+              
+             //   connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher, peerAuthenticated, null );
 
             }
 

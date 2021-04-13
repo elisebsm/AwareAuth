@@ -176,6 +176,12 @@
         android:layout_height="wrap_content"
         android:text="@string/Request_Peer_Auth_Conn" />
 
+    <Button
+        android:id="@+id/btnReqPeerAuthCredentials"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Button" />
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

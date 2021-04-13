@@ -79,9 +79,8 @@ public class PeerAuthServer {
                 while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
-                    //check if key and ip is in auth list
-                   // if (VerifyUser.isAuthenticatedUser(pubKey, connectedPeerIP)) {  //not sure if this is nessesary
-                    if(true){
+                    connectedPeerIP = "/"+connectedPeerIP;
+                    if (VerifyUser.isAuthenticatedUser(connectedPeerIP, pubKey)) {  //not sure if this is nessesary  VerifyUser.isAuthenticatedUser(connectedPeerIP,pubKey
                         //addClient(sslClientSocket);
                         Log.d(LOG, "Peer auth client accepted");
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));

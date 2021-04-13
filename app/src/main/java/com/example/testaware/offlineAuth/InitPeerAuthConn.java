@@ -1,30 +1,40 @@
 package com.example.testaware.offlineAuth;
 
+import android.util.Log;
+
 import java.security.PublicKey;
 
-//initialized in main by client(peer authenticated user) pressing button and sending msg to server
 public class InitPeerAuthConn {
-    private static PublicKey peerPubKey;
-    private static String peerIP;
+    private static boolean userIsAuthenticated;
+    private static String LOG = "LOG-Test-Aware-InitPeerAuthConn";
 
 
-    public void InitPeerAuthConn(PublicKey peerPubKey, String peerIP){
-        this.peerPubKey= peerPubKey;
-        this.peerIP=peerIP;
-    }
-/*
-    public static boolean setupPeerAuthConn(){
-        boolean isAuthenticated=false;
-        if (VerifyCredentials.checkAuthenticatedUserKey(peerPubKey)){     //check if peer has authenticated this user
-            //Check if user has already ben authenticated - and know that this Ip corresponds to pub key (user holds private key)
-            //if(VerifyUser.isAuthenticatedUser(peerIP)){
-                 isAuthenticated=true;//start server
+    public static boolean checkPeerAuthCredentials(String receivedString, String signature, PublicKey clientPubKey, String peerIP){
+        userIsAuthenticated=false;
+
+        if(VerifyCredentials.verifyString(receivedString, signature, clientPubKey)){
+            VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());
+            Log.d(LOG, "Signature provided is correct");
+            if(VerifyUser.isAuthenticatedUser(peerIP, clientPubKey.toString())){
+                userIsAuthenticated=true;
+                Log.d(LOG, "Match found for key and IP. User is peer authenticated");
+            }
+            else if(VerifyCredentials.checkAuthenticatedUserKey(clientPubKey.toString())){
+                VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());  //TODO: testing with this
+                userIsAuthenticated=true;
+                Log.d(LOG, "Peer key has been peer authenticated by other user. User is authenticated");
+            }
+            else{
+                userIsAuthenticated=false;
+                Log.d(LOG, "User not peer authenticated");
             }
         }
         else{
-            //get credentials from peer  //TODO: GET THIS IMPLEMENTED IN MAIN
+            userIsAuthenticated=false;
+            Log.d(LOG, "Signature provided is not valid. No connection initialized");
         }
-       // return isAuthenticated;  //if this is true, setup conn
+
+        return userIsAuthenticated;
     }
-*/
+
 }
