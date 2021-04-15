@@ -59,7 +59,10 @@ import com.example.testaware.offlineAuth.VerifyCredentials;
 import com.example.testaware.offlineAuth.VerifyUser;
 import com.example.testaware.models.Message;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.Serializable;
 import java.net.Inet6Address;
 import java.security.KeyPair;
@@ -146,6 +149,7 @@ public class MainActivity extends AppCompatActivity  {
     private String receivedString;
 
     private static File file;
+    private static final String fileName="authenticatedUsers.txt";
 
 
 
@@ -188,7 +192,7 @@ public class MainActivity extends AppCompatActivity  {
         peerHandle = null;
         IamPeerAuth = false;
 
-        setFileDir();
+
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
@@ -252,6 +256,10 @@ public class MainActivity extends AppCompatActivity  {
 
 
     }
+
+
+
+
     private void sendPeerAuthMsg(boolean IamAuth){
         byte[] msgSignedtosend = ("signedString"+signedStringToSend).getBytes();
         byte[] msgRandomStringtoSend = ("randomString"+randomStringToSend).getBytes();
@@ -834,16 +842,8 @@ private AppServer appServer;
     }
     */
 
-
-    private KeyPair getKeyPair(){
+    public KeyPair getKeyPair(){
         return keyPair;
-    }
-
-    private void setFileDir(){
-        file= new File(this.getFilesDir(),"AuthenticatedUsers.txt");
-    }
-    public static File getFileDir(){
-        return file;
     }
 
 }

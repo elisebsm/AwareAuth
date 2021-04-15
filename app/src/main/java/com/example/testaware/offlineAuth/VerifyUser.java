@@ -1,32 +1,25 @@
 package com.example.testaware.offlineAuth;
 
-import android.content.Context;
+
 import android.util.Log;
-
-
-import com.example.testaware.activities.MainActivity;
 import com.github.cliftonlabs.json_simple.Jsoner;
-
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+
 import java.nio.file.Files;
-import java.security.PublicKey;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Scanner;
+
 
 
 /*Methods used to verify user that server wants to connect to - mappings of pub key and mac/Ip- after done challenge response*/
@@ -34,50 +27,58 @@ import java.util.HashMap;
 public class VerifyUser {
 
     private static String LOG = "LOG-Test-Aware-Verify-User";
-    private static ArrayList<AuthenticatedUser> arrayList;
-    private static  FileWriter file;
-    private static final String fileName="/data/data/com.example.testaware/authenticatedUsers.txt";
-    private static AuthenticatedUser user;
 
+    private static AuthenticatedUser parsedUser;
+    private static AuthenticatedUser currentUser;
+    private static ArrayList<AuthenticatedUser> userList;
 
-    public static void setAuthenticateUser(String connectedPeerIP,String connectedPeerKey) throws JSONException {
-        File file;
+    public static void setAuthenticatedUser(String connectedPeerIP, String connectedPeerKey) {
 
-        try{
-            user = new AuthenticatedUser(connectedPeerIP,connectedPeerKey);
-            String json= Jsoner.serialize(user);
-            file= new FileWriter(fileName,true);
-            file.write(json);
-            Log.i(LOG, "Successfully wrote key and ipaddr to the file.");
-            System.out.println(json);
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/AuthenticatedUsers.txt", true));
+            String mapping = connectedPeerIP + "split"+ connectedPeerKey;
+            writer.write(mapping);
+            Log.i(LOG, "Successfully wrote key and ip to the file.");
+
+            writer.close();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean isAuthenticatedUser(String peerIP, String peerKey) {
+        boolean isAuthenticated = false;
+
+        String ip;
+        String key;
+        String thisLine = null;
+
+        try {
+            File file = new File("/data/data/com.example.testaware/AuthenticatedUsers.txt");
+            Scanner sc = new Scanner(file);
+            while (sc.hasNext()) {
+                thisLine = sc.nextLine();
+                String[] splitLine = thisLine.split("split");
+                ip = splitLine[0];
+                key = splitLine[1];
+                if (ip == peerIP) {
+                    if (key == peerKey) {
+                        isAuthenticated = true;
+                        Log.i(LOG, "Successfully read key and ip to the file.");
+                    }
+                }
+            }
+
         } catch (IOException e) {
+            System.out.println("An error occurred.");
             e.printStackTrace();
         }
-
-    }
-
-
-    public static boolean isAuthenticatedUser(String peerIP, String key){
-        boolean isAuthenticated=false;
-        AuthenticatedUser user;
-        JSONParser jsonParser = new JSONParser();
-        try{
-            FileReader reader = new FileReader(fileName);
-            Reader reader = Files.newBufferedReader(Paths.get("book.json"));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-
         return isAuthenticated;
-
     }
 
 
-
-
-
-
+}
 
 
     /*
@@ -163,4 +164,3 @@ public class VerifyUser {
     */
 
 
-}
