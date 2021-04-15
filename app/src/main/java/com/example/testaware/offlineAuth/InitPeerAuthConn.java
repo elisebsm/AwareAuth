@@ -13,14 +13,14 @@ public class InitPeerAuthConn {
         userIsAuthenticated=false;
 
         if(VerifyCredentials.verifyString(receivedString, signature, clientPubKey)){
-            VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());
+
             Log.d(LOG, "Signature provided is correct");
             if(VerifyUser.isAuthenticatedUser(peerIP, clientPubKey.toString())){
                 userIsAuthenticated=true;
                 Log.d(LOG, "Match found for key and IP. User is peer authenticated");
             }
             else if(VerifyCredentials.checkAuthenticatedUserKey(clientPubKey.toString())){
-                VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());  //TODO: testing with this
+                VerifyUser.setAuthenticatedUser(peerIP,clientPubKey.toString());
                 userIsAuthenticated=true;
                 Log.d(LOG, "Peer key has been peer authenticated by other user. User is authenticated");
             }

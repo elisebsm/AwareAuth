@@ -58,6 +58,8 @@ import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyCredentials;
 import com.example.testaware.offlineAuth.VerifyUser;
 import com.example.testaware.models.Message;
+
+import java.io.File;
 import java.io.Serializable;
 import java.net.Inet6Address;
 import java.security.KeyPair;
@@ -132,17 +134,18 @@ public class MainActivity extends AppCompatActivity  {
     private static final int MY_PERMISSION_EXTERNAL_REQUEST_CODE = 99;
 
     private String receivedPubKeyToBeSigned;
+    private boolean IamPeerAuth;
 
     private KeyPair keyPair;
     private String signedStringToSend;
-    private String encPubKeyToSend;
+    private String encodedPubKeyToSend;
     private String randomStringToSend;
 
     private String receivedSignedString;
     private String receivedPubKey;              //TODO : not variables for all, change for multiple connections
     private String receivedString;
 
-
+    private static File file;
 
 
 
@@ -183,14 +186,14 @@ public class MainActivity extends AppCompatActivity  {
         publishDiscoverySession = null;
         subscribeDiscoverySession = null;
         peerHandle = null;
+        IamPeerAuth = false;
 
-
-
+        setFileDir();
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
         TextView tvRole = findViewById(R.id.tvRole);
-        tvRole.setText(role);
+        tvRole.setText(role+ "    PeerAuth: "+ IamPeerAuth);
 
 
         this.keyPair = IdentityHandler.getKeyPair();
@@ -241,52 +244,44 @@ public class MainActivity extends AppCompatActivity  {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 requestPeerAuthConn();
+                sendPeerAuthMsg(IamPeerAuth);
 
-                byte[] msgSignedtosend = ("signedString"+signedStringToSend).getBytes();
-                byte[] msgRandomStringtoSend = ("randomString"+randomStringToSend).getBytes();
-                String publicKey = "pubKey"+ encPubKeyToSend;
-                byte[] pubKeyToSend =publicKey.getBytes();
-
-                if(role == "publisher"){
-                    if (publishDiscoverySession != null && peerHandle != null) {
-                        publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
-                        publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
-                        publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
-                        //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
-                    }
-                }
-                else{
-                    if (subscribeDiscoverySession != null && peerHandle != null) {
-                        subscribeDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
-                        subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
-                        subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
-                        connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
-                    }
-                }
             }
         });
 
-         Button reqPeerAuthCredentials = findViewById(R.id.btnReqPeerAuthCredentials);
-         reqPeerAuthCredentials.setOnClickListener(v -> {
-
-             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                 String encodedPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
-                 String publicKey = "pubKeyToBeSigned"+ encodedPubKeyToSend;
-                 byte[] pubKeyToSend =publicKey.getBytes();
-
-                  if (subscribeDiscoverySession != null && peerHandle != null) {
-                      subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
-                  }
-                  if (publishDiscoverySession != null && peerHandle != null) {
-                     publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
-                  }
-
-             }
-         });
 
 
     }
-/*
+    private void sendPeerAuthMsg(boolean IamAuth){
+        byte[] msgSignedtosend = ("signedString"+signedStringToSend).getBytes();
+        byte[] msgRandomStringtoSend = ("randomString"+randomStringToSend).getBytes();
+        String publicKey;
+        if(IamAuth==false){   //TODO: add feedback so user know it is aut. fek get the signed key back
+            publicKey = "reqAuth"+ encodedPubKeyToSend;     //request peer auth- user is not authenticated
+        }
+        else{
+            publicKey = "pubKey"+ encodedPubKeyToSend;
+        }
+        byte[] pubKeyToSend =publicKey.getBytes();
+
+        if(role == "publisher"){
+            if (publishDiscoverySession != null && peerHandle != null) {
+                publishDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
+                publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
+                publishDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY, pubKeyToSend);
+                //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
+            }
+        }
+        else{
+            if (subscribeDiscoverySession != null && peerHandle != null) {
+                subscribeDiscoverySession.sendMessage(peerHandle, SIGNED_STRING, msgSignedtosend);
+                subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgRandomStringtoSend);
+                subscribeDiscoverySession.sendMessage(peerHandle, PUBLIC_KEY,pubKeyToSend);
+                // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer );
+            }
+        }
+    }
+
     private void setDialogBox(String keyReceived){
 
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
@@ -299,28 +294,42 @@ public class MainActivity extends AppCompatActivity  {
 
                 case DialogInterface.BUTTON_NEGATIVE:
                     Log.i(LOG,"Dont want ot peer authenticate user");
+                    startPeerAuthServer(keyReceived);
                     break;
                 }
             }
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setMessage("Are you sure?").setPositiveButton("Yes", dialogClickListener)
+        builder.setMessage("Do you want to authenticate user?").setPositiveButton("Yes", dialogClickListener)
             .setNegativeButton("No", dialogClickListener).show();
 
     }
-*/
-    private void authenticatePeer(String key){            //TODO: verify signature of m ?
-       PublicKey peerPubKey = Decoder.getPubKeyGenerated(key);
-       String signedKey= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());               //TODO: broadcast this somehow,or save to file
-       VerifyCredentials.addAuthenticatedUserKey(peerPubKey);
-       VerifyUser.setAuthenticatedUser(peerIpv6.toString(),peerPubKey.toString());
 
+    private void authenticatePeer(String key){
+       PublicKey peerPubKey = Decoder.getPubKeyGenerated(key);
+       if(VerifyCredentials.verifyString(receivedString,receivedSignedString,peerPubKey))  {
+          
+            String signedKey= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());               //TODO: broadcast this somehow,or save to file
+            PeerSigner.saveSignedKeyToFile(signedKey);
+            VerifyCredentials.addAuthenticatedUserKey(peerPubKey);                                                    //TODO: inform user that it is authenticated
+            VerifyUser.setAuthenticatedUser(peerIpv6.toString(),peerPubKey.toString());
+            peerAuthenticated="true";
+            Log.i(LOG,"authenticatePeer done:");
+            Toast.makeText(this, "User authenticated", Toast.LENGTH_LONG).show();
+            if (role=="publisher"){
+                 peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT,peerPubKey.toString());
+            }
+
+       }
+       else{
+            Log.i(LOG,"Credentials not correct");
+       }
 
     }
     //Performed by client
     private void requestPeerAuthConn(){
-        encPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        encodedPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
         randomStringToSend = "hellbff";  //TODO: genreate random for each time
         signedStringToSend = PeerSigner.signString(randomStringToSend, keyPair);
 
@@ -334,7 +343,7 @@ public class MainActivity extends AppCompatActivity  {
             if (role == "publisher") {
                 peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, clientPubKey.toString());           //TODO: change to no auth server port ?
             }
-            connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+           // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
         }
     }
 
@@ -495,9 +504,9 @@ public class MainActivity extends AppCompatActivity  {
                         receivedPubKey= messageIn.replace("pubKey", "");
                         startPeerAuthServer(receivedPubKey);
                     }
-                     else if(messageIn.contains("pubKeyToBeSigned")){
-                         receivedPubKeyToBeSigned= messageIn.replace("pubKeyToBeSigned", "");
-                         authenticate
+                     else if(messageIn.contains("reqAuth")){    //request authentication
+                         receivedPubKeyToBeSigned= messageIn.replace("reqAuth", "");
+                         setDialogBox(receivedPubKeyToBeSigned);
                      }
    /* forsøk på å bestemme hvem som er pub/sub
 
@@ -609,9 +618,11 @@ public class MainActivity extends AppCompatActivity  {
                         receivedPubKey= messageIn.replace("pubKey", "");
                         startPeerAuthServer(receivedPubKey);
                     }
-                    else if(messageIn.contains("pubKeyToBeSigned")){
-                        receivedPubKeyToBeSigned= messageIn.replace("pubKeyToBeSigned", "");
+                    else if(messageIn.contains("reqAuth")){
+                        receivedPubKeyToBeSigned= messageIn.replace("reqAuth", "");
+
                         setDialogBox(receivedPubKeyToBeSigned);
+
 
                     }
 
@@ -824,8 +835,15 @@ private AppServer appServer;
     */
 
 
-    public KeyPair getKeyPair(){
+    private KeyPair getKeyPair(){
         return keyPair;
+    }
+
+    private void setFileDir(){
+        file= new File(this.getFilesDir(),"AuthenticatedUsers.txt");
+    }
+    public static File getFileDir(){
+        return file;
     }
 
 }

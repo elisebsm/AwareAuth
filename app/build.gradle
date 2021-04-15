@@ -38,6 +38,9 @@ dependencies {
     compile 'com.scaledrone:scaledrone-java:0.6.0'
     compileOnly 'org.projectlombok:lombok:1.18.4'
     annotationProcessor 'org.projectlombok:lombok:1.18.4'
+    implementation 'com.github.cliftonlabs:json-simple:3.1.0'
+    implementation 'com.github.dozermapper:dozer-core:6.5.0'
+
 
 
 }

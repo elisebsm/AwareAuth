@@ -5,8 +5,13 @@ import android.util.Log;
 import com.example.testaware.IdentityHandler;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -14,6 +19,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Base64;
 
 /*
@@ -25,8 +31,8 @@ public class PeerSigner {
 
     private static String LOG = "LOG-Test-Aware-Peer-Signer";
     private static String signedKey;
-    private static X509Certificate peerCertificate;
     private static String signedString;
+    private static ArrayList<String> signedKeys=new ArrayList();
 
     public static String peerSign(KeyPair signerKeyPair, PublicKey peerPubKey) {
         try {
@@ -91,5 +97,32 @@ public class PeerSigner {
         e.printStackTrace();
     }
         return signedString;
+    }
+
+
+    public static void saveSignedKeyToFile(String sigKey){
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeys.txt", true));
+            writer.write(sigKey);
+
+            writer.close();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public ArrayList<String> getSavedSignedKeysFromFile(){
+        try{
+            BufferedReader reader = new BufferedReader(new FileReader("/data/data/com.example.testaware/signedKeys.txt"));
+            String line= reader.readLine();
+            while(line!=null) {
+                signedKeys.add(line);
+            }
+        }
+        catch(IOException e){
+            e.printStackTrace();
+        }
+        return signedKeys;
     }
 }
