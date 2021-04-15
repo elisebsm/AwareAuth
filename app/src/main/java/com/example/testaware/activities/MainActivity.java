@@ -15,6 +15,8 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.net.wifi.aware.AttachCallback;
 import android.net.wifi.aware.Characteristics;
 import android.net.wifi.aware.DiscoverySessionCallback;
@@ -56,12 +58,18 @@ import com.example.testaware.models.Message;
 import java.io.Serializable;
 import java.net.Inet6Address;
 import java.security.KeyPair;
+import java.security.Timestamp;
+import java.sql.Time;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
+
+import static java.lang.System.currentTimeMillis;
 
 
 public class MainActivity extends AppCompatActivity implements ConnectionListener {
@@ -150,11 +158,22 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     @Getter
     private SSLContextedObserver sslContextedObserver;
 
+    long start;
+    long discovered;
+    long available;
+    long diffStartDiscovered;
+    long diffStartAvailable;
+
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("TESTING-LOG", "the app is starting");
+        start = currentTimeMillis();
+
+        Log.d("TESTING-LOG-TIME-START", String.valueOf(start));
+
 
         wifiAwareManager = null;
         wifiAwareSession = null;
@@ -401,6 +420,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             @Override
             public void onServiceDiscovered(PeerHandle peerHandle_, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
                 super.onServiceDiscovered(peerHandle, serviceSpecificInfo, matchFilter);
+                Log.d("TESTING-LOG", "Service discovered at " + role);
+
+                discovered = currentTimeMillis();
+
+                Log.d("TESTING-LOG-TIME-DISCOVERY", String.valueOf(discovered));
+
                 peerHandle=peerHandle_;
                 if (subscribeDiscoverySession != null && peerHandle != null) {
                     subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);
@@ -511,13 +536,23 @@ private AppServer appServer;
             Log.d(LOG, "hasestablished not");
             //establishWhoIsPublisherAndSubscriber();
         }*/
+
         if(role.equals("subscriber")){
-            networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
-                    .build();
+
+                networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
+                      //  .setPskPassphrase("password")
+                       // .setTransportProtocol(6)
+                        //.setPmk(test)
+                        .build();
+
             Log.d(LOG, "This devices is subscriber");
         } else {
-            networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
-                    .build();
+
+                networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
+                        .setPskPassphrase("password")
+                        .setTransportProtocol(6)
+                        .build();
+
             Log.d(LOG, "This devices is publisher");
         }
 
@@ -525,6 +560,7 @@ private AppServer appServer;
             Log.d(LOG, "No NetworkSpecifier Created ");
             return;
         }
+
         NetworkRequest myNetworkRequest = new NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI_AWARE)
                 .setNetworkSpecifier(networkSpecifier)
@@ -537,9 +573,19 @@ private AppServer appServer;
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
                 //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
+                Log.d("TESTING-LOG", "On available for " + role);
+
+                available = currentTimeMillis();
+                Log.d("TESTING-LOG-TIME-AVAILABLE", String.valueOf(available));
+                diffStartAvailable = available - start;
+                diffStartDiscovered = discovered - start;
+                Log.d("TESTING-LOG-TIME-DIFF ", + diffStartDiscovered + ":" + diffStartAvailable);
+
+
                 appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
 
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
+
 
             }
 
@@ -558,6 +604,10 @@ private AppServer appServer;
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 setPeerIpv6(peerAwareInfo.getPeerIpv6Addr());
                 Log.d(LOG, "Peeripv6: " + peerAwareInfo.getPeerIpv6Addr() );
+
+               // WifiAwareNetworkInfo wifiInfo = (WifiAwareNetworkInfo) networkCapabilities_.getTransportInfo();
+                //String ssid = wifiInfo.get;
+
             }
 
             @Override
