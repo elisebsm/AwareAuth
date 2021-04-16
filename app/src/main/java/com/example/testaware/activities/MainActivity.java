@@ -140,10 +140,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private String signedKey;
 
     @Getter
-    private String role = "subscriber";
-    boolean isPublisher = false;
-    //private String role = "publisher";
-    //boolean isPublisher = true;
+    //private String role = "subscriber";
+    //boolean isPublisher = false;
+    private String role = "publisher";
+    boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
@@ -540,7 +540,7 @@ private AppServer appServer;
         if(role.equals("subscriber")){
 
                 networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
-                      //  .setPskPassphrase("password")
+                        .setPskPassphrase("password")
                        // .setTransportProtocol(6)
                         //.setPmk(test)
                         .build();
