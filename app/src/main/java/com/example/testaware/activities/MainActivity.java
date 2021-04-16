@@ -154,10 +154,10 @@ public class MainActivity extends AppCompatActivity  {
 
 
     @Getter
-   // private String role = "subscriber";
-   // boolean isPublisher = false;
-    private String role = "publisher";
-    boolean isPublisher = true;
+    private String role = "subscriber";
+    boolean isPublisher = false;
+   // private String role = "publisher";
+   // boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
@@ -190,7 +190,7 @@ public class MainActivity extends AppCompatActivity  {
         publishDiscoverySession = null;
         subscribeDiscoverySession = null;
         peerHandle = null;
-        IamPeerAuth = false;
+        IamPeerAuth = true;
 
 
         setupPermissions();
@@ -314,19 +314,19 @@ public class MainActivity extends AppCompatActivity  {
 
     }
 
-    private void authenticatePeer(String key){
-       PublicKey peerPubKey = Decoder.getPubKeyGenerated(key);
+    private void authenticatePeer(String encodedKey){
+       PublicKey peerPubKey = Decoder.getPubKeyGenerated(encodedKey);
        if(VerifyCredentials.verifyString(receivedString,receivedSignedString,peerPubKey))  {
           
             String signedKey= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());               //TODO: broadcast this somehow,or save to file
-            PeerSigner.saveSignedKeyToFile(signedKey);
-            VerifyCredentials.addAuthenticatedUserKey(peerPubKey);                                                    //TODO: inform user that it is authenticated
-            VerifyUser.setAuthenticatedUser(peerIpv6.toString(),peerPubKey.toString());
+            PeerSigner.saveSignedKeyToFile(signedKey);  //TODO: do something with this
+            VerifyCredentials.addAuthenticatedUserKey(encodedKey);                                                    //TODO: inform user that it is authenticated
+            VerifyUser.setAuthenticatedUser(peerIpv6.toString(),encodedKey);
             peerAuthenticated="true";
             Log.i(LOG,"authenticatePeer done:");
             Toast.makeText(this, "User authenticated", Toast.LENGTH_LONG).show();
             if (role=="publisher"){
-                 peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT,peerPubKey.toString());
+                 peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT,peerPubKey, peerIpv6.toString());
             }
 
        }
@@ -345,11 +345,12 @@ public class MainActivity extends AppCompatActivity  {
 
     private void startPeerAuthServer(String key) {
         PublicKey clientPubKey = Decoder.getPubKeyGenerated(key);
-        boolean userIsAuthenticated = InitPeerAuthConn.checkPeerAuthCredentials(receivedString, receivedSignedString, clientPubKey, peerIpv6.toString());
+        boolean userIsAuthenticated = InitPeerAuthConn.checkPeerAuthCredentials(receivedString, receivedSignedString, clientPubKey,key, peerIpv6.toString());
         if (userIsAuthenticated) {
             peerAuthenticated="true";
             if (role == "publisher") {
-                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, clientPubKey.toString());           //TODO: change to no auth server port ?
+                Toast.makeText(this, "Starting peerAuthConn", Toast.LENGTH_LONG).show();
+                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT, clientPubKey,peerIpv6.toString());           //TODO: change to no auth server port ?
             }
            // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
         }

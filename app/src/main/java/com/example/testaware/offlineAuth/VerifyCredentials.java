@@ -28,10 +28,11 @@ Only used to add verified public key to list, not to verify user in actual conne
 public class VerifyCredentials {
     private static String LOG = "LOG-Test-Aware-Verify-Credentials";
 
-    public static boolean verifyCredentials(String sigPeerKey, Certificate signerCert, PublicKey peerPubKey){
+       public static boolean verifyCredentials(String sigPeerKey, Certificate signerCert, PublicKey peerPubKey){
 
         if (verifySignature(sigPeerKey, signerCert, peerPubKey) && verifySigner(signerCert)) {
-            addAuthenticatedUserKey(peerPubKey);
+            String encodedKey= Base64.getEncoder().encodeToString(peerPubKey.getEncoded());
+            addAuthenticatedUserKey(encodedKey);
             return true;
         }
         else{
@@ -74,11 +75,11 @@ public class VerifyCredentials {
 
 
     //called if signature is valid aka verify ==true. Only sets key to file. Used before client connects. LAST STEP
-    public static void addAuthenticatedUserKey(PublicKey key){
+    public static void addAuthenticatedUserKey(String encodedKeyString){
         //PublicKey peerPubKey = peerCertificate.getPublicKey();
         try {
             BufferedWriter myWriter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/authenticateUserKeys.txt",true) );
-            myWriter.write(key.toString());
+            myWriter.write(encodedKeyString+"\n");
             myWriter.close();
             System.out.println("Successfully wrote key to the file.");
         } catch (IOException e) {
@@ -87,14 +88,16 @@ public class VerifyCredentials {
         }
 
     }
-    public static boolean checkAuthenticatedUserKey(String key){
+    public static boolean checkAuthenticatedUserKey(PublicKey clientKey){
         //PublicKey peerPubKey = peerCertificate.getPublicKey();
         boolean isAuth= false;
         String thisLine=null;
+        PublicKey keyFromFile =null;
         try {
             BufferedReader myReader = new BufferedReader(new FileReader("/data/data/com.example.testaware/authenticateUserKeys.txt" ));
             while ((thisLine = myReader.readLine()) != null) {
-                if(thisLine==key){
+                keyFromFile = Decoder.getPubKeyGenerated(thisLine);
+                if(keyFromFile.equals(clientKey)){
                     isAuth=true;
                 }
             }

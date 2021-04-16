@@ -64,7 +64,7 @@ public class PeerAuthServer {
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public PeerAuthServer(SSLContext serverSSLContext, int serverPort,  String pubKey){  //use SERVER_PORT_NO_AUTH
+    public PeerAuthServer(SSLContext serverSSLContext, int serverPort,  PublicKey pubKey, String connectedPeerIP){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
         protocol= new String[1];
@@ -77,10 +77,9 @@ public class PeerAuthServer {
                 serverSocket.setEnabledCipherSuites(protocol);  // no need for client auth
 
                 while (running) {
+                    Log.d(LOG, "Starting peer aut server");
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
-                    String connectedPeerIP = sslClientSocket.getInetAddress().getHostAddress();
-                    connectedPeerIP = "/"+connectedPeerIP;
-                    if (VerifyUser.isAuthenticatedUser(connectedPeerIP, pubKey)) {  //not sure if this is nessesary  VerifyUser.isAuthenticatedUser(connectedPeerIP,pubKey
+                   if (VerifyUser.isAuthenticatedUser(connectedPeerIP, pubKey)) {
                         //addClient(sslClientSocket);
                         Log.d(LOG, "Peer auth client accepted");
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
@@ -92,7 +91,7 @@ public class PeerAuthServer {
                         Log.d(LOG, "Starting new peer auth client Thread -");
 
                     }
-                    else{
+                   else{
                         //stop conn if user not authenticated
                         sslClientSocket.close();
                         running =false;
