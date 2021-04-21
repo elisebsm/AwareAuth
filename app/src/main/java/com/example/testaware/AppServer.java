@@ -4,12 +4,16 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Build;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
 
+import com.example.testaware.activities.TestChatActivity;
 import com.example.testaware.listeners.MessageReceivedObserver;
 import com.example.testaware.listeners.OnMessageReceivedListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
@@ -17,6 +21,8 @@ import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
+import com.example.testaware.offlineAuth.PeerSigner;
+import com.example.testaware.offlineAuth.VerifyUser;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -27,6 +33,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
 import java.security.PublicKey;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +44,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
@@ -59,8 +70,17 @@ public class AppServer {
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
+    private PublicKey pubKey;
+    private SSLSocket sslClientSocket;
+    private boolean userCertificateCorrect =true;
 
-   // private List<ConnectionListener> connectionListeners;
+    // private List<ConnectionListener> connectionListeners;
+   @Getter
+   private static WeakReference<TestChatActivity> testChatActivity;
+
+    public static void updateTestChatActivity(TestChatActivity activity) {
+        testChatActivity = new WeakReference<>(activity);
+    }
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -89,8 +109,26 @@ public class AppServer {
                 serverSocket.setNeedClientAuth(true);
 
 
+
                while (running) {
-                    SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
+                    sslClientSocket = (SSLSocket) serverSocket.accept();
+
+                    sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                        @Override
+                        public void handshakeCompleted(HandshakeCompletedEvent event) {
+                            if(event.getSession().isValid() ){
+                                Log.d(LOG, "Handshake completed");
+                                X509Certificate peerCert = getClientIdentity();
+                                if(userCertificateCorrect) {
+                                    addPeerAuthInfo(peerCert);
+                                }
+                            }
+                            else{
+                                Log.d(LOG, "Handshake failed");
+                            }
+
+                        }
+                    });
                     //addClient(sslClientSocket);
                     Log.d(LOG, "client accepted");
                     // FJERNET BufferedInputStream 06.04
@@ -137,7 +175,41 @@ public class AppServer {
         running = false;
     }
 
-  //  public void setListener(ConnectionListener listener){
+
+
+    private X509Certificate getClientIdentity() {
+        Context context = testChatActivity.get().getContext();
+        try {
+            Certificate[] certs = sslClientSocket.getSession().getPeerCertificates();
+            if(certs.length > 0 && certs[0] instanceof X509Certificate) {
+                return (X509Certificate) certs[0];
+
+            }
+
+        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
+            ignored.printStackTrace();
+            userCertificateCorrect =false;
+            Log.d(LOG, "Cert not valid");
+
+        }
+        return null;
+    }
+
+    private void addPeerAuthInfo(X509Certificate peerCert){
+        PublicKey peerPubKey= peerCert.getPublicKey();
+        VerifyUser.setValidatedAuthenticator(peerPubKey);
+        //TODO: add tmp signed keys to permanent file
+        ArrayList<String> listOfSingedStrings = PeerSigner.getSavedtmpSignedKeysFromFile();
+        if(listOfSingedStrings!= null) {
+            for (int i = 0; i < listOfSingedStrings.size(); i++) {
+                PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
+            }
+        }
+
+    }
+
+
+    //  public void setListener(ConnectionListener listener){
      //   connectionListeners.add(listener);
   //  }
 

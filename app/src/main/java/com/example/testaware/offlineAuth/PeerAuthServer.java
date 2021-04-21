@@ -11,6 +11,7 @@ import com.example.testaware.ConnectedClient;
 import com.example.testaware.Constants;
 import com.example.testaware.activities.MainActivity;
 
+import com.example.testaware.activities.TestChatActivity;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -57,10 +58,16 @@ public class PeerAuthServer {
     @Getter
     private static WeakReference<MainActivity> mainActivity;
 
+    @Getter
+    private static WeakReference<TestChatActivity> testChatActivity;
 
     public static void updateActivity(MainActivity activity) {
         mainActivity = new WeakReference<>(activity);
     }
+    public static void updateTestChatActivity(TestChatActivity activity) {
+        testChatActivity = new WeakReference<>(activity);
+    }
+
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -89,11 +96,13 @@ public class PeerAuthServer {
                         Thread t = new Thread(noAuthClient);
                         t.start();
                         Log.d(LOG, "Starting new peer auth client Thread -");
+                        outputStream.flush();
 
                     }
                    else{
                         //stop conn if user not authenticated
                         sslClientSocket.close();
+                        Log.d(LOG, "socket closing, user not peer authenticated ");
                         running =false;
                     }
                 }
@@ -101,7 +110,7 @@ public class PeerAuthServer {
                 }  catch (IOException e) {
                     Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                     e.printStackTrace();
-                    Log.d(LOG, "Exception in AppServer in constructor");
+                    Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
                 }
 
 

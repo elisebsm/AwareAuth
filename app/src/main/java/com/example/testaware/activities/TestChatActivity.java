@@ -6,11 +6,14 @@ import android.content.pm.ActivityInfo;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -41,8 +44,10 @@ import java.util.Enumeration;
 import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public class TestChatActivity extends AppCompatActivity {
+
 
     private Inet6Address peerIpv6;
     private EditText editChatText;
@@ -52,13 +57,20 @@ public class TestChatActivity extends AppCompatActivity {
 
     //public  ArrayList<Message> messageList;     // øystein sin adapter
    public static ArrayList<MessageListItem> messageList;
-    private Context context;
+   @Getter
+   private Context context;
     private User user;
     private String myIpvAddr;
 
+    private Contact contact;
+    String role;
+    boolean peerAuthenticated;
 
     private SSLContext sslContext;
     private KeyPair keyPair;
+
+    @Setter
+    private String userCertificateCorrect;
 
     @Getter
     private AppClient appClient;
@@ -78,9 +90,6 @@ public class TestChatActivity extends AppCompatActivity {
         clientHandlerWeakReference = new WeakReference<>(activity);
     }
 
-    private Contact contact;
-    String role;
-    boolean peerAuthenticated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +99,9 @@ public class TestChatActivity extends AppCompatActivity {
         this.context = this;
 
         myIpvAddr = getLocalIp();
+        AppClient.updateTestChatActivity(this);
+        AppServer.updateTestChatActivity(this);
+        PeerAuthServer.updateTestChatActivity(this);
 
 
         SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
@@ -106,8 +118,7 @@ public class TestChatActivity extends AppCompatActivity {
             role = "Server";
         } else {
             appClient = new AppClient(keyPair, sslContext);
-//            mainActivity.get().getConnectionHandler().setAppClient(appClient);
-
+            mainActivity.get().getConnectionHandler().setAppClient(appClient);
             textView.setText("CLIENT");
             role = "Client";
             //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
@@ -117,8 +128,8 @@ public class TestChatActivity extends AppCompatActivity {
         }
 
 
-       // this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
-        //this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
+        this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
+        this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
 
         Intent intent = getIntent();
         contact = (Contact) intent.getSerializableExtra("contact");
@@ -137,6 +148,8 @@ public class TestChatActivity extends AppCompatActivity {
         mMessageAdapter = new MessageListAdapter(this, messageList);
         mMessageRecycler.setAdapter(mMessageAdapter);
         mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
+
+
 
 
 
@@ -233,7 +246,13 @@ public class TestChatActivity extends AppCompatActivity {
         } else {
             if(mainActivity.get().getPeerAuthenticated().equals("true") ) {
                 Log.d(LOG, "Sending message from peerAuthServer" + msg);
-                peerAuthServer.sendMessage(msg);
+                if(peerAuthServer != null){
+                    peerAuthServer.sendMessage(msg);
+                }
+                else{
+                    Log.d(LOG, "Peer auth server obj null");
+                }
+
 
             }
             else {
@@ -242,6 +261,8 @@ public class TestChatActivity extends AppCompatActivity {
         }
 
     }
+
+
 
     /*
     KOMMENTERT UT 06.04

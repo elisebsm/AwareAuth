@@ -1,29 +1,51 @@
 package com.example.testaware.offlineAuth;
 
+import android.provider.ContactsContract;
 import android.util.Log;
 
+import com.example.testaware.IdentityHandler;
+
+import java.lang.reflect.Array;
 import java.security.PublicKey;
+import java.util.ArrayList;
 
 public class InitPeerAuthConn {
     private static boolean userIsAuthenticated;
     private static String LOG = "LOG-Test-Aware-InitPeerAuthConn";
+    private static ArrayList<PublicKey> verifiedAuthenticatorList;
+    private static PublicKey pubKeySelf;
 
 //TODO: remember to verify signer also - check root cert against cert of signer- or not
-    public static boolean checkPeerAuthCredentials(String receivedString, String signature, PublicKey clientPubKey, String clientEncodedKey, String peerIP){
+    public static boolean checkPeerAuthCredentials(String receivedString, String signature, PublicKey clientPubKey, String clientEncodedKey, String peerIP, String peerSignedKey){
         userIsAuthenticated=false;
+        pubKeySelf = IdentityHandler.getCertificate().getPublicKey();
+
+        ArrayList<String> signedKeyList= PeerSigner.getSavedSignedKeysFromFile();
+        verifiedAuthenticatorList = new ArrayList<>();
 
         if(VerifyCredentials.verifyString(receivedString, signature, clientPubKey)){
+            verifiedAuthenticatorList = VerifyUser.getValidatedAuthenticator();
 
             Log.d(LOG, "Signature provided is correct");
             if(VerifyUser.isAuthenticatedUser(peerIP, clientPubKey)){
                 userIsAuthenticated=true;
                 Log.d(LOG, "Match found for key and IP. User is peer authenticated");
             }
-            else if(VerifyCredentials.checkAuthenticatedUserKey(clientPubKey)){
+           // else if(VerifyCredentials.checkAuthenticatedUserKey(clientPubKey)){
+
+            else if(signedKeyList.contains(peerSignedKey)){
+                //check if singed key is in file with broadcasted signed keys
+                  VerifyUser.setAuthenticatedUser(peerIP,clientEncodedKey);
+                  userIsAuthenticated=true;
+                  Log.d(LOG, "Signed key in file ");
+            }
+            else if (checkAuthOnString(verifiedAuthenticatorList,peerSignedKey,clientPubKey)){       //verify signature on key based on authenticated users
                 VerifyUser.setAuthenticatedUser(peerIP,clientEncodedKey);
                 userIsAuthenticated=true;
-                Log.d(LOG, "Peer key has been peer authenticated by other user. User is authenticated");
+                Log.d(LOG, "Signature on key verified");
+              //  Log.d(LOG, "Peer key has been peer authenticated by other user. User is authenticated");
             }
+
             else{
                 userIsAuthenticated=false;
                 Log.d(LOG, "User not peer authenticated");
@@ -36,5 +58,25 @@ public class InitPeerAuthConn {
 
         return userIsAuthenticated;
     }
+
+
+    private static boolean checkAuthOnString(ArrayList<PublicKey> signerPublicKeys, String peerSignedKey, PublicKey clientPubKey) {
+        boolean match =false;
+        if(VerifyCredentials.verifyCredentials(peerSignedKey, pubKeySelf, clientPubKey)){
+            match = true;
+        }
+        else {
+            if (signerPublicKeys != null) {
+                for (int i = 0; i < signerPublicKeys.size(); i++) {
+                    if (VerifyCredentials.verifyCredentials(peerSignedKey, signerPublicKeys.get(i), clientPubKey)) {
+                        match = true;
+                    }
+                }
+            }
+        }
+        return match;
+    }
+
+
 
 }

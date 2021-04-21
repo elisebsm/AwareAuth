@@ -1,10 +1,12 @@
 package com.example.testaware;
 
 
+import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 
@@ -16,6 +18,8 @@ import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
+import com.example.testaware.offlineAuth.PeerSigner;
+import com.example.testaware.offlineAuth.VerifyUser;
 
 import java.io.BufferedInputStream;
 
@@ -25,8 +29,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import java.lang.ref.WeakReference;
 import java.net.Inet6Address;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -34,10 +40,13 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+import javax.security.auth.x500.X500Principal;
 
 import lombok.Getter;
 
@@ -48,9 +57,13 @@ public class AppClient implements Runnable{
     private SSLSocket sslSocket;
     private SSLContext sslContext;
 
+    private boolean certSelfSigned;
+
     private DataInputStream inputStream;
     private DataOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
+
+    private boolean userCertificateCorrect =true;
 
  //   @Getter
    // private List<ConnectionListener> connectionListeners;
@@ -62,7 +75,12 @@ public class AppClient implements Runnable{
     private Inet6Address inet6Address;
 
     private int port;
+    @Getter
+    private static WeakReference<TestChatActivity> testChatActivity;
 
+    public static void updateTestChatActivity(TestChatActivity activity) {
+          testChatActivity = new WeakReference<>(activity);
+        }
 
     public AppClient(KeyPair keyPair, SSLContext sslContext){
         this.keyPair = keyPair;
@@ -77,15 +95,25 @@ public class AppClient implements Runnable{
 
 
     private X509Certificate getServerIdentity() {
+        Context context = testChatActivity.get().getContext();
         try {
             Certificate[] certs = sslSocket.getSession().getPeerCertificates();
             if(certs.length > 0 && certs[0] instanceof X509Certificate) {
                 return (X509Certificate) certs[0];
             }
-        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
-            ignored.printStackTrace();
 
+        } catch (SSLPeerUnverifiedException ignored)       {
+            userCertificateCorrect =false;
+            Log.d(LOG, "Cert not valid");
+
+
+        }     catch(NullPointerException ignored){
+                ignored.printStackTrace();
         }
+
+
+
+
         return null;
     }
 
@@ -126,6 +154,7 @@ public class AppClient implements Runnable{
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void run() {
+        certSelfSigned(IdentityHandler.getCertificate());
         running = true;
         sslSocket = null;
 
@@ -134,8 +163,32 @@ public class AppClient implements Runnable{
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
             while(running){
-                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+                if(certSelfSigned){
+                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT_NO_AUTH);
+                    Log.d(LOG, "Connecting to NO_AUTH_SERVER PORT");
+                }
+                else{
+                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+                }
 
+
+                sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                    @Override
+                    public void handshakeCompleted(HandshakeCompletedEvent event) {
+                        if(event.getSession().isValid()){
+                            Log.d(LOG, "Handshake completed");
+                            X509Certificate peerCert = getServerIdentity();
+                            if(userCertificateCorrect && !certSelfSigned) {
+                                addPeerAuthInfo(peerCert);
+                            }
+                         }
+                         else{
+                             Log.d(LOG, "Handshake failed");
+                         }
+
+
+                    }
+                });
 
           //  for(ConnectionListener listener: connectionListeners){
             //    listener.onConnect();
@@ -193,6 +246,37 @@ public class AppClient implements Runnable{
         }
         return null;
     }
+
+    private void addPeerAuthInfo(X509Certificate peerCert){
+        if(peerCert != null) {
+            PublicKey peerPubKey = peerCert.getPublicKey();
+            VerifyUser.setValidatedAuthenticator(peerPubKey);
+            ArrayList<String> listOfSingedStrings = PeerSigner.getSavedtmpSignedKeysFromFile();
+            if (listOfSingedStrings != null) {
+                for (int i = 0; i < listOfSingedStrings.size(); i++) {
+                    PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
+                }
+            }
+        }
+        else{
+            Log.d(LOG, "PeerCert is null");
+        }
+
+    }
+
+    public boolean certSelfSigned(X509Certificate cert){
+        certSelfSigned=false;
+        X500Principal subject = cert.getSubjectX500Principal();
+        X500Principal issuer = cert.getIssuerX500Principal();
+        if(subject.equals(issuer)) {
+            certSelfSigned= true;
+        }
+        return certSelfSigned;
+    }
+
+
+
+
 
 /*
 
