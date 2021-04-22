@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.testaware.activities.MainActivity;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;

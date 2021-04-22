@@ -104,6 +104,7 @@ public class AppClient implements Runnable{
 
             } catch (IOException e) {
                 e.printStackTrace();
+                //if (e.ge)
                 Log.d(LOG, "Exception in Appclient  in sendMessage()");
                 running = false;
             }
@@ -149,15 +150,9 @@ public class AppClient implements Runnable{
 
              while(running){
                  if (inputStream != null){
-                     Log.d(LOG, "Before reading object");
-
-
                      String message =  inputStream.readUTF();
-                     Log.d(LOG, "Object read");
-
                      //MessagePacket messagePacket = (MessagePacket) abstractPacket;
                      //Message message = messagePacket.getMessage() ;
-
                      new Handler(Looper.getMainLooper()).post(()-> {
                          TestChatActivity.setChat(message);
 

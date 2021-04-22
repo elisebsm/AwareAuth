@@ -71,6 +71,9 @@ public class AppServer {
 
     private ClientHandler client;
 
+    @Getter
+    private SSLServerSocket serverSocket;
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, int serverPort){
         running = true;
@@ -83,7 +86,9 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
-                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
+                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(Constants.SERVER_PORT);
+                serverSocket.setReuseAddress(true);
+                serverSocket.getLocalPort();
                 serverSocket.setEnabledCipherSuites(protocol);
                 Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
                 serverSocket.setNeedClientAuth(true);

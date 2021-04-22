@@ -1,7 +1,7 @@
 package com.example.testaware;
 
 public class Constants {
-    public static final int SERVER_PORT = 1025;
+    public static final int SERVER_PORT = 1026;
     public static final String SERVICE_NAME = "wifiawareElise";
     public static final String ENCRYPTION_ALGORITHM_AES = "AES/GCM/NoPadding"; // ChaCha20/Poly1305/NoPadding OR  AES/GCM/NoPadding
     //AES/CBC/PKCS5PADDING
