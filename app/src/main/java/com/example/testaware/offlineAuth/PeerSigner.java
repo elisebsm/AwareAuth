@@ -1,31 +1,18 @@
 package com.example.testaware.offlineAuth;
 
 import android.util.Log;
-
-import com.example.testaware.IdentityHandler;
-
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
-
-/*
-This method is supposed to be called before the ssl connection is established with another peer, because user is not yet authenticated. Peer authenticates another peer. Web of trust. Sign public key
-of user who wants to get authenticated.
-*/
 
 public class PeerSigner {
 

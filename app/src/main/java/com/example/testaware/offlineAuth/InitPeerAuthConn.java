@@ -1,11 +1,7 @@
 package com.example.testaware.offlineAuth;
 
-import android.provider.ContactsContract;
 import android.util.Log;
-
 import com.example.testaware.IdentityHandler;
-
-import java.lang.reflect.Array;
 import java.security.PublicKey;
 import java.util.ArrayList;
 
@@ -31,21 +27,17 @@ public class InitPeerAuthConn {
                 userIsAuthenticated=true;
                 Log.d(LOG, "Match found for key and IP. User is peer authenticated");
             }
-           // else if(VerifyCredentials.checkAuthenticatedUserKey(clientPubKey)){
 
             else if(signedKeyList.contains(peerSignedKey)){
-                //check if singed key is in file with broadcasted signed keys
                   VerifyUser.setAuthenticatedUser(peerIP,clientEncodedKey);
                   userIsAuthenticated=true;
-                  Log.d(LOG, "Signed key in file ");
+                  Log.d(LOG, "Signed key provided is in file of signed keys ");
             }
-            else if (checkAuthOnString(verifiedAuthenticatorList,peerSignedKey,clientPubKey)){       //verify signature on key based on authenticated users
+            else if (checkAuthOnString(verifiedAuthenticatorList,peerSignedKey,clientPubKey)){
                 VerifyUser.setAuthenticatedUser(peerIP,clientEncodedKey);
                 userIsAuthenticated=true;
-                Log.d(LOG, "Signature on key verified");
-              //  Log.d(LOG, "Peer key has been peer authenticated by other user. User is authenticated");
+                Log.d(LOG, "Signature on key verified against authenticators");
             }
-
             else{
                 userIsAuthenticated=false;
                 Log.d(LOG, "User not peer authenticated");

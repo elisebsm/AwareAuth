@@ -1,30 +1,16 @@
 package com.example.testaware.offlineAuth;
 
-
 import android.util.Log;
-import com.github.cliftonlabs.json_simple.Jsoner;
-import org.json.JSONException;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-
-import java.nio.file.Files;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Scanner;
-
-
-
-/*Methods used to verify user that server wants to connect to - mappings of pub key and mac/Ip- after done challenge response*/
 
 public class VerifyUser {
 
@@ -48,7 +34,7 @@ public class VerifyUser {
         }
     }
 
-    public static boolean isAuthenticatedUser(String peerIP, PublicKey connectedPeerKey) {   //todo: never returns true
+    public static boolean isAuthenticatedUser(String peerIP, PublicKey connectedPeerKey) {
         boolean isAuthenticated = false;
         PublicKey keyDecodedFromFile = null;
         String thisLine = null;
@@ -77,7 +63,6 @@ public class VerifyUser {
 
     }
 
-    //public key of users who have had ssl connection with peer before, and therefore has valid certificate signed by root.
     public static void setValidatedAuthenticator(PublicKey peerKey) {
         String encodedPeerKey= Base64.getEncoder().encodeToString(peerKey.getEncoded());
         ArrayList<PublicKey> authenticatorList= VerifyUser.getValidatedAuthenticator();

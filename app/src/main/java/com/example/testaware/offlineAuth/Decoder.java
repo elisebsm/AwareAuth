@@ -6,15 +6,14 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Random;
 
 public class Decoder {
     private static PublicKey pubKey;
 
-    //Server uses returned key to validate signature
     private static PublicKey byteArrayToKey(byte[] publicKeyBytes)  {
         PublicKey pubKeyGenerated=null;
         try{
-            //generate public key object from bytes received
             pubKeyGenerated = KeyFactory.getInstance("EC").generatePublic(new X509EncodedKeySpec(publicKeyBytes));
         }
         catch(NoSuchAlgorithmException | InvalidKeySpecException i) {
@@ -24,7 +23,6 @@ public class Decoder {
         return pubKeyGenerated;
     }
 
-    //use to decode encoded key and signature
     public static byte[] decodeString(String encodedString){
         byte[] decodedString = Base64.getDecoder().decode(encodedString);
         return decodedString;
@@ -35,6 +33,15 @@ public class Decoder {
         return pubKey;
    }
 
+    public static String generateRandomString(int len) {
+        String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk"
+                +"lmnopqrstuvwxyz!@#$%&";
+        Random rnd = new Random();
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++)
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        return sb.toString();
+    }
 
 
 }

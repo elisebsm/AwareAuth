@@ -22,12 +22,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
-import java.net.InetAddress;
 import java.security.PublicKey;
 import java.util.Map;
 import java.util.Objects;
@@ -54,7 +50,6 @@ public class PeerAuthServer {
     private String [] protocol;
     private ClientHandler noAuthClient;
 
-
     @Getter
     private static WeakReference<MainActivity> mainActivity;
 
@@ -67,8 +62,6 @@ public class PeerAuthServer {
     public static void updateTestChatActivity(TestChatActivity activity) {
         testChatActivity = new WeakReference<>(activity);
     }
-
-
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public PeerAuthServer(SSLContext serverSSLContext, int serverPort,  PublicKey pubKey, String connectedPeerIP){  //use SERVER_PORT_NO_AUTH
@@ -100,19 +93,16 @@ public class PeerAuthServer {
 
                     }
                    else{
-                        //stop conn if user not authenticated
                         sslClientSocket.close();
-                        Log.d(LOG, "socket closing, user not peer authenticated ");
+                        Log.d(LOG, "Socket closing, user not peer authenticated ");
                         running =false;
                     }
                 }
-                 //   serverSocket.close();  //TODO: close socket
-                }  catch (IOException e) {
-                    Log.d(LOG, Objects.requireNonNull(e.getMessage()));
-                    e.printStackTrace();
-                    Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
-                }
-
+            }catch (IOException e) {
+                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+                e.printStackTrace();
+                Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
+            }
 
             };
         Thread serverThread = new Thread(serverTask);
