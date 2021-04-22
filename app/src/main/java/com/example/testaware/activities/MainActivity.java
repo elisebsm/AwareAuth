@@ -70,6 +70,7 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.security.auth.x500.X500Principal;
@@ -155,12 +156,14 @@ public class MainActivity extends AppCompatActivity  {
     private String signedKeyBroadcasted;
     private String peerSignedKeyReceived;
 
+    private boolean stopQuestionBox;
+
     @Getter
     private String certSelfSigned="false";
 
     @Getter
- //   private String role = "subscriber";
-  //  boolean isPublisher = false;
+   // private String role = "subscriber";
+   // boolean isPublisher = false;
     private String role = "publisher";
     boolean isPublisher = true;
 
@@ -448,7 +451,12 @@ public class MainActivity extends AppCompatActivity  {
 
 
             } else {
-                Toast.makeText(this, "Not peer Authe", Toast.LENGTH_SHORT).show();
+                Log.i(LOG,"User not authenticated.");
+              //  if (!stopQuestionBox) {
+             //       setDialogBox(key);
+              //      stopQuestionBox = true;
+
+             //   }
             }
 
         }
@@ -847,10 +855,10 @@ private AppServer appServer;
                 super.onAvailable(network);
                 Log.d(LOG, "onAvaliable + Network:" + network_.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_LONG).show();
-                if(role=="publisher"){
-                    appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+             //   if(role=="publisher"){
+                appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
 
-                }
+               // }
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher, peerAuthenticated, null );
 
             }

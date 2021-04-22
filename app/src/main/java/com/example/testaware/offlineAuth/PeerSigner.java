@@ -165,7 +165,7 @@ public class PeerSigner {
                     writer.close();
                     Log.i(LOG, "wrote key to file");
                 } else {
-                    Log.i(LOG, "No keys to save to file");
+                    Log.i(LOG, "No keys to save to file. Already in file");
                 }
 
             } catch (Exception e) {

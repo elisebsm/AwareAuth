@@ -178,7 +178,7 @@ public class AppClient implements Runnable{
                         if(event.getSession().isValid()){
                             Log.d(LOG, "Handshake completed");
                             X509Certificate peerCert = getServerIdentity();
-                            if(userCertificateCorrect && !certSelfSigned) {
+                            if(userCertificateCorrect && !certSelfSigned && peerCert != null) {
                                 addPeerAuthInfo(peerCert);
                             }
                          }
@@ -248,16 +248,15 @@ public class AppClient implements Runnable{
     }
 
     private void addPeerAuthInfo(X509Certificate peerCert){
-        if(peerCert != null) {
-            PublicKey peerPubKey = peerCert.getPublicKey();
-            VerifyUser.setValidatedAuthenticator(peerPubKey);
-            ArrayList<String> listOfSingedStrings = PeerSigner.getSavedtmpSignedKeysFromFile();
-            if (listOfSingedStrings != null) {
-                for (int i = 0; i < listOfSingedStrings.size(); i++) {
-                    PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
-                }
+        PublicKey peerPubKey = peerCert.getPublicKey();
+        VerifyUser.setValidatedAuthenticator(peerPubKey);
+        ArrayList<String> listOfSingedStrings = PeerSigner.getSavedtmpSignedKeysFromFile();
+        if (listOfSingedStrings != null) {
+            for (int i = 0; i < listOfSingedStrings.size(); i++) {
+                PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
             }
         }
+
         else{
             Log.d(LOG, "PeerCert is null");
         }

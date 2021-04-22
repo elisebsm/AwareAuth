@@ -127,9 +127,9 @@ public class TestChatActivity extends AppCompatActivity {
 
         }
 
-
         this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
         this.peerAuthServer = mainActivity.get().getConnectionHandler().getPeerAuthServer();
+
 
         Intent intent = getIntent();
         contact = (Contact) intent.getSerializableExtra("contact");
@@ -256,7 +256,10 @@ public class TestChatActivity extends AppCompatActivity {
 
             }
             else {
-                appServer.sendMessage(msg);
+                if(appServer != null) {
+                    appServer.sendMessage(msg);
+                    Log.d(LOG, "No client connected");
+                }
             }  //Also check if user is not autenticated at all
         }
 

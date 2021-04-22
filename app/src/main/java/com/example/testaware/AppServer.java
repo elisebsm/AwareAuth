@@ -119,7 +119,7 @@ public class AppServer {
                             if(event.getSession().isValid() ){
                                 Log.d(LOG, "Handshake completed");
                                 X509Certificate peerCert = getClientIdentity();
-                                if(userCertificateCorrect) {
+                                if(userCertificateCorrect && peerCert != null) {
                                     addPeerAuthInfo(peerCert);
                                 }
                             }
@@ -178,7 +178,6 @@ public class AppServer {
 
 
     private X509Certificate getClientIdentity() {
-        Context context = testChatActivity.get().getContext();
         try {
             Certificate[] certs = sslClientSocket.getSession().getPeerCertificates();
             if(certs.length > 0 && certs[0] instanceof X509Certificate) {
@@ -198,7 +197,6 @@ public class AppServer {
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey= peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
-        //TODO: add tmp signed keys to permanent file
         ArrayList<String> listOfSingedStrings = PeerSigner.getSavedtmpSignedKeysFromFile();
         if(listOfSingedStrings!= null) {
             for (int i = 0; i < listOfSingedStrings.size(); i++) {
@@ -274,7 +272,9 @@ public class AppServer {
 
 
     public void sendMessage(String message){
-        client.sendMessage(message);
+        if(client != null) {
+            client.sendMessage(message);
+        }
        /* if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;

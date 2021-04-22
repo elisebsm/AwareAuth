@@ -33,7 +33,6 @@ public class VerifyCredentials {
 
         if (verifySignature(sigPeerKey, signerPubKey, peerPubKey) ) {
             String encodedKey= Base64.getEncoder().encodeToString(peerPubKey.getEncoded());
-            addAuthenticatedUserKey(encodedKey);
             return true;
         }
         else{

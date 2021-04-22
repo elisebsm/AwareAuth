@@ -82,15 +82,24 @@ public class VerifyUser {
         String encodedPeerKey= Base64.getEncoder().encodeToString(peerKey.getEncoded());
         ArrayList<PublicKey> authenticatorList= VerifyUser.getValidatedAuthenticator();
         try {
-            if (authenticatorList.contains(peerKey)) {
-                Log.i(LOG, "Authenticator already verifyed");
-            } else {
+            if(authenticatorList != null) {
+                if (authenticatorList.contains(peerKey)) {
+                    Log.i(LOG, "Authenticator already verifyed");
+                }
+                else{
+                    BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/validatedAuthenticators.txt", true));
+                    writer.write(encodedPeerKey + "\n");
+                    Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
+                    writer.close();
+                }
+            }
+            else {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/validatedAuthenticators.txt", true));
                 writer.write(encodedPeerKey + "\n");
-                Log.i(LOG, "setValidatedAuthenticator : "+ encodedPeerKey);
+                Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
                 writer.close();
-
             }
+
         }
         catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -100,7 +109,7 @@ public class VerifyUser {
     }
 
     public static ArrayList<PublicKey> getValidatedAuthenticator() {
-        ArrayList<PublicKey> authenticatorList =null;
+        ArrayList<PublicKey> authenticatorList = new ArrayList<>();
         PublicKey keyDecodedFromFile = null;
         String thisLine = null;
         try {
