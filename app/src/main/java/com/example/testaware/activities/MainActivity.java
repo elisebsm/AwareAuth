@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
@@ -54,9 +55,14 @@ import com.example.testaware.models.Message;
 
 import java.io.Serializable;
 import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 
@@ -106,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private WifiAwareNetworkInfo peerAwareInfo;
 
     private static Inet6Address peerIpv6 ;
+    private Inet6Address myIP;
 
     private String macAddress;
 
@@ -122,10 +129,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
 
     @Getter
-    private String role = "subscriber";
-    boolean isPublisher = false;
-    //private String role = "publisher";
-    //boolean isPublisher = true;
+    ///private String role = "subscriber";
+    //boolean isPublisher = false;
+    private String role = "publisher";
+    boolean isPublisher = true;
 
     private String LOG = "LOG-Test-Aware";
 
@@ -501,10 +508,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                     super.onMessageReceived(peerHandle, message);
                     Log.d(LOG, "subscribe, received message");
+
                     String messageIn = new String(message);
+
+                    Log.d("TEST-PORT", "port: " + messageIn);
                     if(message.length == 2) {
                         portToUse = byteToPortInt(message);
-                        Log.d(LOG, "subscribe, will use port number "+ portToUse);
+                        Log.d("TEST-PORT", "subscribe, will use port number "+ portToUse);
                     } else if (message.length == 6){
                         setOtherMacAddress(message);
 
@@ -633,6 +643,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 .setNetworkSpecifier(networkSpecifier)
                 .build();
 
+
         connectivityManager.requestNetwork(myNetworkRequest, new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(Network network) {
@@ -652,7 +663,23 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     Log.d("TESTING-LOG-TIME-DIFF ", + diffStartDiscovered + ":" + diffStartAvailable);
                 }
 
-                appServer = new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT);
+
+                if(appServer == null){
+                    appServer = new AppServer(sslContextedObserver.getSslContext());
+                }
+
+
+                if(role.equals("publisher")){
+                    localPortServer = appServer.getLocalPort();
+                    hashMapMacWithPort.put(getMacAddressFromNetwork(network), localPortServer);
+                    PeerHandle peer = hashMapPeerHandleAndMac.get(getMacAddressFromNetwork(network));
+                    String portStr = String.valueOf(localPortServer);
+                    byte [] message = portStr.getBytes();
+                    publishDiscoverySession.sendMessage(peer, MESSAGE, message);
+                    Log.d("TEST-PORT", portStr );
+                }
+
+
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
             }
 
@@ -664,6 +691,28 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 Toast.makeText(context, "onUnavailable", Toast.LENGTH_SHORT).show();
             }
 
+            @Override
+            public void onLinkPropertiesChanged(Network network, LinkProperties linkProperties) {
+                super.onLinkPropertiesChanged(network, linkProperties);
+                try {
+                    NetworkInterface awareNi = NetworkInterface.getByName(linkProperties.getInterfaceName());
+                    Enumeration<InetAddress> inetAddresses = awareNi.getInetAddresses();
+
+                    while (inetAddresses.hasMoreElements()) {
+                        InetAddress addr = inetAddresses.nextElement();
+                        if (addr instanceof Inet6Address) {
+                            Log.d("myTag", "netinterface ipv6 address: " + addr.toString());
+                            if (addr.isLinkLocalAddress()) {
+                                //ipv6 = Inet6Address.getByAddress("WifiAware",addr.getAddress(),awareNi);
+                                myIP = Inet6Address.getByAddress("WifiAware",addr.getAddress(),awareNi);
+                            }
+                        }
+                    }
+
+                } catch (SocketException | UnknownHostException e) {
+                    e.printStackTrace();
+                }
+            }
 
             @Override
             public void onCapabilitiesChanged(Network network_, NetworkCapabilities networkCapabilities) {
@@ -673,6 +722,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 setPeerIpv6(peerAwareInfo.getPeerIpv6Addr());
                 Log.d(LOG, "Peeripv6: " + peerAwareInfo.getPeerIpv6Addr() );
+
+
 
                 // WifiAwareNetworkInfo wifiInfo = (WifiAwareNetworkInfo) networkCapabilities_.getTransportInfo();
                 //String ssid = wifiInfo.get;
@@ -695,6 +746,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 if(hashMapPeerHandleAndMac.isEmpty()){
                     Log.d("LOG-Test-Debugging", "HashMap empty? yes");
                     closeSession();
+                    appServer.stop();
+                    appServer = null;
                     new Handler(Looper.getMainLooper()).post(()-> {
                         setUpNewConnection();
                     });
@@ -717,12 +770,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
 
+    private HashMap<String, Integer> hashMapMacWithPort = new HashMap<String, Integer>();
+    private int localPortServer;
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void openChat(int position){
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
         Contact contact = new Contact(IdentityHandler.getCertificate());
         intentChat.putExtra("contact", contact);
+        intentChat.putExtra("port", localPortServer);
         startActivity(intentChat);
     }
 

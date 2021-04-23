@@ -74,8 +74,11 @@ public class AppServer {
     @Getter
     private SSLServerSocket serverSocket;
 
+    @Getter
+    private int localPort;
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public AppServer(SSLContext serverSSLContext, int serverPort){
+    public AppServer(SSLContext serverSSLContext){
         running = true;
         clients = new ConcurrentHashMap<>();
         protocol= new String[1];
@@ -86,9 +89,9 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
-                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(Constants.SERVER_PORT);
-                serverSocket.setReuseAddress(true);
-                serverSocket.getLocalPort();
+                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
+                //serverSocket.setReuseAddress(true);
+                localPort = serverSocket.getLocalPort();
                 serverSocket.setEnabledCipherSuites(protocol);
                 Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
                 serverSocket.setNeedClientAuth(true);
@@ -98,7 +101,6 @@ public class AppServer {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     //addClient(sslClientSocket);
                     Log.d(LOG, "client accepted");
-                    // FJERNET BufferedInputStream 06.04
                     inputStream = new DataInputStream(sslClientSocket.getInputStream());
                     outputStream = new DataOutputStream(sslClientSocket.getOutputStream());
 
@@ -160,10 +162,14 @@ public class AppServer {
 
 
     public void stop(){
-        for (ConnectedClient client: clients.values()){
+        /*for (ConnectedClient client: clients.values()){
             removeClient(client);
-        }
+        }*/
         running = false;
+        if(client!=null){
+
+            client.setRunning(false);
+        }
     }
 
     public void setListener(ConnectionListener listener){
@@ -202,32 +208,6 @@ public class AppServer {
         }
     }*/
 
-   /* @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(Message message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream send message runnable");
-                outputStream.writeObject(message);
-                outputStream.flush();
-
-                *//*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*//*
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
-    }*/
 
 
     public void sendMessage(String message){

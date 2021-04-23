@@ -31,6 +31,7 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public class ClientHandler extends Thread  {
 
@@ -38,6 +39,8 @@ public class ClientHandler extends Thread  {
     private DataInputStream in;
     private DataOutputStream out;
 
+    @Getter
+    @Setter
     private boolean running;
 
     private SSLSocket sslSocket;

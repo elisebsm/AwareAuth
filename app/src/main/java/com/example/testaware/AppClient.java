@@ -129,12 +129,12 @@ public class AppClient implements Runnable{
         running = true;
         sslSocket = null;
 
-        this.port = Constants.SERVER_PORT;
+        //this.port = Constants.SERVER_PORT;
 
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
             while(running){
-                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, 0);
 
 
             for(ConnectionListener listener: connectionListeners){
