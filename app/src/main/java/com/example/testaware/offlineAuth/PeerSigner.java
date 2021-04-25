@@ -127,7 +127,7 @@ public class PeerSigner {
        if(sigKey != null) {
            try {
                BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeySelf.txt", true));
-               writer.write(sigKey);
+               writer.write(sigKey+  "\n");
                Log.i(LOG, "Setting signed key self");
                writer.close();
            } catch (Exception e) {
@@ -142,7 +142,7 @@ public class PeerSigner {
             try {
                 if (!getSavedSignedKeysFromFile().contains(sigKey)) {
                     BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/tmpSignedKeys.txt", true));
-                    writer.write(sigKey);
+                    writer.write(sigKey+ "\n");
 
                     writer.close();
                     Log.i(LOG, "wrote key to file");
