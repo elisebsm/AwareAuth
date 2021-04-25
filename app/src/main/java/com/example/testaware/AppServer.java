@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
+import java.net.Inet6Address;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -103,7 +104,7 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
-                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
+                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort,3);
                 serverSocket.setEnabledCipherSuites(protocol);
                 Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
                 serverSocket.setNeedClientAuth(true);

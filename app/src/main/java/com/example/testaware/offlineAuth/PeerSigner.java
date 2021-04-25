@@ -105,36 +105,31 @@ public class PeerSigner {
         return signedKeys;
     }
 
-    public static String getSignedKeySelf(){  //this is encoded base 64
+    public static ArrayList<String> getSignedKeySelf(){
         String line = null;
-        String signedKeysSelf=null;
+        ArrayList<String> signedKeysSelfList= new ArrayList<>();
         try{
             File file = new File("/data/data/com.example.testaware/signedKeySelf.txt");
             if(file.exists()) {
                 BufferedReader reader = new BufferedReader(new FileReader("/data/data/com.example.testaware/signedKeySelf.txt"));
                 while ((line = reader.readLine()) != null) {
-                    signedKeysSelf = line;
-
+                    signedKeysSelfList.add(line);
                 }
             }
         }
         catch(IOException e){
             e.printStackTrace();
         }
-        return signedKeysSelf;
+        return signedKeysSelfList;
     }
 
-    public static void setSignedKeySelf(String sigKey){  //this is encoded base 64
+    public static void setSignedKeySelf(String sigKey){
        if(sigKey != null) {
            try {
-               if (getSignedKeySelf() == null) {  //only peer authneticated once
-                   BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeySelf.txt", true));
-                   writer.write(sigKey);
-                   Log.i(LOG, "Setting signed keys");
-
-                   writer.close();
-               }
-
+               BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeySelf.txt", true));
+               writer.write(sigKey);
+               Log.i(LOG, "Setting signed key self");
+               writer.close();
            } catch (Exception e) {
                e.printStackTrace();
            }
