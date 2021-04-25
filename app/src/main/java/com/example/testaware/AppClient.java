@@ -63,10 +63,11 @@ public class AppClient implements Runnable{
     private int port;
 
 
-    public AppClient(KeyPair keyPair, SSLContext sslContext){
+    public AppClient(KeyPair keyPair, SSLContext sslContext, int port){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
+        this.port = port;
 
         //Thread thread = new Thread(this);
         //thread.start();
@@ -134,7 +135,8 @@ public class AppClient implements Runnable{
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
             while(running){
-                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, 0);
+                Log.d(LOG, "port: " + port);
+                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
 
 
             for(ConnectionListener listener: connectionListeners){

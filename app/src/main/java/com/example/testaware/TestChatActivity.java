@@ -77,6 +77,7 @@ public class TestChatActivity extends AppCompatActivity {
 
     private Contact contact;
     String role;
+    private int port;
 
 
     @Override
@@ -87,6 +88,8 @@ public class TestChatActivity extends AppCompatActivity {
         this.context = this;
 
         myIpvAddr = getLocalIp();
+        port = getIntent().getIntExtra("port", 1025);
+
 
 
         SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
@@ -102,7 +105,8 @@ public class TestChatActivity extends AppCompatActivity {
             textView.setText("SERVER");
             role = "Server";
         } else {
-            appClient = new AppClient(keyPair, sslContext);
+            appClient = new AppClient(keyPair, sslContext, port);
+            Log.d(LOG, "Port: " + port);
             mainActivity.get().getConnectionHandler().setAppClient(appClient);
             textView.setText("CLIENT");
             role = "Client";

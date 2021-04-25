@@ -12,8 +12,11 @@ import com.example.testaware.R;
 
 import java.util.ArrayList;
 
+import lombok.Getter;
+
 
 public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
+    @Getter
     private ArrayList<ChatListItem> chats;
     Context context;
     public ChatsListAdapter(Context context, ArrayList<ChatListItem> chats) {

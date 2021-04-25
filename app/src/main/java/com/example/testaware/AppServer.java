@@ -2,6 +2,7 @@ package com.example.testaware;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.os.Build;
 
 import android.util.Log;
@@ -78,7 +79,7 @@ public class AppServer {
     private int localPort;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public AppServer(SSLContext serverSSLContext){
+    public AppServer(SSLContext serverSSLContext, Network network){
         running = true;
         clients = new ConcurrentHashMap<>();
         protocol= new String[1];
@@ -89,17 +90,23 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
+
+
                 serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
                 //serverSocket.setReuseAddress(true);
                 localPort = serverSocket.getLocalPort();
+                Log.d(LOG, "Port: "+ localPort);
                 serverSocket.setEnabledCipherSuites(protocol);
                 Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
                 serverSocket.setNeedClientAuth(true);
 
+                Log.d(LOG, "POrt"+ localPort);
+                mainActivity.get().setServerPort(network);
 
                while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     //addClient(sslClientSocket);
+                    sslClientSocket.getPort();
                     Log.d(LOG, "client accepted");
                     inputStream = new DataInputStream(sslClientSocket.getInputStream());
                     outputStream = new DataOutputStream(sslClientSocket.getOutputStream());

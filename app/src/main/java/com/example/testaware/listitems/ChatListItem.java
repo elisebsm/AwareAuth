@@ -2,8 +2,11 @@ package com.example.testaware.listitems;
 
 import java.net.Inet6Address;
 
+import lombok.Getter;
+
 public class ChatListItem {
     private String username;
+    @Getter
     private String peerIpv6;
 
     public ChatListItem(String username, String peerIpv6){
