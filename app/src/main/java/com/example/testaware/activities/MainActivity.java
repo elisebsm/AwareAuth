@@ -136,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     //private String role = "publisher";
     //boolean isPublisher = true;
 
-    private String LOG = "LOG-Test-Aware";
+    private String LOG = "Log-Main";
 
 
 
@@ -174,6 +174,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private HashMap<String, Integer> hashMapMacWithPort = new HashMap<String, Integer>();
     private int localPortServer;
 
+
+    private List<PeerHandle> listOfPeersPortIsSentTo = new ArrayList<>();
+    private HashMap<PeerHandle, Integer> hashMapPortAndServer = new HashMap<>();
+
     int data_init ;
     int data_resp ;
 
@@ -185,10 +189,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         if(start == 0){
             start = currentTimeMillis();
             Log.d("TESTING-LOG-TIME-START", String.valueOf(start));
-
         }
-
-
         wifiAwareManager = null;
         wifiAwareSession = null;
         connectivityManager = null;
@@ -197,16 +198,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         subscribeDiscoverySession = null;
         peerHandle = null;
 
-        String state_change = WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED;
-        int data_init = WifiAwareManager.WIFI_AWARE_DATA_PATH_ROLE_INITIATOR;
-        int data_resp = WifiAwareManager.WIFI_AWARE_DATA_PATH_ROLE_RESPONDER;
-
 
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
-        //TextView tvRole = findViewById(R.id.tvRole);
-        //tvRole.setText(role);
+        TextView tvRole = findViewById(R.id.tvRole);
+        tvRole.setText(role);
 
 
         if (canAccessLocationFine()) {
@@ -226,11 +223,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
 
-
         context = this;
 
         sslContextedObserver = new SSLContextedObserver();
-
         sslContextedObserver.setListener(sslContext -> {
             connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
             attachToSession();
@@ -258,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         attachToSession();
     }
 
-    private boolean hasRequestedConnection(PeerHandle peerHandle){
+    private boolean hasRequestedConnection(PeerHandle peerHandle){ //TODO:
         for (PeerHandle peer : requestedConnectionList)
             if (peer.equals(peerHandle)) {
                 return true;
@@ -280,17 +275,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         connectivityManager = null;*/
 
 
-        wifiConnectionRequested = false;
-
+        //wifiAwareManager = null;
+        //connectivityManager = null;
+        //wifiConnectionRequested = false;
+        //wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
+        //connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         closeSession();
-        wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
-
-        connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         attachToSession();
         addPeersToChatList();
         TestChatActivity.updateActivityMain(this);
         AppServer.updateActivity(this);
     }
+
 
     private void setupPermissions() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -301,20 +297,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         if (requestCode == MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE) {// If request is cancelled, the result arrays are empty.
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 return;
-
             } else {
                 Toast.makeText(this, "Permission for location not granted. NAN can't run.", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
     }
-
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -329,7 +322,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         listViewChats.setAdapter(chatListAdapter);
         listViewChats.setOnItemClickListener((parent, view, position, id) -> {
             String peerIpv6 = chatListAdapter.getChats().get(position).getPeerIpv6();
-
             MainActivity.this.openChat(position, peerIpv6);
         });
     }
@@ -338,10 +330,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     public void startPublishAndSubscribe(String role){
         if(role.equals("subscriber")){
             subscribe();
-           // publish();
         } else {
             publish();
-            //subscribe();
         }
     }
 
@@ -350,19 +340,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         wifiAwareManager.attach(new AttachCallback() {
             @Override
             public void onAttached(WifiAwareSession session) {
-
-                int data_init = WifiAwareManager.WIFI_AWARE_DATA_PATH_ROLE_INITIATOR;
-
-                int data_resp = WifiAwareManager.WIFI_AWARE_DATA_PATH_ROLE_RESPONDER;
-
                 super.onAttached(session);
                 wifiAwareSession = session;
             }
-
             @Override
             public void onAttachFailed() {
-
-                Log.d(LOG,"on attached failed");
+                Log.d(LOG,"onAttachFailed");
             }
         }, new IdentityChangedListener() {
             @Override
@@ -371,42 +354,27 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 startPublishAndSubscribe(role);
-                //closeSession(); ENDRET  //TODO: close session
             }
         }, null);
     }
+
 
 
     private void publish () {
         publishConfig = new PublishConfig.Builder()
                 .setServiceName(Constants.SERVICE_NAME)
                 .build();
+
         if(wifiAwareSession!=null){
-
-            //Log.d("LOG-Test-Debugging", "publish method");
-            //isPublisher = true;
-
             wifiAwareSession.publish(publishConfig, new DiscoverySessionCallback() {
-
-            @Override
-            public void onMessageSendFailed (int messageId) {
-                Log.i("LOG-Test-Debugging", "onMessageSendFailed");
-            }
             @Override
             public void onSessionConfigFailed(){
                 Log.i("LOG-Test-Debugging", "onSessionConfigFailed");
-                //setUpNewConnection();
             }
-
 
             @Override
             public void onServiceDiscovered(PeerHandle peerHandle_, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
-                super.onServiceDiscovered(peerHandle, serviceSpecificInfo, matchFilter);
-
-               /* subscribeDiscoverySession.close();
-                subscribeDiscoverySession = null;
-                role = "publisher";*/
-
+                super.onServiceDiscovered(peerHandle_, serviceSpecificInfo, matchFilter);
                 Log.i("LOG-Test-Debugging", "publish onServiceDiscovered");
             }
 
@@ -420,16 +388,20 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             @RequiresApi(api = Build.VERSION_CODES.Q)
             @Override
             public void onMessageReceived(PeerHandle peerHandle_, byte[] message) {
-                super.onMessageReceived(peerHandle, message);
+                super.onMessageReceived(peerHandle_, message);
                 publishDiscoverySession.sendMessage(peerHandle_, MESSAGE, myMac);       //Så lenge den mottar meldinger, det skjer hele tiden hvis det er noen andre i nærheten
                 Log.d(LOG, "message received publisher: " + message);
+                if (!listOfPeersPortIsSentTo.contains(peerHandle_)){
+                    if(appServer!=null){
+                        sendPort(peerHandle_);
+                    }
+                }
 
-                if (message.length == 2) {
+                /*if (message.length == 2) {
                     portToUse = byteToPortInt(message);
                     Log.d(LOG, "subscribe, will use port number " + portToUse);
-                } else if (message.length == 6) {
+                } else*/ if (message.length == 6) {
                     setOtherMacAddress(message);
-
                     if (!hashMapPeerHandleAndMac.containsKey(macAddress)) {
                         hashMapPeerHandleAndMac.put(macAddress, peerHandle_);
                         addPeersToChatList();
@@ -464,22 +436,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 } else {
                     Log.d(LOG, "MEssage length = " + message.length);
                 }
-
                 peerHandle = peerHandle_;
-
             }
 
-        }, null);
+            }, null);
 
-    }
+        }
     }
 
 
     private void subscribe(){
-        int i = 0;
         subscribeConfig = new SubscribeConfig.Builder()
                 .setServiceName(Constants.SERVICE_NAME)
-                //.setSubscribeType(i)
                 .build();
         if(wifiAwareSession!= null){
             wifiAwareSession.subscribe(subscribeConfig, new DiscoverySessionCallback() {
@@ -489,12 +457,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 }
                 @Override
                 public void onSessionConfigFailed(){
-                    //setUpNewConnection();
-
                     Log.i("LOG-Test-Debugging", "onSessionConfigFailed");
                 }
                 @Override
-                public void onSubscribeStarted(SubscribeDiscoverySession session) {
+                public void onSubscribeStarted(@NonNull SubscribeDiscoverySession session) {
                     super.onSubscribeStarted(session);
                     subscribeDiscoverySession = session;
                     Log.i("LOG-Test-Debugging", "subscribe started");
@@ -508,33 +474,28 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 @RequiresApi(api = Build.VERSION_CODES.Q)
                 @Override
                 public void onServiceDiscovered(PeerHandle peerHandle_, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
-                    super.onServiceDiscovered(peerHandle, serviceSpecificInfo, matchFilter);
+                    super.onServiceDiscovered(peerHandle_, serviceSpecificInfo, matchFilter);
 
                     Log.i("LOG-Test-Debugging", "subscribe onServiceDiscovered");
-
-                    /*publishDiscoverySession.close();
-                    publishDiscoverySession = null;
-                    role = "subscriber";*/
-
 
                     if(discovered == 0){
                         discovered = currentTimeMillis();
                         Log.d("TESTING-LOG-TIME-DISCOVERY", String.valueOf(discovered));
                     }
-
                     peerHandle = peerHandle_;
                     if (subscribeDiscoverySession != null && peerHandle != null) {
                         subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);      //Hele tiden
                     }
-
                 }
+
                 @RequiresApi(api = Build.VERSION_CODES.Q)
                 @Override
                 public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                     super.onMessageReceived(peerHandle, message);
-                    Log.d(LOG, "subscribe, received message");
 
                     String messageIn = new String(message);
+
+                    Log.d(LOG, "Message Received" + messageIn);
                     if(message.length == 2) {
                         portToUse = byteToPortInt(message);
                         Log.d(LOG, "subscribe, will use port number "+ portToUse);
@@ -549,7 +510,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         Log.d(LOG, "Message IN:" + messageIn);
                         requestWiFiConnection(peerHandle, "subscriber");
                     } else if(messageIn.contains("ServerPort:") && !isPortToServerSet) {
+                        Log.d(LOG, "Message IN:" + messageIn);
                         portToServer = Integer.parseInt(messageIn.split(":")[1]);
+                        if(!hashMapPortAndServer.containsValue(peerHandle)){
+                            hashMapPortAndServer.put(peerHandle, portToServer);
+                        }
                     }
                     else if (message.length == 16) {
                         //setOtherIPAddress(message);
@@ -557,18 +522,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     } else if (message.length > 16) {
                         Log.d(LOG, "Message IN:" + messageIn);
 
-                        boolean hasRequestedConnection = hasRequestedConnection(peerHandle);
+                        /*boolean hasRequestedConnection = hasRequestedConnection(peerHandle);
                         if(messageIn.contains("startConnection")  && !hasRequestedConnection) {
                             requestWiFiConnection(peerHandle, "subscriber");
                             requestedConnectionList.add(peerHandle);
-                        }
+                        }*/
                     }
                 }
             }, null);
         }
 
     }
-
 
 
     @Override
@@ -581,6 +545,13 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     protected void onResume() {
         super.onResume();
         addPeersToChatList();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(LOG, "App onDestroy");
+        //TODO: remove peer from list
     }
 
 
@@ -601,16 +572,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             wifiAwareSession = null;
         }
     }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.d(LOG, "App onDestroy");
-        //TODO: remove peer from list
-    }
-
-
 
 
     private String getMacAddressFromPeerHandle(PeerHandle peerHandle){
@@ -676,9 +637,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         connectivityManager.requestNetwork(myNetworkRequest, new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(Network network) {
-                hashMapOfNetworks.put(getMacAddressFromPeerHandle(peerHandle), network);
-
                 super.onAvailable(network);
+                hashMapOfNetworks.put(getMacAddressFromPeerHandle(peerHandle), network);
                 Log.d(LOG, "onAvaliable + Network:" + network.toString());
                 Toast.makeText(context, "On Available!", Toast.LENGTH_SHORT).show();
                 //connectionHandler.setAppServer(new AppServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT));
@@ -696,7 +656,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 if(appServer == null){
                     appServer = new AppServer(sslContextedObserver.getSslContext(), network);
                 }
-
 
 
 
@@ -786,17 +745,20 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         this.peerIpv6 = ipv6;
     }
 
+    private void sendPort(PeerHandle peerHandle){
+        listOfPeersPortIsSentTo.add(peerHandle);
+        String portStr = "ServerPort:"+ localPortServer;
+        byte [] message = portStr.getBytes();
+        publishDiscoverySession.sendMessage(peerHandle, MESSAGE, message);
+        Log.d(LOG, portStr );
+    }
 
     public void setServerPort(Network network){
         if(role.equals("publisher")){
             localPortServer = appServer.getLocalPort();
             hashMapMacWithPort.put(getMacAddressFromNetwork(network), localPortServer);
             PeerHandle peer = hashMapPeerHandleAndMac.get(getMacAddressFromNetwork(network));
-
-            String portStr = "ServerPort:"+ localPortServer;
-            byte [] message = portStr.getBytes();
-            publishDiscoverySession.sendMessage(peer, MESSAGE, message);
-            Log.d(LOG, portStr );
+            sendPort(peer);
         }
     }
     private HashMap<String, Integer> hashMapPortMac = new HashMap<String, Integer>();

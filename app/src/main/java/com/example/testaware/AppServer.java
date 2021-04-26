@@ -48,7 +48,7 @@ import lombok.Getter;
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
-    private String LOG = "LOG-Test-Aware-App-Server";
+    private String LOG = "Log-App-Server";
     //private ObjectInputStream inputStream;
     //private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
 
@@ -213,7 +213,11 @@ public class AppServer {
 
 
     public void sendMessage(String message){
-        client.sendMessage(message);
+        if(client != null){
+            client.sendMessage(message);
+        } else {
+            Log.d(LOG, "Client is null");
+        }
        /* if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;

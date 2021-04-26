@@ -35,7 +35,7 @@ import lombok.Setter;
 
 public class ClientHandler extends Thread  {
 
-    private String LOG = "LOG-Test-Aware-Client-handler";
+    private String LOG = "Log-Client-handler";
     private DataInputStream in;
     private DataOutputStream out;
 

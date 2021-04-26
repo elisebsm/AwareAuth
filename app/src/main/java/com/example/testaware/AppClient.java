@@ -54,7 +54,7 @@ public class AppClient implements Runnable{
     @Getter
     private List<ConnectionListener> connectionListeners;
 
-    private String LOG = "LOG-Test-Aware-Client";
+    private String LOG = "Log-Client";
     @Getter
     private KeyPair keyPair;
 
@@ -68,6 +68,7 @@ public class AppClient implements Runnable{
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
         this.port = port;
+        Log.d(LOG, "port: " + port);
 
         //Thread thread = new Thread(this);
         //thread.start();
@@ -139,9 +140,9 @@ public class AppClient implements Runnable{
                 sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
 
 
-            for(ConnectionListener listener: connectionListeners){
+            /*for(ConnectionListener listener: connectionListeners){
                 listener.onConnect();
-            }
+            }*/
             outputStream = new DataOutputStream(sslSocket.getOutputStream());
 
 
