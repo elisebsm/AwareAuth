@@ -20,7 +20,7 @@ public class VerifyUser {
 
         try {
             PublicKey clientPubKey = Decoder.getPubKeyGenerated(encodedPeerKey);
-            if(isAuthenticatedUser(connectedPeerIP,clientPubKey)){
+            if(isAuthenticatedUser(clientPubKey)){
                 Log.i(LOG, "User Already authenticated and in file");
             }
             else {
@@ -34,7 +34,7 @@ public class VerifyUser {
         }
     }
 
-    public static boolean isAuthenticatedUser(String peerIP, PublicKey connectedPeerKey) {
+    public static boolean isAuthenticatedUser(PublicKey connectedPeerKey) {
         boolean isAuthenticated = false;
         PublicKey keyDecodedFromFile = null;
         String thisLine = null;
@@ -47,7 +47,7 @@ public class VerifyUser {
                     String ip = newSplitString[0];
                     String encodedKeyFromFile = newSplitString[1];
                     keyDecodedFromFile = Decoder.getPubKeyGenerated(encodedKeyFromFile);
-                    if (ip.equals(peerIP) && keyDecodedFromFile.equals(connectedPeerKey)) {
+                    if ( keyDecodedFromFile.equals(connectedPeerKey)) { //removed IP from checklist. Dont need this
                         isAuthenticated = true;
                     }
 

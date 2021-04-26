@@ -23,7 +23,7 @@ public class InitPeerAuthConn {
             verifiedAuthenticatorList = VerifyUser.getValidatedAuthenticator();
 
             Log.d(LOG, "Signature provided is correct");
-            if(VerifyUser.isAuthenticatedUser(peerIP, clientPubKey)){
+            if(VerifyUser.isAuthenticatedUser(clientPubKey)){
                 userIsAuthenticated=true;
                 Log.d(LOG, "Match found for key and IP. User is peer authenticated");
             }

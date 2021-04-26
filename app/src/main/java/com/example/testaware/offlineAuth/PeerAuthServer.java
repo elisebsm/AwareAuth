@@ -25,13 +25,18 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.security.PublicKey;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
@@ -49,6 +54,8 @@ public class PeerAuthServer {
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
     private String [] protocol;
     private ClientHandler noAuthClient;
+    private SSLSocket sslClientSocket;
+    private boolean userPeerAuth=false;
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -78,25 +85,32 @@ public class PeerAuthServer {
 
                 while (running) {
                     Log.d(LOG, "Starting peer aut server");
-                    SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
-                   if (VerifyUser.isAuthenticatedUser(connectedPeerIP, pubKey)) {
-                        //addClient(sslClientSocket);
+                    sslClientSocket = (SSLSocket) serverSocket.accept();
+                    sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                        @Override
+                        public void handshakeCompleted(HandshakeCompletedEvent event) {
+                            PublicKey clientKey = getClientIdentity().getPublicKey();
+                            if (VerifyUser.isAuthenticatedUser(clientKey)) {
+                                userPeerAuth = true;
+                            }
+                        }
+                    });
+                    if(userPeerAuth) {
                         Log.d(LOG, "Peer auth client accepted");
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                         outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
-                        noAuthClient = new ClientHandler(inputStream, outputStream,sslClientSocket);
+                        noAuthClient = new ClientHandler(inputStream, outputStream, sslClientSocket);
                         Thread t = new Thread(noAuthClient);
                         t.start();
                         Log.d(LOG, "Starting new peer auth client Thread -");
                         outputStream.flush();
-
                     }
-                   else{
-                        sslClientSocket.close();
-                        Log.d(LOG, "Socket closing, user not peer authenticated ");
-                        running =false;
-                    }
+                    else{
+                          sslClientSocket.close();
+                          Log.d(LOG, "Socket closing, user not peer authenticated ");
+                          running =false;
+                     }
                 }
             }catch (IOException e) {
                 Log.d(LOG, Objects.requireNonNull(e.getMessage()));
@@ -138,6 +152,22 @@ public class PeerAuthServer {
         noAuthClient.sendMessage(message);
 
     }
+
+
+    private X509Certificate getClientIdentity() {
+        try {
+            Certificate[] certs = sslClientSocket.getSession().getPeerCertificates();
+            if(certs.length > 0 && certs[0] instanceof X509Certificate) {
+                return (X509Certificate) certs[0];
+            }
+
+        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
+            ignored.printStackTrace();
+
+        }
+        return null;
+    }
+
 
 
 }
