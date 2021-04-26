@@ -129,10 +129,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private KeyPair keyPair;
 
     @Getter
-    private String role;
-    boolean isPublisher = false;
-    //private String role = "subscriber";
+    //private String role;
     //boolean isPublisher = false;
+    private String role = "subscriber";
+    boolean isPublisher = false;
     //private String role = "publisher";
     //boolean isPublisher = true;
 
@@ -233,7 +233,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
         sslContextedObserver.setListener(sslContext -> {
             connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-            //attachToSession();
+            attachToSession();
         });
         sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
 
@@ -267,8 +267,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
     private void setUpNewConnection(){
-        //closeSession();
-        wifiAwareManager = null;
+
+        /*wifiAwareManager = null;
         wifiAwareSession = null;
         networkSpecifier = null;
         publishDiscoverySession = null;
@@ -277,9 +277,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         wifiConnectionRequested = false;
         publishConfig = null;
         subscribeConfig = null;
-        connectivityManager = null;
+        connectivityManager = null;*/
 
 
+        wifiConnectionRequested = false;
+
+        closeSession();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
 
         connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -546,8 +549,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         Log.d(LOG, "Message IN:" + messageIn);
                         requestWiFiConnection(peerHandle, "subscriber");
                     } else if(messageIn.contains("ServerPort:") && !isPortToServerSet) {
-
-                        Log.d(LOG, "Message IN:" + messageIn);
                         portToServer = Integer.parseInt(messageIn.split(":")[1]);
                     }
                     else if (message.length == 16) {
@@ -688,7 +689,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     Log.d(LOG, String.valueOf(available));
                     diffStartAvailable = available - start;
                     diffStartDiscovered = discovered - start;
-                    Log.d(LOG, + diffStartDiscovered + ":" + diffStartAvailable);
+                    Log.d("TESTING-LOG-TIME-DIFF", + diffStartDiscovered + ":" + diffStartAvailable);
                 }
 
 
@@ -762,9 +763,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 //addPeersToChatList();
                 if(hashMapPeerHandleAndMac.isEmpty()){
                     Log.d(LOG, "HashMap empty? yes");
-                    closeSession();
-                   // appServer.stop();
-                   // appServer = null;
+                    //closeSession();
+                    appServer.stop();
+                    appServer = null;
                     new Handler(Looper.getMainLooper()).post(()-> {
                         setUpNewConnection();
                     });
@@ -791,9 +792,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
             localPortServer = appServer.getLocalPort();
             hashMapMacWithPort.put(getMacAddressFromNetwork(network), localPortServer);
             PeerHandle peer = hashMapPeerHandleAndMac.get(getMacAddressFromNetwork(network));
-            if(hashMapPeerHandleAndMac.containsValue(peer)){
-                Log.d(LOG, "Yes");
-            }
+
             String portStr = "ServerPort:"+ localPortServer;
             byte [] message = portStr.getBytes();
             publishDiscoverySession.sendMessage(peer, MESSAGE, message);

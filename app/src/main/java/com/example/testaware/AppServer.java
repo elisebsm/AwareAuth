@@ -90,17 +90,12 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
-
-
                 serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
-                //serverSocket.setReuseAddress(true);
                 localPort = serverSocket.getLocalPort();
                 Log.d(LOG, "Port: "+ localPort);
                 serverSocket.setEnabledCipherSuites(protocol);
                 Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
                 serverSocket.setNeedClientAuth(true);
-
-                Log.d(LOG, "POrt"+ localPort);
                 mainActivity.get().setServerPort(network);
 
                while (running) {
