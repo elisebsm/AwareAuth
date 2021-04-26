@@ -131,10 +131,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     @Getter
     //private String role;
     //boolean isPublisher = false;
-    private String role = "subscriber";
-    boolean isPublisher = false;
-    //private String role = "publisher";
-    //boolean isPublisher = true;
+    //private String role = "subscriber";
+    //boolean isPublisher = false;
+    private String role = "publisher";
+    boolean isPublisher = true;
 
     private String LOG = "Log-Main";
 

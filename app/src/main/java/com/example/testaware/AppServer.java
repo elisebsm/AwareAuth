@@ -59,7 +59,8 @@ public class AppServer {
     private Map<PublicKey, ConnectedClient> clients;
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
-    private String [] protocol;
+    private String [] protocolGCM;
+    private String [] protocolCHACHA;
 
     private List<ConnectionListener> connectionListeners;
 
@@ -82,8 +83,12 @@ public class AppServer {
     public AppServer(SSLContext serverSSLContext, Network network){
         running = true;
         clients = new ConcurrentHashMap<>();
-        protocol= new String[1];
-        protocol [0]= Constants.SUPPORTED_CIPHER_GCM;
+        protocolGCM = new String[1];
+        protocolGCM [0]= Constants.SUPPORTED_CIPHER_GCM;
+
+        protocolCHACHA = new String[1];
+        protocolCHACHA [0]= Constants.SUPPORTED_CIPHER_CHACHA;
+
 
         connectionListeners = new ArrayList<>();
 
@@ -93,8 +98,8 @@ public class AppServer {
                 serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
                 localPort = serverSocket.getLocalPort();
                 Log.d(LOG, "Port: "+ localPort);
-                serverSocket.setEnabledCipherSuites(protocol);
-                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
+                serverSocket.setEnabledCipherSuites(protocolGCM);
+                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocolGCM));
                 serverSocket.setNeedClientAuth(true);
                 mainActivity.get().setServerPort(network);
 
