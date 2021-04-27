@@ -26,6 +26,7 @@ import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 
 import java.net.Inet6Address;
@@ -80,6 +81,7 @@ public class TestChatActivity extends AppCompatActivity {
     private int port;
 
 
+    private Thread thread;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,7 +113,7 @@ public class TestChatActivity extends AppCompatActivity {
             textView.setText("CLIENT");
             role = "Client";
             //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
-            Thread thread = new Thread(appClient);
+            thread = new Thread(appClient);
             thread.start();
         }
 
@@ -236,7 +238,19 @@ public class TestChatActivity extends AppCompatActivity {
         } else {
             appServer.sendMessage(msg);
         }
+    }
 
+    @Override
+    protected void onStop() {
+
+
+        super.onStop();
+        /*try {
+            appClient.getSslSocket().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+        Log.d(LOG, "ChatActivity onStop");
     }
 
     /*

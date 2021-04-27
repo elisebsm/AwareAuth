@@ -277,7 +277,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
         //wifiAwareManager = null;
         //connectivityManager = null;
-        //wifiConnectionRequested = false;
+        //
+        wifiConnectionRequested = false;
         //wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         //connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
         closeSession();
@@ -333,6 +334,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         } else {
             publish();
         }
+        //subscribe();
+        //publish();
     }
 
 
@@ -363,9 +366,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void publish () {
         publishConfig = new PublishConfig.Builder()
                 .setServiceName(Constants.SERVICE_NAME)
+          //      .setPublishType(PublishConfig.PUBLISH_TYPE_UNSOLICITED)
                 .build();
 
         if(wifiAwareSession!=null){
+
             wifiAwareSession.publish(publishConfig, new DiscoverySessionCallback() {
             @Override
             public void onSessionConfigFailed(){
@@ -415,14 +420,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         }
                     }
 
-                    for (String macAddr : hashMapPeerHandleAndMac.keySet()) {
+                    /*for (String macAddr : hashMapPeerHandleAndMac.keySet()) {
                         if (!connectedMac.contains(macAddr)) {
                             requestWiFiConnection(peerHandle_, role);
                             connectedMac.add(macAddr);
                             byte[] msgtosend = "startConnection".getBytes();
                             publishDiscoverySession.sendMessage(peerHandle_, MESSAGE, msgtosend);   //OK
                         }
-                    }
+                    }*/
                     /*if (!wifiConnectionRequested) { //TODO: hashmap wifiConnected and peerhandle
                         requestWiFiConnection(peerHandle_, role);
                         byte[] msgtosend = "startConnection".getBytes();
@@ -448,6 +453,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void subscribe(){
         subscribeConfig = new SubscribeConfig.Builder()
                 .setServiceName(Constants.SERVICE_NAME)
+         //       .setSubscribeType(SubscribeConfig.SUBSCRIBE_TYPE_PASSIVE)
                 .build();
         if(wifiAwareSession!= null){
             wifiAwareSession.subscribe(subscribeConfig, new DiscoverySessionCallback() {
@@ -465,10 +471,10 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                     subscribeDiscoverySession = session;
                     Log.i("LOG-Test-Debugging", "subscribe started");
 
-                    if (subscribeDiscoverySession != null && peerHandle != null) {
+                    /*if (subscribeDiscoverySession != null && peerHandle != null) {
                         subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);  //Hele tiden
                         Log.d(LOG, " subscribe, onServiceStarted send mac");
-                    }
+                    }*/
                 }
 
                 @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -482,9 +488,9 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                         discovered = currentTimeMillis();
                         Log.d("TESTING-LOG-TIME-DISCOVERY", String.valueOf(discovered));
                     }
-                    peerHandle = peerHandle_;
-                    if (subscribeDiscoverySession != null && peerHandle != null) {
-                        subscribeDiscoverySession.sendMessage(peerHandle, MAC_ADDRESS_MESSAGE, myMac);      //Hele tiden
+
+                    if (subscribeDiscoverySession != null && peerHandle_ != null) {
+                        subscribeDiscoverySession.sendMessage(peerHandle_, MAC_ADDRESS_MESSAGE, myMac);      //Hele tiden
                     }
                 }
 
@@ -597,7 +603,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         wifiConnectionRequested = true;
 
         if(role.equals("subscriber")){
-            DiscoverySession session = subscribeDiscoverySession;
+            //DiscoverySession session = subscribeDiscoverySession;
 
 
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
@@ -722,7 +728,6 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 //addPeersToChatList();
                 if(hashMapPeerHandleAndMac.isEmpty()){
                     Log.d(LOG, "HashMap empty? yes");
-                    //closeSession();
                     appServer.stop();
                     appServer = null;
                     new Handler(Looper.getMainLooper()).post(()-> {
@@ -766,6 +771,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void openChat(int position, String peerIpv6){
         hashMapMacWithPort.put(peerIpv6, portToServer);
+        byte [] message = "goToChat".getBytes();
+        publishDiscoverySession.sendMessage(hashMapPeerHandleAndMac.get(peerIpv6), MESSAGE, message); //TODO
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
         Contact contact = new Contact(IdentityHandler.getCertificate());

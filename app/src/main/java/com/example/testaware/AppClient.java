@@ -119,9 +119,7 @@ public class AppClient implements Runnable{
     private void onPacket(AbstractPacket packet) {
         Contact from = new Contact(getServerIdentity());
         Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
- /* TORSDAG      for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(from, packet);
-        }*/
+
     }
 
 
@@ -143,25 +141,25 @@ public class AppClient implements Runnable{
             /*for(ConnectionListener listener: connectionListeners){
                 listener.onConnect();
             }*/
-            outputStream = new DataOutputStream(sslSocket.getOutputStream());
+                outputStream = new DataOutputStream(sslSocket.getOutputStream());
 
 
-            inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
+                inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
                 // SSLException: Read error: ssl=0x7c46091508: I/O error during system call, Software caused connection abort
                 //outputStream.writeU("clientHello");
-             outputStream.flush();
+                outputStream.flush();
 
-             while(running){
-                 if (inputStream != null){
-                     String message =  inputStream.readUTF();
+                while(running){
+                    if (inputStream != null){
+                        String message =  inputStream.readUTF();
                      //MessagePacket messagePacket = (MessagePacket) abstractPacket;
                      //Message message = messagePacket.getMessage() ;
-                     new Handler(Looper.getMainLooper()).post(()-> {
-                         TestChatActivity.setChat(message);
+                        new Handler(Looper.getMainLooper()).post(()-> {
+                            TestChatActivity.setChat(message);
 
-                     });
-                 }
-             }
+                        });
+                    }
+                }
             }
         } catch (IOException  e) {
             e.printStackTrace();

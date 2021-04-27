@@ -98,8 +98,8 @@ public class AppServer {
                 serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
                 localPort = serverSocket.getLocalPort();
                 Log.d(LOG, "Port: "+ localPort);
-                serverSocket.setEnabledCipherSuites(protocolGCM);
-                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocolGCM));
+                serverSocket.setEnabledCipherSuites(protocolCHACHA);
+                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocolCHACHA));
                 serverSocket.setNeedClientAuth(true);
                 mainActivity.get().setServerPort(network);
 
