@@ -79,13 +79,13 @@ public class ConnectionHandler implements ConnectionListener {  //add this imple
         thread.start();
     }
 
-    public void registerConnectionListener(ConnectionListener listener) {
+   /* public void registerConnectionListener(ConnectionListener listener) {
         if(isPublisher){
             appServer.setListener(this);
         } else {
             appClient.registerConnectionListener(listener);
         }
-    }
+    }*/
 
 
     public void removeConnectionListener(ConnectionListener listener) {

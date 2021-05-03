@@ -62,6 +62,8 @@ public class AppServer {
     private String [] protocolGCM;
     private String [] protocolCHACHA;
 
+    private String [] tlsVersion;
+
     private List<ConnectionListener> connectionListeners;
 
     @Getter
@@ -81,6 +83,7 @@ public class AppServer {
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, Network network){
+    //public AppServer(SSLContext serverSSLContext){
         running = true;
         clients = new ConcurrentHashMap<>();
         protocolGCM = new String[1];
@@ -88,6 +91,9 @@ public class AppServer {
 
         protocolCHACHA = new String[1];
         protocolCHACHA [0]= Constants.SUPPORTED_CIPHER_CHACHA;
+
+        tlsVersion = new String[1];
+        tlsVersion [0] = "TLSv1.3";
 
 
         connectionListeners = new ArrayList<>();
@@ -97,17 +103,31 @@ public class AppServer {
             try {
                 serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
                 localPort = serverSocket.getLocalPort();
+                mainActivity.get().setServerPort(network, "server", localPort);
+                serverSocket.setEnabledProtocols(tlsVersion);
                 Log.d(LOG, "Port: "+ localPort);
-                serverSocket.setEnabledCipherSuites(protocolCHACHA);
-                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocolCHACHA));
+
+               /* serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(1025  );
+                //localPort = serverSocket.getLocalPort();
+                serverSocket.setEnabledProtocols(tlsVersion);*/
+
+               // serverSocket.setEnabledCipherSuites(protocolCHACHA);
                 serverSocket.setNeedClientAuth(true);
-                mainActivity.get().setServerPort(network);
+
 
                while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
+                    serverSocket.getEnabledCipherSuites();
                     //addClient(sslClientSocket);
                     sslClientSocket.getPort();
                     Log.d(LOG, "client accepted");
+
+                    Log.d(LOG, "Server Socket PRotocols: " + serverSocket.getEnabledProtocols().length);
+                    Log.d(LOG, "Server Socket cipher suites: " + serverSocket.getEnabledCipherSuites().length);
+
+                   Log.d(LOG, "Client socket PRotocols: " + sslClientSocket.getEnabledProtocols().length);
+                   Log.d(LOG, "Client Socket cipher suites: " + sslClientSocket.getEnabledCipherSuites().length);
+
                     inputStream = new DataInputStream(sslClientSocket.getInputStream());
                     outputStream = new DataOutputStream(sslClientSocket.getOutputStream());
 

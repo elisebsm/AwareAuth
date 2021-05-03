@@ -122,12 +122,22 @@ public class AppClient implements Runnable{
 
     }
 
+    private String [] protocolGCM;
+    private String [] protocolCHACHA;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void run() {
         running = true;
         sslSocket = null;
+        String [] tlsVersion = new String[1];
+        tlsVersion [0] = "TLSv1.3";
+
+        protocolGCM = new String[1];
+        protocolGCM [0]= Constants.SUPPORTED_CIPHER_GCM;
+
+        protocolCHACHA = new String[1];
+        protocolCHACHA [0]= Constants.SUPPORTED_CIPHER_CHACHA;
 
         //this.port = Constants.SERVER_PORT;
 
@@ -136,6 +146,8 @@ public class AppClient implements Runnable{
             while(running){
                 Log.d(LOG, "port: " + port);
                 sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
+                //sslSocket.setEnabledProtocols(tlsVersion);
+                //sslSocket.setEnabledCipherSuites(protocolCHACHA);
 
 
             /*for(ConnectionListener listener: connectionListeners){

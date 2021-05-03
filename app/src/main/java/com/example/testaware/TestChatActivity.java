@@ -77,7 +77,7 @@ public class TestChatActivity extends AppCompatActivity {
     }
 
     private Contact contact;
-    String role;
+    private String role;
     private int port;
 
 
@@ -92,7 +92,9 @@ public class TestChatActivity extends AppCompatActivity {
         myIpvAddr = getLocalIp();
         port = getIntent().getIntExtra("port", 1025);
 
-
+        role = getIntent().getStringExtra("Role");
+        TextView textView = findViewById(R.id.tvRole);
+        textView.setText(role);
 
         SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
         this.sslContext = sslContextedObserver.getSslContext();
@@ -101,30 +103,21 @@ public class TestChatActivity extends AppCompatActivity {
 
         this.keyPair = mainActivity.get().getKeyPair();
         peerIpv6 = MainActivity.getPeerIpv6();
-        TextView textView = findViewById(R.id.tvRole);
 
-        if(mainActivity.get().getRole().equals("publisher")){
-            textView.setText("SERVER");
-            role = "Server";
-        } else {
+        if(role.equals("Client")){
             appClient = new AppClient(keyPair, sslContext, port);
             Log.d(LOG, "Port: " + port);
             mainActivity.get().getConnectionHandler().setAppClient(appClient);
-            textView.setText("CLIENT");
-            role = "Client";
-            //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
+
             thread = new Thread(appClient);
             thread.start();
         }
-
 
         this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
 
         Intent intent = getIntent();
         contact = (Contact) intent.getSerializableExtra("contact");
         setupUI();
-        /* KOMMENTERT UT 06.04
-        mainActivity.get().getConnectionHandler().registerConnectionListener(this); */
 
 
     }
@@ -243,7 +236,7 @@ public class TestChatActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
 
-
+        //TODO close client/server
         super.onStop();
         /*try {
             appClient.getSslSocket().close();

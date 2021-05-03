@@ -168,16 +168,16 @@ public class ClientHandler extends Thread  {
         return null;
     }
 
-    private void onPacket(Message message) {
+  /*  private void onPacket(Message message) {
         Contact from = new Contact(getServerIdentity());
         Log.d(LOG,   "on packet" + " from " + from.getCommonName());
         for(ConnectionListener connectionListener : connectionListeners) {
             connectionListener.onPacket(message);
-/*  TORSDAG       for(ConnectionListener connectionListener : connectionListeners) {
+*//*  TORSDAG       for(ConnectionListener connectionListener : connectionListeners) {
             connectionListener.onPacket(from, packet);
-        }*/
+        }*//*
         }
     }
-
+*/
 
 }

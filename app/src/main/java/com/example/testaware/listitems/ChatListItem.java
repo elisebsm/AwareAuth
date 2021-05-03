@@ -18,7 +18,7 @@ public class ChatListItem {
         return username;
     }
 
-    public String getPeerIpv6(){
+  /*  public String getPeerIpv6(){
         return peerIpv6;
-    }
+    }*/
 }
