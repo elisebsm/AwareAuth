@@ -137,12 +137,15 @@ public class PeerSigner {
     }
 
 
-    public static void savetmpSignedKeyToFile(String sigKey){
-        if(sigKey != null) {
+    public static void setTmpPeerAuthInfo(String encodedTmpInfo){
+        //if (encodedTmpInfo.contains("sigKeyList"))
+       // encoded= messageIn.replace("sigKeyList", "");
+        //String trustedAuthenticatorKey = messageIn.replace("authUser", "");
+        if(encodedTmpInfo != null) {
             try {
-                if (!getSavedSignedKeysFromFile().contains(sigKey)) {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/tmpSignedKeys.txt", true));
-                    writer.write(sigKey+ "\n");
+                if (!getSavedSignedKeysFromFile().contains(encodedTmpInfo)) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/tmpSavedPeerAuthInfo.txt", true));
+                    writer.write(encodedTmpInfo+ "\n");
 
                     writer.close();
                     Log.i(LOG, "wrote key to file");
@@ -156,26 +159,42 @@ public class PeerSigner {
         }
     }
 
-    public static ArrayList<String> getSavedtmpSignedKeysFromFile(){
-        ArrayList<String> signedKeysTMP=new ArrayList();
+    public static ArrayList<String> getTmpPeerAuthInfo(boolean reqSignedKeyList){
+        ArrayList<String> peerAuthInfoList =new ArrayList();
         String line=null;
         try{
-            File file = new File("/data/data/com.example.testaware/tmpSignedKeys.txt");
+            File file = new File("/data/data/com.example.testaware/tmpSavedPeerAuthInfo.txt");
             if (file.exists()) {
-
-
-                BufferedReader reader = new BufferedReader(new FileReader("/data/data/com.example.testaware/tmpSignedKeys.txt"));
-
+                BufferedReader reader = new BufferedReader(new FileReader("/data/data/com.example.testaware/tmpSavedPeerAuthInfo.txt"));
                 while ((line = reader.readLine()) != null) {
-                    signedKeysTMP.add(line);
+                    if(reqSignedKeyList==true) {
+                        if (line.contains("sigKeyList")) {
+                            String signedKey = line.replace("sigKeyList", "");
+                            peerAuthInfoList.add(signedKey);
+                        }
+                    }
+                    else {
+                        if (line.contains("authUser")) {
+                            String trustedAuthenticator = line.replace("authUser", "");
+                            peerAuthInfoList.add(trustedAuthenticator);
+                        }
+                    }
                 }
-                file.delete();
             }
             
         }
         catch(IOException e){
             e.printStackTrace();
         }
-        return signedKeysTMP;
+        return peerAuthInfoList;
     }
+
+    public static void deleteTmpFile()  {
+        File file = new File("/data/data/com.example.testaware/tmpSavedPeerAuthInfo.txt");
+        if (file.exists()){
+            file.delete();
+        }
+
+    }
+
 }

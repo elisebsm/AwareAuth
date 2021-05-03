@@ -21,6 +21,8 @@ import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.Message;
 import com.example.testaware.models.MessagePacket;
+import com.example.testaware.offlineAuth.Decoder;
+import com.example.testaware.offlineAuth.PeerAuthServer;
 import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyUser;
 
@@ -198,13 +200,20 @@ public class AppServer {
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey= peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
-        ArrayList<String> listOfSingedStrings = PeerSigner.getSavedtmpSignedKeysFromFile();
+        ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
+        ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
         if(listOfSingedStrings!= null) {
             for (int i = 0; i < listOfSingedStrings.size(); i++) {
                 PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
             }
         }
-
+        if(listOfTrustedAuthenticators != null){
+            for (int i = 0; i < listOfTrustedAuthenticators.size(); i++) {
+                PublicKey pubKeyDecoded = Decoder.getPubKeyGenerated(listOfTrustedAuthenticators.get(i));
+                VerifyUser.setValidatedAuthenticator(pubKeyDecoded);
+            }
+            PeerSigner.deleteTmpFile();
+        }
     }
 
 
