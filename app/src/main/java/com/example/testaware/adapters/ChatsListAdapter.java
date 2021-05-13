@@ -12,8 +12,11 @@ import com.example.testaware.R;
 
 import java.util.ArrayList;
 
+import lombok.Getter;
+
 
 public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
+    @Getter
     private ArrayList<ChatListItem> chats;
     Context context;
     public ChatsListAdapter(Context context, ArrayList<ChatListItem> chats) {
@@ -51,6 +54,14 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
         TextView peerIP = convertView.findViewById(R.id.tvPeerIP);
         // Populate the data into the template view using the data object
         tvName.setText(chat.getPeerIpv6());
+
+        TextView status = convertView.findViewById(R.id.tvStatus);
+
+        status.setText(chat.getStatus());
+
+        TextView certificate = convertView.findViewById(R.id.tvCertificateStatus);
+
+        status.setText(chat.getStatus());
 
         return convertView;
     }

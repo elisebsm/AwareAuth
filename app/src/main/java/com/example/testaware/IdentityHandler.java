@@ -67,6 +67,7 @@ public class IdentityHandler {
                 TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
 
                 SSLContext sslContext = SSLContext.getInstance("TLS");
+                //SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
                 sslContext.init(keyManagers, trustManagers, null);
 
 

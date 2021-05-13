@@ -1,4 +1,4 @@
-package com.example.testaware.activities;
+package com.example.activities.testaware;
 
 import android.content.Context;
 import android.content.Intent;
@@ -25,6 +25,7 @@ import com.example.testaware.ClientHandler;
 import com.example.testaware.User;
 //import com.example.testaware.adapters.MessageAdapter;
 import com.example.testaware.adapters.MessageListAdapter;
+
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.AbstractPacket;
@@ -32,6 +33,9 @@ import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 import com.example.testaware.offlineAuth.PeerAuthServer;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import com.example.testaware.R;
 import java.net.Inet6Address;
@@ -46,8 +50,9 @@ import javax.net.ssl.SSLContext;
 import lombok.Getter;
 import lombok.Setter;
 
-public class TestChatActivity extends AppCompatActivity {
+import static java.lang.System.currentTimeMillis;
 
+public class TestChatActivity extends AppCompatActivity {
 
     private Inet6Address peerIpv6;
     private EditText editChatText;
@@ -62,18 +67,17 @@ public class TestChatActivity extends AppCompatActivity {
     private User user;
     private String myIpvAddr;
 
-    private Contact contact;
-    String role;
-    boolean peerAuthenticated;
 
     private SSLContext sslContext;
     private KeyPair keyPair;
+    boolean peerAuthenticated;
 
     @Setter
     private String userCertificateCorrect;
 
     @Getter
     private AppClient appClient;
+
     private AppServer appServer;
     private PeerAuthServer peerAuthServer;
 
@@ -90,7 +94,13 @@ public class TestChatActivity extends AppCompatActivity {
         clientHandlerWeakReference = new WeakReference<>(activity);
     }
 
+    private Contact contact;
+    private String role;
+    private int port;
+    private int counterValue = 0;
 
+
+    private Thread thread;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,10 +109,12 @@ public class TestChatActivity extends AppCompatActivity {
         this.context = this;
 
         myIpvAddr = getLocalIp();
-        AppClient.updateTestChatActivity(this);
-        AppServer.updateTestChatActivity(this);
-        PeerAuthServer.updateTestChatActivity(this);
+        port = getIntent().getIntExtra("port", 1025);
 
+        role = getIntent().getStringExtra("Role");
+        counterValue = getIntent().getIntExtra("counter", 0);
+        TextView textView = findViewById(R.id.tvRole);
+        textView.setText(role);
 
         SSLContextedObserver sslContextedObserver = mainActivity.get().getSslContextedObserver();
         this.sslContext = sslContextedObserver.getSslContext();
@@ -111,20 +123,23 @@ public class TestChatActivity extends AppCompatActivity {
 
         this.keyPair = mainActivity.get().getKeyPair();
         peerIpv6 = MainActivity.getPeerIpv6();
-        TextView textView = findViewById(R.id.tvRole);
 
-        if(mainActivity.get().getRole().equals("publisher")){
-            textView.setText("SERVER");
-            role = "Server";
-        } else {
-            appClient = new AppClient(keyPair, sslContext);
+        if(role.equals("Client")){
+
+            long clientStarted = currentTimeMillis();
+            Log.d("TESTING-LOG-TIME-TLS-CLIENT-STARTED",  String.valueOf(clientStarted));
+            appClient = new AppClient(keyPair, sslContext, port, clientStarted, counterValue);
+
+
+            Log.d(LOG, "Port: " + port);
             mainActivity.get().getConnectionHandler().setAppClient(appClient);
-            textView.setText("CLIENT");
-            role = "Client";
-            //client = new Client(keyPair,sslContext);   //if user is client, new thread for each server conn
-            Thread thread = new Thread(appClient);
+
+            thread = new Thread(appClient);
             thread.start();
 
+
+            //long clientThreadStarted = currentTimeMillis();
+            //Log.d("TESTING-LOG-TIME-TLS-CLIENT-THREAD",  String.valueOf(clientThreadStarted));
         }
 
         this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
@@ -132,10 +147,12 @@ public class TestChatActivity extends AppCompatActivity {
 
 
         Intent intent = getIntent();
-        contact = (Contact) intent.getSerializableExtra("contact");
+        //contact = (Contact) intent.getSerializableExtra("contact");
         setupUI();
-        /* KOMMENTERT UT 06.04
-        mainActivity.get().getConnectionHandler().registerConnectionListener(this); */
+
+        TextView username = findViewById(R.id.tvName);
+        username.setText("User2");
+
 
     }
 
@@ -148,8 +165,6 @@ public class TestChatActivity extends AppCompatActivity {
         mMessageAdapter = new MessageListAdapter(this, messageList);
         mMessageRecycler.setAdapter(mMessageAdapter);
         mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
-
-
 
 
 
@@ -167,13 +182,13 @@ public class TestChatActivity extends AppCompatActivity {
                 String messageToSend = messageText.getText().toString();
                 sendMessage(messageToSend);
                 messageText.getText().clear();
-                if(appClient != null){
+               /* if(appClient != null){
                    //appClient.sendMessage(messageToSend);
                     //sendMessage(messageToSend);
                 }
                 else{
                     //sendMessage(messageToSend);
-                    /*//clientHandelerWeakReference.sendMessage(messageToSend);
+                    //clientHandelerWeakReference.sendMessage(messageToSend);
                     try {
                         WeakReference<ClientHandeler> clientHandeler = clientHandelerWeakReference;
                         String [] msg = new String[0];
@@ -182,8 +197,8 @@ public class TestChatActivity extends AppCompatActivity {
                         Log.i(LOG, "Send MEssage Client Handler");
                     } catch (NoSuchMethodException e) {
                         e.printStackTrace();
-                    }*/
-                }
+                    }
+                }*/
             }
             Log.i(LOG, "Send btn pressed");
         });
@@ -192,10 +207,27 @@ public class TestChatActivity extends AppCompatActivity {
 
 
 
-    public static void setChat(String message){
-        MessageListItem chatMsg = new MessageListItem(message, "Elise");    //TODO: GET USERNAME FROM CHATLISTITEM
+    public static void setChat(String message, int counterValueStatic){
+        MessageListItem chatMsg = new MessageListItem(message, "User2");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
+
+        long settingMessage = currentTimeMillis();
+        //Log.d("TESTING-LOG-TIME-TLS-MESSAGE-SET",  String.valueOf(settingMessage));
+
+        BufferedWriter writer = null;
+        try {
+            String outputText = String.valueOf(settingMessage);
+            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageReceived", true));
+            writer.append("Counter:" + counterValueStatic);
+            writer.append("\n");
+            writer.append(outputText);
+            writer.append("\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         //mMessageAdapter.add(message);
     }
 
@@ -225,8 +257,11 @@ public class TestChatActivity extends AppCompatActivity {
 
 
 
-
     private void sendMessage(String msg) {
+
+        long sendingMessage = currentTimeMillis();
+        Log.d("TESTING-LOG-TIME-TLS-SEND-MESSAGE-PRESSED",  String.valueOf(sendingMessage));
+
         Log.d(LOG, "Sending message: " + msg);
         MessageListItem chatMsg = new MessageListItem(msg, "Deg");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
@@ -242,12 +277,12 @@ public class TestChatActivity extends AppCompatActivity {
 
         //mainActivity.get().getConnectionHandler().sendMessage(message);
         if(role.equals("Client")){
-            appClient.sendMessage(msg);
+            appClient.sendMessage(msg, sendingMessage);
         } else {
             if(mainActivity.get().getPeerAuthenticated().equals("true") ) {
                 Log.d(LOG, "Sending message from peerAuthServer" + msg);
                 if(peerAuthServer != null){
-                    peerAuthServer.sendMessage(msg);
+                    peerAuthServer.sendMessage(msg);//TODO: add sending message
                 }
                 else{
                     Log.d(LOG, "Peer auth server obj null");
@@ -257,38 +292,30 @@ public class TestChatActivity extends AppCompatActivity {
             }
             else {
                 if(appServer != null) {
-                    appServer.sendMessage(msg);
+                    appServer.sendMessage(msg, sendingMessage);
                     Log.d(LOG, "No client connected");
                 }
             }  //Also check if user is not autenticated at all
         }
-
-    }
-
-
-
-    /*
-    KOMMENTERT UT 06.04
-    @Override
-    public void onConnect() {
-
     }
 
     @Override
-    public void onDisconnect() {
+    protected void onStop() {
 
+        //TODO close client/server
+        super.onStop();
+        /*try {
+            appClient.getSslSocket().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+        Log.d(LOG, "ChatActivity onStop");
     }
 
     @Override
-    public void onPacket(Message message) {
-        Log.d(LOG, "onPacket in ChatAct");
-
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d("TESTING-LOG-TIME-TLS-onDestroy", "App destroyed");
+        //TODO: remove peer from list
     }
-
-    @Override
-    public void onServerPacket(AbstractPacket packet) {
-
-    }
-*/
-
 }

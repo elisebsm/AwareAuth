@@ -23,7 +23,7 @@ import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
 
-public class ConnectionHandler {  //add this implements ConnectionListener
+public class ConnectionHandler  {  //add this implements ConnectionListener
 
     private String LOG = "LOG-Test-Aware-Connection-Handler";
 
@@ -46,8 +46,7 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     private Map<PublicKey, List<Message>> messages;
 
     private ArrayList<AbstractPacket> packets;
-    //@Getter
-  //  private List<ConnectionListener> connectionListeners;
+
 
     private boolean isPublisher;
 
@@ -64,25 +63,11 @@ public class ConnectionHandler {  //add this implements ConnectionListener
             this.appServer = appServer;
         }
 
-
-
-       // connectionListeners = new ArrayList<>();
-
         this.isPublisher = isPublisher;
-
-
-        //appClient = new AppClient(keyPair, sslContext);
-        //appClient.registerConnectionListener(this);
-
-        //Thread thread = new Thread(appServer);
-        //thread.start();
-         //TODO initialize wifi aware here?
     }
 
 
-    public void setAppServer(AppServer appServer){
-        this.appServer = appServer;
-    }
+
 
     public void setAppClient(AppClient appClient){
         this.appClient = appClient;
@@ -93,28 +78,23 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     public void setPeerAuthServer(PeerAuthServer peerAuthServer){
         this.peerAuthServer=peerAuthServer;
     }
-/*
-    public void registerConnectionListener(ConnectionListener listener) {
+
+    public void setAppServer(AppServer appServer){
+        this.appServer = appServer;
+    }
+}
+
+
+   /* public void registerConnectionListener(ConnectionListener listener) {
         if(isPublisher){
             appServer.setListener(this);
         } else {
             appClient.registerConnectionListener(listener);
         }
-    }
+    }*/
 
 
-    public void removeConnectionListener(ConnectionListener listener) {
-        appClient.removeConnectionListener(listener);
-    }
-
-    public void setPeerAuthServer(PeerAuthServer peerAuthServer){
-        this.peerAuthServer= peerAuthServer;
-    }
-
-
-
-
-
+/*
     @Override
     public void onConnect() {
 
@@ -132,9 +112,7 @@ public class ConnectionHandler {  //add this implements ConnectionListener
 
     @Override
     public void onServerPacket(AbstractPacket packet) {
-
-    }
-    */
+*/
 
 /*
 
@@ -184,4 +162,4 @@ public class ConnectionHandler {  //add this implements ConnectionListener
     }
     */
 
-}
+

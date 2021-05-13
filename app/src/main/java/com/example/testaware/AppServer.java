@@ -2,6 +2,7 @@ package com.example.testaware;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.os.Build;
 
 import android.os.Handler;
@@ -13,7 +14,6 @@ import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
 
-import com.example.testaware.activities.TestChatActivity;
 import com.example.testaware.listeners.MessageReceivedObserver;
 import com.example.testaware.listeners.OnMessageReceivedListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
@@ -28,8 +28,10 @@ import com.example.testaware.offlineAuth.VerifyUser;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -56,12 +58,14 @@ import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
+import static java.lang.System.currentTimeMillis;
+
 
 //client can also instantiate connection.
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
-    private String LOG = "LOG-Test-Aware-App-Server";
+    private final String LOG = "Log-App-Server";
     //private ObjectInputStream inputStream;
     //private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
 
@@ -69,6 +73,7 @@ public class AppServer {
     private DataOutputStream outputStream;
 
     private boolean running;
+    private final String [] tlsVersion;
     private Map<PublicKey, ConnectedClient> clients;
     private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
@@ -77,13 +82,7 @@ public class AppServer {
     private SSLSocket sslClientSocket;
     private boolean userCertificateCorrect =true;
 
-    // private List<ConnectionListener> connectionListeners;
-   @Getter
-   private static WeakReference<TestChatActivity> testChatActivity;
 
-    public static void updateTestChatActivity(TestChatActivity activity) {
-        testChatActivity = new WeakReference<>(activity);
-    }
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -94,31 +93,71 @@ public class AppServer {
 
     private ClientHandler client;
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    public AppServer(SSLContext serverSSLContext, int serverPort){
-        running = true;
-        clients = new ConcurrentHashMap<>();
-        protocol= new String[1];
-        protocol [0]= Constants.SUPPORTED_CIPHER_GCM;
+    @Getter
+    private SSLServerSocket serverSocket;
 
-        //connectionListeners = new ArrayList<>();
+    @Getter
+    private int localPort;
+
+    private int counterValue = 0;
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    public AppServer(SSLContext serverSSLContext, Network network){
+    //public AppServer(SSLContext serverSSLContext){
+        running = true;
+        String[] protocolGCM = new String[1];
+        protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
+
+        String[] protocolCHACHA = new String[1];
+        protocolCHACHA[0]= Constants.SUPPORTED_CIPHER_CHACHA;
+
+        tlsVersion = new String[1];
+        tlsVersion [0] = "TLSv1.2";
+
+
+
+        counterValue = mainActivity.get().getCountervalue();
+
 
         Runnable serverTask = () -> {
             running  = true;
             try {
-                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort,3);
-                serverSocket.setEnabledCipherSuites(protocol);
-                Log.d(LOG, "Ciphers supported"+ Arrays.toString(protocol));
+                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
+                localPort = serverSocket.getLocalPort();
+                mainActivity.get().setServerPort(network, "server", localPort);
+                serverSocket.setEnabledProtocols(tlsVersion);
+                Log.d(LOG, "Port: "+ localPort);
+
+               /* serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(1025  );
+                //localPort = serverSocket.getLocalPort();
+                serverSocket.setEnabledProtocols(tlsVersion);*/
+
+                serverSocket.setEnabledCipherSuites(protocolCHACHA);
                 serverSocket.setNeedClientAuth(true);
 
 
-
                while (running) {
-                    sslClientSocket = (SSLSocket) serverSocket.accept();
+                    SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
+                    serverSocket.getEnabledCipherSuites();
+                    sslClientSocket.getPort();
 
                     sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
                         @Override
                         public void handshakeCompleted(HandshakeCompletedEvent event) {
+                            long handshakeCompletedServer = currentTimeMillis();
+                            //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-SERVER",  String.valueOf(handshakeCompletedServer));
+                            BufferedWriter writer = null;
+                            try {
+                                String outputText = String.valueOf(handshakeCompletedServer);
+                                writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/handshakeCompletedServer", true));
+                                writer.append("Counter:" + counterValue);
+                                writer.append("\n");
+                                writer.append(outputText);
+                                writer.append("\n");
+                                writer.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                             if(event.getSession().isValid() ){
                                 Log.d(LOG, "Handshake completed");
                                 X509Certificate peerCert = getClientIdentity();
@@ -132,19 +171,22 @@ public class AppServer {
 
                         }
                     });
-                    //addClient(sslClientSocket);
+
+
                     Log.d(LOG, "client accepted");
-                    // FJERNET BufferedInputStream 06.04
+
                     inputStream = new DataInputStream(sslClientSocket.getInputStream());
                     outputStream = new DataOutputStream(sslClientSocket.getOutputStream());
 
-                    client = new ClientHandler(inputStream, outputStream , sslClientSocket );
+                    client = new ClientHandler(inputStream, outputStream , sslClientSocket, counterValue );
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
+                    //outputStream.flush(); //TODO: check if we need this, is flused in clienthandeler
                }
             }  catch (IOException  e) {
                 Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+                Log.d(LOG, "Printing message: " +  Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
@@ -155,30 +197,26 @@ public class AppServer {
     }
 
 
-
-    protected void addClient(SSLSocket sslClientSocket){
-        ConnectedClient clientTask = new ConnectedClient(this, sslClientSocket);
-        clients.put(clientTask.getUserIdentity().getPublicKey(), clientTask);
-        clientProcessingPool.submit(clientTask);
-    }
-
-
-    protected void removeClient(ConnectedClient connectedClient){
-        if(clients.containsKey(connectedClient.getUserIdentity().getPublicKey())){
-            connectedClient.stop();
-            clients.remove(connectedClient.getUserIdentity().getPublicKey());
-        }
-    }
-
-
     public void stop(){
-        for (ConnectedClient client: clients.values()){
-            removeClient(client);
-        }
         running = false;
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(client!=null){
+            client.setRunning(false);
+        }
     }
 
 
+    public void sendMessage(String message, long sendingMessageTime){
+        if(client != null){
+            client.sendMessage(message, sendingMessageTime);
+        } else {
+            Log.d(LOG, "Client is null");
+        }
+    }
 
     private X509Certificate getClientIdentity() {
         try {
@@ -215,97 +253,6 @@ public class AppServer {
             PeerSigner.deleteTmpFile();
         }
     }
-
-
-    //  public void setListener(ConnectionListener listener){
-     //   connectionListeners.add(listener);
-  //  }
-
-   /* private void onPacketReceived(AbstractPacket packet) {
-        Contact from = new Contact(getServerIdentity());
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(from, packet);
-        }
-    }
-
-
-    /*protected void onPacketReceived(ConnectedClient device, AbstractPacket packet){
-        Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        mainActivity.get().getConnectionHandler().getAppClient().getConnectionListeners();
-
-        for(ConnectionListener listeners: mainActivity.get().getConnectionHandler().getAppClient().getConnectionListeners()){
-            listeners.onServerPacket(packet);
-        }
-
-        if (packet instanceof MessagePacket) {
-            PublicKey to = ((MessagePacket)packet).getMessage().getTo(); // henter ut public key av meldingen dersom det er av type MessagePacket
-
-            if(clients.containsKey(to)){
-                ConnectedClient toClient = clients.get(to); // sjekker med listen av klienter for å finne match på public key
-                Runnable packetForwardingTask = () -> {
-                    toClient.send(packet);  // pakken sendes til klienten
-                };
-                Thread packetForwardingThred = new Thread(packetForwardingTask);
-                packetForwardingThred.start();
-            }
-        }
-    }*/
-
-   /* @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(Message message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream send message runnable");
-                outputStream.writeObject(message);
-                outputStream.flush();
-
-                *//*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*//*
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
-    }*/
-
-
-    public void sendMessage(String message){
-        if(client != null) {
-            client.sendMessage(message);
-        }
-       /* if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                MessagePacket messagePacket = (new MessagePacket(message));
-                Log.d(LOG, "outputstream " + message);
-                outputStream.writeObject(messagePacket);
-                outputStream.flush();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in AppServer  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;*/
-    }
-
 
 }
 

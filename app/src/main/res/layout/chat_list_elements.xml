@@ -2,7 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:orientation="vertical">
     <TextView
         android:id="@+id/tvUsername"
         android:layout_width="match_parent"
@@ -14,8 +14,21 @@
         android:id="@+id/tvPeerIP"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="PeerIP"
-        android:textSize="20dp"/>
+        android:text="user1@gmail.com"
+        android:textSize="18sp"/>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Status"
+        android:textSize="18sp"/>
+    <TextView
+        android:id="@+id/tvCertificateStatus"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Certificate: unknown"
+        android:textSize="18sp"/>
 
 
 </LinearLayout>
