@@ -18,8 +18,10 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -33,12 +35,16 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import lombok.Getter;
+
+import static java.lang.System.currentTimeMillis;
 
 public class AppClient implements Runnable{
 
@@ -61,13 +67,17 @@ public class AppClient implements Runnable{
     private Inet6Address inet6Address;
 
     private int port;
+    private long clientStartedTime;
+    public int counterValue;
 
 
-    public AppClient(KeyPair keyPair, SSLContext sslContext, int port){
+    public AppClient(KeyPair keyPair, SSLContext sslContext, int port, long clientStartedTime, int counterValue){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
         this.port = port;
+        this.clientStartedTime = clientStartedTime;
+        this.counterValue = counterValue;
         Log.d(LOG, "port: " + port);
 
         //Thread thread = new Thread(this);
@@ -92,7 +102,7 @@ public class AppClient implements Runnable{
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message){
+    public boolean sendMessage(String message, long sendingMessageTime){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
@@ -112,6 +122,18 @@ public class AppClient implements Runnable{
             }
         };
         sendService.submit(sendMessageRunnable);
+        BufferedWriter writer = null;
+        try {
+            String outputText = String.valueOf(sendingMessageTime);
+            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageSentClient", true));
+            writer.append("Counter:" + counterValue);
+            writer.append("\n");
+            writer.append(outputText);
+            writer.append("\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return true;
     }
 
@@ -131,7 +153,7 @@ public class AppClient implements Runnable{
         running = true;
         sslSocket = null;
         String [] tlsVersion = new String[1];
-        tlsVersion [0] = "TLSv1.3";
+        tlsVersion [0] = "TLSv1.2";
 
         protocolGCM = new String[1];
         protocolGCM [0]= Constants.SUPPORTED_CIPHER_GCM;
@@ -147,12 +169,30 @@ public class AppClient implements Runnable{
                 Log.d(LOG, "port: " + port);
                 sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
                 //sslSocket.setEnabledProtocols(tlsVersion);
-                //sslSocket.setEnabledCipherSuites(protocolCHACHA);
+                sslSocket.setEnabledCipherSuites(protocolCHACHA);
 
+                sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                    @Override
+                    public void handshakeCompleted(HandshakeCompletedEvent event) {
 
-            /*for(ConnectionListener listener: connectionListeners){
-                listener.onConnect();
-            }*/
+                        long handshakeCompletedClient = currentTimeMillis();
+                        //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-CLIENT",  String.valueOf(handshakeCompletedClient));
+
+                        BufferedWriter writer = null;
+                        try {
+                            String outputText = String.valueOf(handshakeCompletedClient);
+                            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/handshakeCompletedServer", true));
+                            writer.append("Counter:" + counterValue);
+                            writer.append("\n");
+                            writer.append(outputText);
+                            writer.append("\n");
+                            writer.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
                 outputStream = new DataOutputStream(sslSocket.getOutputStream());
 
 
@@ -161,13 +201,28 @@ public class AppClient implements Runnable{
                 //outputStream.writeU("clientHello");
                 outputStream.flush();
 
+                BufferedWriter writer = null;
+                try {
+                    String outputText = String.valueOf(clientStartedTime);
+                    writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/clientStarted", true));
+                    writer.append("Counter:" + counterValue);
+                    writer.append("\n");
+                    writer.append(outputText);
+                    writer.append("\n");
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
                 while(running){
                     if (inputStream != null){
                         String message =  inputStream.readUTF();
+                        long readinMessageAtClient = currentTimeMillis();
+                        Log.d("TESTING-LOG-TIME-TLS-MESSAGE-INPUTSTREAM-CLIENT",  String.valueOf(readinMessageAtClient));
                      //MessagePacket messagePacket = (MessagePacket) abstractPacket;
                      //Message message = messagePacket.getMessage() ;
                         new Handler(Looper.getMainLooper()).post(()-> {
-                            TestChatActivity.setChat(message);
+                            TestChatActivity.setChat(message, counterValue);
 
                         });
                     }

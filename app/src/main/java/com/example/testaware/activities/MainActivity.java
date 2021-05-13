@@ -16,7 +16,8 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
-import android.net.TransportInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.net.wifi.aware.AttachCallback;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
@@ -43,6 +44,8 @@ import com.example.testaware.AppServer;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.TestChatActivity;
+import com.example.testaware.listeners.BooleanChangedListener;
+import com.example.testaware.listeners.BooleanObserver;
 import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
@@ -54,6 +57,12 @@ import com.example.testaware.adapters.ChatsListAdapter;
 import com.example.testaware.models.Message;
 
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -61,10 +70,15 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 
 import lombok.Getter;
 
@@ -157,6 +171,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     long available = 0;
     long diffStartDiscovered;
     long diffStartAvailable;
+    long diffSSLContext;
 
     @Getter
     private AppServer appServer;
@@ -171,11 +186,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private HashMap<PeerHandle, byte[]> peerAndMacByte;
 
     private List<PeerHandle> requestedConnectionList;
-    private List<PeerHandle> listOfPeersPortIsSentTo;
+    private List<PeerHandle> listOfPeersPortIsSentTo; // TODO: change, have multiple peer handles
     private List<String> listConnectionInitiatedMacs;
     private List<String> connectionInitiatedMac;
     private List<String> listConnectionWifiRequestedMacs;
-    private List<String> listMacMessageRequestSentFromPublisher = new ArrayList<>();
+    public List<PeerHandle> publishDiscoveredPeers;
+    public List<PeerHandle> subscribeDiscoveredPeers;
+    private List<PeerHandle> discoveredDevices = new ArrayList<>();
+    private List<PeerHandle> connectedDevices = new ArrayList<>();
+
+   // private List<String> listMacMessageRequestSentFromPublisher = new ArrayList<>();
 
    // private int portToServer;
    // private boolean isPortToServerSet = false;
@@ -187,15 +207,27 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     int data_init ;
     int data_resp ;
+    private long startAttached;
+    private long resultAttached;
 
     PeerHandle peer;
     byte [] msg;
+
+    private BooleanObserver booleanObserver;
+
+
+    @Getter
+    private  int countervalue;
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
         super.onCreate(savedInstanceState);
+
+        Log.d("TESTING-LOG-TIME-BEGINNING", "PHONE: 7R");
         if(start == 0){
             start = currentTimeMillis();
             Log.d("TESTING-LOG-TIME-START", String.valueOf(start));
@@ -206,19 +238,21 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         networkSpecifier = null;
         publishDiscoverySession = null;
         subscribeDiscoverySession = null;
-        //peerHandle = null;
 
         hashMapPeerHandleKeyAndMac = new HashMap<>();
         hashMapOfNetworks = new HashMap<>();
         hashMapMacWithPort = new HashMap<>();
+        peerAndMacByte = new HashMap<>();
 
         requestedConnectionList = new ArrayList<>();
         listOfPeersPortIsSentTo = new ArrayList<>();
         listConnectionInitiatedMacs = new ArrayList<>();
         connectionInitiatedMac = new ArrayList<>();
         listConnectionWifiRequestedMacs = new ArrayList<>();
+        publishDiscoveredPeers = new ArrayList<>();
+        subscribeDiscoveredPeers = new ArrayList<>();
 
-
+        booleanObserver  = new BooleanObserver();
 
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -243,20 +277,29 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
         this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
-
         context = this;
+
+        final long[] sslContextChanged = new long[1];
 
         sslContextedObserver = new SSLContextedObserver();
         sslContextedObserver.setListener(sslContext -> {
+            sslContextChanged[0] = currentTimeMillis();
             connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+            startAttached = currentTimeMillis();
             attachToSession();
+
+            Log.d("ELISE", "attached started" );
+
         });
+        long sslContextStart = currentTimeMillis();
         sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
+        diffSSLContext = sslContextChanged[0] - sslContextStart;
 
 
         addPeersToChatList();
         TestChatActivity.updateActivityMain(this);
         AppServer.updateActivity(this);
+
     }
 
     private boolean hasRequestedConnection(PeerHandle peerHandle){ //TODO:
@@ -265,6 +308,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 return true;
             }
         return false;
+
     }
 
     private void setUpNewConnection(){
@@ -304,7 +348,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE) {// If request is cancelled, the result arrays are empty.
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -319,14 +363,54 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void addPeersToChatList(){
+        int counter = 1;
         ArrayList<ChatListItem> userList = new ArrayList<>();
         List<String> macAddresses = new ArrayList<>();
-        for (String mac : hashMapPeerHandleKeyAndMac.values()){
+        /*for(PeerHandle peerHandle : hashMapPeerHandleKeyAndMac.keySet()){
+            String mac = hashMapPeerHandleKeyAndMac.get(peerHandle);
             if(!macAddresses.contains(mac)){
-                ChatListItem chatListDevices = new ChatListItem("MAC:", mac);
+                String status = "Not discovered";
+                if(discoveredDevices.contains(getPeerHandleFromMacAddress(mac))){
+                    status = "Discovered";
+                } else if(connectedDevices.contains(getPeerHandleFromMacAddress(mac))){
+                    status = "Data path established";
+                }
+                ChatListItem chatListDevices = new ChatListItem("MAC:", mac, status);
                 userList.add(chatListDevices);
                 macAddresses.add(mac);
             }
+        }*/
+        for (String mac : hashMapPeerHandleKeyAndMac.values()){
+            if(!macAddresses.contains(mac)){
+                String status = "Not discovered";
+                String cert = "Not discovered";
+
+                if(counter ==1){
+                    cert = "Certificate: Valid";
+                } else if(counter == 2){
+                    cert = "Certificate: Not valid";
+                }
+
+                List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(mac);
+                if(peerHandles.size()>1){
+                    if((discoveredDevices.contains(peerHandles.get(0)))||(discoveredDevices.contains(peerHandles.get(1)))){
+                        status = "Discovered";
+                    } else if((connectedDevices.contains(peerHandles.get(0)))||(connectedDevices.contains(peerHandles.get(1)))){
+                        status = "Data path established";
+                    }
+                } else {
+                    if(discoveredDevices.contains(peerHandles.get(0))){
+                        status = "Discovered";
+                    } else if(connectedDevices.contains(peerHandles.get(0))){
+                        status = "Data path established";
+                    }
+                }
+
+                ChatListItem chatListDevices = new ChatListItem("MAC:", mac, status, cert);
+                userList.add(chatListDevices);
+                macAddresses.add(mac);
+            }
+            counter +=1;
         }
        /* for (String macAddr : hashMapPeerHandleAndMac.keySet()){
             ChatListItem chatListDevices = new ChatListItem("MAC:", macAddr);
@@ -342,12 +426,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
 
-    public void startPublishAndSubscribe(String role){
-       /* if(role.equals("subscriber")){
-            subscribe();
-        } else {
-            publish();
-        }*/
+    public void startPublishAndSubscribe(){
         subscribe();
         publish();
     }
@@ -357,11 +436,16 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         wifiAwareManager.attach(new AttachCallback() {
             @Override
             public void onAttached(WifiAwareSession session) {
+                long onAttached = currentTimeMillis();
+                resultAttached = onAttached - startAttached;
                 super.onAttached(session);
                 wifiAwareSession = session;
+
+
             }
             @Override
             public void onAttachFailed() {
+
             }
         }, new IdentityChangedListener() {
             @Override
@@ -369,14 +453,14 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 myMacDeci = getMacInDecimal(mac);
-                startPublishAndSubscribe(role);
+                startPublishAndSubscribe();
             }
         }, null);
     }
     private boolean wait = true;
 private int counterRetriedSendMessagePort = 0;
     private int counterRetriedSendMessageOpenChat = 0;
-    private boolean sendMessageOpenChatFailed = false;
+    private boolean sendMessageOpenChatFailed;
 
     byte [] serviceSpecificInfoText = "StartingConnection".getBytes();
     private void publish () {
@@ -384,7 +468,7 @@ private int counterRetriedSendMessagePort = 0;
         PublishConfig publishConfig = new PublishConfig.Builder()
                 .setServiceName(Constants.SERVICE_NAME)
                 .setPublishType(PublishConfig.PUBLISH_TYPE_UNSOLICITED)
-                .setServiceSpecificInfo(serviceSpecificInfoText)
+                //.setServiceSpecificInfo(serviceSpecificInfoText)
                 .build();
         if(wifiAwareSession!=null){
             wifiAwareSession.publish(publishConfig, new DiscoverySessionCallback() {
@@ -396,14 +480,17 @@ private int counterRetriedSendMessagePort = 0;
                     } else if(messageId == MESSAGEGOTOCHAT && counterRetriedSendMessageOpenChat <=5 ){
                         counterRetriedSendMessageOpenChat += 1;
                         Log.d(LOG, "Sending message goToChat failed");
-                        sendMessageOpenChatFailed = true;
+                        byte [] message = "goToChat".getBytes();
+                        publishDiscoverySession.sendMessage(peerHandlesStartChat.get(1), MESSAGEGOTOCHAT, message);
+                        //sendMessageOpenChatFailed = true;
+                        //booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
+
+
                     } else if( counterRetriedSendMessagePort >5){
                         localPortServer = 1025;
-                    } else if(counterRetriedSendMessageOpenChat >5) {
+                    } else if(counterRetriedSendMessageOpenChat >1) {
                         sendMessageOpenChatFailed = true;
-                        wait = false;
-
-
+                        booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
                     }
                 }
 
@@ -414,7 +501,8 @@ private int counterRetriedSendMessagePort = 0;
                         msg = null;
                         Log.d(LOG, "Sending message port success");
                     } if(messageId == MESSAGEGOTOCHAT){
-                        wait = false;
+                        sendMessageOpenChatFailed = false;
+                        booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
                     }
                 }
 
@@ -435,8 +523,13 @@ private int counterRetriedSendMessagePort = 0;
             @Override
             public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
                 super.onMessageReceived(peerHandle, message);
-                if(!subscribeDiscoveredPeers.contains(peerHandle)){
+                if(!publishDiscoveredPeers.contains(peerHandle)){
                     publishDiscoveredPeers.add(peerHandle);
+                }
+
+                if(!discoveredDevices.contains(peerHandle)){
+                    discoveredDevices.add(peerHandle);
+                    addPeersToChatList();
                 }
                 publishDiscoverySession.sendMessage(peerHandle, MESSAGE, myMac);
                 if (!listOfPeersPortIsSentTo.contains(peerHandle)){
@@ -517,13 +610,33 @@ private int counterRetriedSendMessagePort = 0;
                 }
             }
 
+            @Override
+            public void onSessionConfigFailed () {
+                  /*  if(!firstTimeRestarted){
+
+                        finish();
+                        startActivity(getIntent());
+                        firstTimeRestarted = true;
+                    }*/
+                /*finish();
+                startActivity(getIntent());*/
+                /*PublishConfig publishConfigUpdate = new PublishConfig.Builder()
+                        .setServiceName(Constants.SERVICE_NAME)
+                        .setPublishType(PublishConfig.PUBLISH_TYPE_UNSOLICITED)
+                        //.setServiceSpecificInfo(serviceSpecificInfoText)
+                        .build();
+
+                publishDiscoverySession.updatePublish(publishConfigUpdate);*/
+
+                }
+
             }, null);
 
         }
     }
 
-    public List<PeerHandle> publishDiscoveredPeers = new ArrayList<>();
-    public List<PeerHandle> subscribeDiscoveredPeers = new ArrayList<>();
+
+
 
     private void subscribe(){
         SubscribeConfig subscribeConfig = new SubscribeConfig.Builder()
@@ -537,7 +650,7 @@ private int counterRetriedSendMessagePort = 0;
                 public void onSubscribeStarted(@NonNull SubscribeDiscoverySession session) {
                     super.onSubscribeStarted(session);
                     subscribeDiscoverySession = session;
-                    Log.i("LOG-Test-Debugging", "subscribe started");
+                    //Log.i("LOG-Test-Debugging", "subscribe started");
                 }
 
                 @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -545,14 +658,19 @@ private int counterRetriedSendMessagePort = 0;
                 public void onServiceDiscovered(PeerHandle peerHandle_, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
                     super.onServiceDiscovered(peerHandle_, serviceSpecificInfo, matchFilter);
                     serviceSpecificInfoText = "noConnection".getBytes();
-                    Log.d(LOG, new String(serviceSpecificInfo));
+                    //Log.d(LOG, new String(serviceSpecificInfo));
 
                     if(!publishDiscoveredPeers.contains(peerHandle_)){
                         subscribeDiscoveredPeers.add(peerHandle_);
                     }
+
+                    if(!discoveredDevices.contains(peerHandle_)){
+                        discoveredDevices.add(peerHandle_);
+                        addPeersToChatList();
+                    }
                     if(discovered == 0){
                         discovered = currentTimeMillis();
-                        Log.d("TESTING-LOG-TIME-DISCOVERY", String.valueOf(discovered));
+                        //("TESTING-LOG-TIME-DISCOVERY", String.valueOf(discovered));
                     }
 
                     if (subscribeDiscoverySession != null && peerHandle_ != null) {
@@ -566,10 +684,10 @@ private int counterRetriedSendMessagePort = 0;
                     super.onMessageReceived(peerHandle, message);
 
                     String messageIn = new String(message);
-                    Log.d(LOG, "Message Received " + messageIn);
+                    //Log.d(LOG, "Message Received " + messageIn);
                     if(message.length == 2) {
                         portToUse = byteToPortInt(message);
-                        Log.d(LOG, "subscribe, will use port number "+ portToUse);
+                        //Log.d(LOG, "subscribe, will use port number "+ portToUse);
                     } else if (messageIn.contains("goToChat")) {
                         Toast.makeText(context, "A Peer wants to talk to you", Toast.LENGTH_SHORT).show();
                         connectionInitiatedMac.add(hashMapPeerHandleKeyAndMac.get(peerHandle));
@@ -579,13 +697,13 @@ private int counterRetriedSendMessagePort = 0;
                         setOtherMacAddress(message);
                         if(!hashMapPeerHandleKeyAndMac.containsKey(peerHandle)){
                             hashMapPeerHandleKeyAndMac.put(peerHandle, macAddress);
-                            peerAndMacByte = new HashMap<>();
+
                             peerAndMacByte.put(peerHandle, message);
                         }
 
 
                     } else if (messageIn.contains("startConnection") ) {
-                        Log.d(LOG, "Message IN:" + messageIn);
+                        //Log.d(LOG, "Message IN:" + messageIn);
                         String mac = hashMapPeerHandleKeyAndMac.get(peerHandle);
                         //String mac = getMacAddressFromPeerHandle(peerHandle);
 
@@ -594,7 +712,7 @@ private int counterRetriedSendMessagePort = 0;
 
                         if(myMacDeci < peerMacDeci){
                             requestWiFiConnection(peerHandle, "subscriber");
-                            Log.d(LOG, "requesting Connection for Subscriber:");
+                            //Log.d(LOG, "requesting Connection for Subscriber:");
                         }
 
                         /*requestWiFiConnection(peerHandle, "subscriber");
@@ -607,7 +725,7 @@ private int counterRetriedSendMessagePort = 0;
                         }*/
 
                     } else if(messageIn.contains("ServerPort:")) {
-                        Log.d(LOG, "onMessageReceived, server port:" + messageIn);
+                        //Log.d(LOG, "onMessageReceived, server port:" + messageIn);
                         Integer portToServer = Integer.parseInt(messageIn.split(":")[1]);
                         String mac = hashMapPeerHandleKeyAndMac.get(peerHandle);
                         if(!hashMapMacWithPort.containsKey(mac)){
@@ -658,7 +776,9 @@ private int counterRetriedSendMessagePort = 0;
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        closeSession();
         Log.d(LOG, "App onDestroy");
+        Log.d("TESTING-LOG-TIME-TLS-onDestroy", "App destroyed");
         //TODO: remove peer from list
     }
 
@@ -682,12 +802,13 @@ private int counterRetriedSendMessagePort = 0;
     }
 
 
-    private PeerHandle getPeerHandleFromMacAddress(String mac){
+    private List<PeerHandle> getPeerHandlesFromMacAddress(String mac){
+        List<PeerHandle> peerHandles = new ArrayList<>();
         for (PeerHandle peerHandle : hashMapPeerHandleKeyAndMac.keySet())
             if (hashMapPeerHandleKeyAndMac.get(peerHandle).equals(mac)) {
-                return peerHandle;
+                peerHandles.add(peerHandle);
             }
-        return null;
+        return peerHandles;
     }
 
     private String getMacAddressFromNetwork(Network network){
@@ -699,14 +820,13 @@ private int counterRetriedSendMessagePort = 0;
     }
 
 
-
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void requestWiFiConnection(PeerHandle peerHandle, String role) {
-        Log.d(LOG, "requestWiFiConnection");
+        //Log.d(LOG, "requestWiFiConnection");
         String peerRole = role;
 
         if(hashMapOfNetworks.keySet().equals(hashMapPeerHandleKeyAndMac.get(peerHandle))){
-            Log.d(LOG, "There already exists a network with this peer");
+            //Log.d(LOG, "There already exists a network with this peer");
         }
 
         if(role.equals("subscriber")){
@@ -714,7 +834,7 @@ private int counterRetriedSendMessagePort = 0;
                     .setPskPassphrase("password")
                     .build();
 
-            Log.d(LOG, "This devices is subscriber");
+            //Log.d(LOG, "This devices is subscriber");
         } else {
            // listConnectionWifiRequestedMacs.add(hashMapPeerHandleKeyAndMac.get(peerHandle));
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
@@ -723,11 +843,11 @@ private int counterRetriedSendMessagePort = 0;
                   //  .setPort(.getLocalPort())
                     .build();
 
-            Log.d(LOG, "This devices is publisher");
+            //Log.d(LOG, "This devices is publisher");
         }
 
         if (networkSpecifier == null) {
-            Log.d(LOG, "No NetworkSpecifier Created ");
+            //Log.d(LOG, "No NetworkSpecifier Created ");
             return;
         }
 
@@ -743,20 +863,69 @@ private int counterRetriedSendMessagePort = 0;
 
                 //List<Network> listActiveNetworks = (List<Network>) connectivityManager.getActiveNetwork();
 
+                if(!connectedDevices.contains(peerHandle)){
+                    connectedDevices.add(peerHandle);
+                    discoveredDevices.remove(peerHandle);
+                }
+
 
                 new Handler(Looper.getMainLooper()).post(()-> {
                     addPeersToChatList();
                 });
                 hashMapOfNetworks.put(hashMapPeerHandleKeyAndMac.get(peerHandle), network); // mac = 0 ? TODO is this fixed?
                 Toast.makeText(context, "On Available!", Toast.LENGTH_SHORT).show();
-                Log.d(LOG, "On available for " + peerRole);
+                //Log.d(LOG, "On available for " + peerRole);
 
                 if( available == 0){
                     available = currentTimeMillis();
-                    Log.d(LOG, String.valueOf(available));
+                    //Log.d(LOG, String.valueOf(available));
                     diffStartAvailable = available - start;
                     diffStartDiscovered = discovered - start;
-                    Log.d("TESTING-LOG-TIME-DIFF", + diffStartDiscovered + ":" + diffStartAvailable);
+
+                    countervalue = 0;
+
+                    FileReader file= null;  //address of the file
+                    try {
+                        file = new FileReader("/data/data/com.example.testaware/counter");
+                        List<String> Lines=new ArrayList<>();  //to store all lines
+                        Scanner sc=new Scanner(file);
+                        while(sc.hasNextLine()){  //checking for the presence of next Line
+                            String line = sc.nextLine();
+                            countervalue = Integer.parseInt(line);
+                        }
+                        sc.close();;
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+
+                   /* try(BufferedReader bufferedReader = new BufferedReader(new FileReader("/data/data/com.example.testaware/counter"))) {
+                        String line = bufferedReader.readLine();
+                        bufferedReader.read();
+                        while(line != null) {
+                            countervalue = Integer.valueOf(line);
+                        }
+                    }  catch (IOException e) {
+                        // Exception handling
+                    }
+*/
+
+                    String outputText = "Discovery:" + diffStartDiscovered + ":Available:" + diffStartAvailable + ":SSLContext:" + diffSSLContext + "Cluster:"+ resultAttached;
+                    try {
+                        BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
+                        BufferedWriter writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                        writer.append("Counter:" + countervalue);
+                        writer.append("\n");
+                        writer.append(outputText);
+                        writer.append("\n");
+                        writer.close();
+
+                        String counterText = String.valueOf(countervalue+1);
+                        writerCounter.write(counterText);
+                        writerCounter.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
 
@@ -802,22 +971,10 @@ private int counterRetriedSendMessagePort = 0;
             @Override
             public void onCapabilitiesChanged(Network network_, NetworkCapabilities networkCapabilities) {
                 Log.d(LOG, "onCapabilitiesChanged with Network " + network_);
-                //networkCapabilities = networkCapabilities;
-                //network = network_;
                 peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
                 setPeerIpv6(peerAwareInfo.getPeerIpv6Addr());
                 Log.d(LOG, "Peeripv6: " + peerAwareInfo.getPeerIpv6Addr() );
 
-
-
-                TransportInfo ti = networkCapabilities.getTransportInfo();
-                if (ti instanceof WifiAwareNetworkInfo) {
-                    WifiAwareNetworkInfo info = (WifiAwareNetworkInfo) ti;
-                    Inet6Address peerAddress = info.getPeerIpv6Addr();
-                    int peerPort = info.getPort();
-                }
-                // WifiAwareNetworkInfo wifiInfo = (WifiAwareNetworkInfo) networkCapabilities_.getTransportInfo();
-                //String ssid = wifiInfo.get;
             }
 
 
@@ -827,25 +984,34 @@ private int counterRetriedSendMessagePort = 0;
                 String mac = getMacAddressFromNetwork(network);
                 Log.d("LOG-Test-Debugging", "onLOST: " + mac + network.toString());
                 listConnectionInitiatedMacs.remove(mac);
+                //listConnectionWifiRequestedMacs.remove(mac);
+                connectionInitiatedMac.remove(mac);
+                hashMapOfNetworks.remove(mac);
+                hashMapMacWithPort.remove(mac);
+
+
+
                 List<PeerHandle> peersToRemove = new ArrayList<>();
-               // hashMapPeerHandleKeyAndMac.remove(getPeerHandleFromMacAddress(mac));
                 for (PeerHandle peer : hashMapPeerHandleKeyAndMac.keySet()){
                     if (hashMapPeerHandleKeyAndMac.get(peer).equals(mac)){
                         peersToRemove.add(peer);
-                        //hashMapPeerHandleKeyAndMac.remove(peer);
                     }
                 }
                 for (PeerHandle peerToRemove: peersToRemove){
                     hashMapPeerHandleKeyAndMac.remove(peerToRemove);
+                    listOfPeersPortIsSentTo.remove(peerToRemove);
+                    publishDiscoveredPeers.remove(peerToRemove);
+                    subscribeDiscoveredPeers.remove(peerToRemove);
+                    requestedConnectionList.remove(peerToRemove);
+                    peerAndMacByte.remove(peerToRemove);
                 }
-                hashMapOfNetworks.remove(mac);
+
                 new Handler(Looper.getMainLooper()).post(()-> {
                     addPeersToChatList();
                 });
-                //addPeersToChatList();
                 if(hashMapPeerHandleKeyAndMac.isEmpty()){
                     Log.d(LOG, "HashMap empty? yes");
-                    //appServer.stop();
+                    appServer.stop();
                     appServer = null;
                     new Handler(Looper.getMainLooper()).post(()-> {
                         setUpNewConnection();
@@ -855,9 +1021,10 @@ private int counterRetriedSendMessagePort = 0;
         });
     }
 
+    private boolean firstTimeRestarted = false;
 
     private void setPeerIpv6(Inet6Address ipv6){
-        this.peerIpv6 = ipv6;
+        peerIpv6 = ipv6;
     }
 
     private void sendPort(PeerHandle peerHandle){
@@ -902,44 +1069,62 @@ private int counterRetriedSendMessagePort = 0;
         return 1025;
     }
 
+private List<PeerHandle> peerHandlesStartChat;
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void openChat(int position, String peerMac){
         //hashMapMacWithPort.put(peerMac, portToServer);
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
-        PeerHandle peerHandle = getPeerHandleFromMacAddress(peerMac);
+        intentChat.putExtra("counter", countervalue);
+        List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(peerMac);
 
         int port = getPortFromMac(peerMac);
         /*while(wait){
             Log.d(LOG, "Waiting");
         }*/
 
+        peerHandlesStartChat = peerHandles;
+        if (!connectionInitiatedMac.contains(peerMac)){
+            byte [] message = "goToChat".getBytes();
+
+            publishDiscoverySession.sendMessage(peerHandlesStartChat.get(0), MESSAGEGOTOCHAT, message);
+            //subscribeDiscoverySession.sendMessage(peer, MESSAGEGOTOCHAT, message);
+
+        }
+
         if(connectionInitiatedMac.contains(peerMac)){
             intentChat.putExtra("Role", "Server");
             intentChat.putExtra("port", localPortServer);
-
             Log.d(LOG, "PORT openChat as Server " + port);
-        } else if (sendMessageOpenChatFailed) {
-            Toast.makeText(context, "Message to open chat did not send. You are server", Toast.LENGTH_SHORT).show();
-
-            intentChat.putExtra("Role", "Server");
-            intentChat.putExtra("port", localPortServer);
-            Log.d(LOG, "PORT openChat as Server " + port);
-        } else{
-             byte [] message = "goToChat".getBytes();
-             PeerHandle peer = getPeerHandleFromMacAddress(peerMac);
-             publishDiscoverySession.sendMessage(peer, MESSAGEGOTOCHAT, message);
-             intentChat.putExtra("Role", "Client");
-             intentChat.putExtra("port", port);
-
-             Log.d(LOG, "PORT openChat Client " + port);
-         }
+            startActivity(intentChat);
+        }
 
 
-        Contact contact = new Contact(IdentityHandler.getCertificate());
-        intentChat.putExtra("contact", contact);
-     //   intentChat.putExtra("port", portToServer);
-        startActivity(intentChat);
+        booleanObserver.setListener(new BooleanChangedListener() {
+            @Override
+            public void onBooleanChanged(boolean messageSentStatus) {
+                 if (sendMessageOpenChatFailed) {
+                    Toast.makeText(context, "Message to open chat did not send. You are server", Toast.LENGTH_LONG).show();
+
+                    intentChat.putExtra("Role", "Server");
+                    intentChat.putExtra("port", localPortServer);
+                    Log.d(LOG, "PORT openChat as Server " + port);
+                    startActivity(intentChat);
+
+                } else if(!sendMessageOpenChatFailed){
+                     intentChat.putExtra("Role", "Client");
+                     intentChat.putExtra("port", port);
+                     Log.d(LOG, "PORT openChat Client " + port);
+                     startActivity(intentChat);
+                 }
+            }
+        });
+
+
+       // Contact contact = new Contact(IdentityHandler.getCertificate());
+       // intentChat.putExtra("contact", contact);
+
     }
 
 

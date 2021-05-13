@@ -21,8 +21,10 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -37,18 +39,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
+import static java.lang.System.currentTimeMillis;
+
 
 //client can also instantiate connection.
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
-    private String LOG = "Log-App-Server";
+    private final String LOG = "Log-App-Server";
     //private ObjectInputStream inputStream;
     //private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
 
@@ -56,15 +62,10 @@ public class AppServer {
     private DataOutputStream outputStream;
 
     private boolean running;
-    private Map<PublicKey, ConnectedClient> clients;
-    private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
-    private ExecutorService sendService = Executors.newSingleThreadExecutor();
-    private String [] protocolGCM;
-    private String [] protocolCHACHA;
 
-    private String [] tlsVersion;
+    private final String [] tlsVersion;
 
-    private List<ConnectionListener> connectionListeners;
+    private final List<ConnectionListener> connectionListeners;
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -81,21 +82,23 @@ public class AppServer {
     @Getter
     private int localPort;
 
+    private int counterValue = 0;
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, Network network){
     //public AppServer(SSLContext serverSSLContext){
         running = true;
-        clients = new ConcurrentHashMap<>();
-        protocolGCM = new String[1];
-        protocolGCM [0]= Constants.SUPPORTED_CIPHER_GCM;
+        String[] protocolGCM = new String[1];
+        protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
 
-        protocolCHACHA = new String[1];
-        protocolCHACHA [0]= Constants.SUPPORTED_CIPHER_CHACHA;
+        String[] protocolCHACHA = new String[1];
+        protocolCHACHA[0]= Constants.SUPPORTED_CIPHER_CHACHA;
 
         tlsVersion = new String[1];
-        tlsVersion [0] = "TLSv1.3";
+        tlsVersion [0] = "TLSv1.2";
 
 
+        counterValue = mainActivity.get().getCountervalue();
         connectionListeners = new ArrayList<>();
 
         Runnable serverTask = () -> {
@@ -111,27 +114,43 @@ public class AppServer {
                 //localPort = serverSocket.getLocalPort();
                 serverSocket.setEnabledProtocols(tlsVersion);*/
 
-               // serverSocket.setEnabledCipherSuites(protocolCHACHA);
+                serverSocket.setEnabledCipherSuites(protocolCHACHA);
                 serverSocket.setNeedClientAuth(true);
 
 
                while (running) {
                     SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
                     serverSocket.getEnabledCipherSuites();
-                    //addClient(sslClientSocket);
                     sslClientSocket.getPort();
+
+                    sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                        @Override
+                        public void handshakeCompleted(HandshakeCompletedEvent event) {
+                            long handshakeCompletedServer = currentTimeMillis();
+                            //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-SERVER",  String.valueOf(handshakeCompletedServer));
+                            BufferedWriter writer = null;
+                            try {
+                                String outputText = String.valueOf(handshakeCompletedServer);
+                                writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/handshakeCompletedServer", true));
+                                writer.append("Counter:" + counterValue);
+                                writer.append("\n");
+                                writer.append(outputText);
+                                writer.append("\n");
+                                writer.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                        }
+                    });
+
+
                     Log.d(LOG, "client accepted");
-
-                    Log.d(LOG, "Server Socket PRotocols: " + serverSocket.getEnabledProtocols().length);
-                    Log.d(LOG, "Server Socket cipher suites: " + serverSocket.getEnabledCipherSuites().length);
-
-                   Log.d(LOG, "Client socket PRotocols: " + sslClientSocket.getEnabledProtocols().length);
-                   Log.d(LOG, "Client Socket cipher suites: " + sslClientSocket.getEnabledCipherSuites().length);
 
                     inputStream = new DataInputStream(sslClientSocket.getInputStream());
                     outputStream = new DataOutputStream(sslClientSocket.getOutputStream());
 
-                    client = new ClientHandler(inputStream, outputStream , sslClientSocket, connectionListeners );
+                    client = new ClientHandler(inputStream, outputStream , sslClientSocket, connectionListeners, counterValue );
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
@@ -162,7 +181,7 @@ public class AppServer {
                     }*/
                 }
             }  catch (IOException  e) {
-               Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+               Log.d(LOG, "Printing message: " +  Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
@@ -173,98 +192,26 @@ public class AppServer {
     }
 
 
-    protected void addClient(SSLSocket sslClientSocket){
-        ConnectedClient clientTask = new ConnectedClient(this, sslClientSocket);
-        clients.put(clientTask.getUserIdentity().getPublicKey(), clientTask);
-        clientProcessingPool.submit(clientTask);
-    }
-
-
-    protected void removeClient(ConnectedClient connectedClient){
-        if(clients.containsKey(connectedClient.getUserIdentity().getPublicKey())){
-            connectedClient.stop();
-            clients.remove(connectedClient.getUserIdentity().getPublicKey());
-        }
-    }
-
-
     public void stop(){
-        /*for (ConnectedClient client: clients.values()){
-            removeClient(client);
-        }*/
         running = false;
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if(client!=null){
-
             client.setRunning(false);
         }
     }
 
-    public void setListener(ConnectionListener listener){
-        connectionListeners.add(listener);
-    }
 
-   /* private void onPacketReceived(AbstractPacket packet) {
-        Contact from = new Contact(getServerIdentity());
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(from, packet);
-        }
-    }
-
-
-    /*protected void onPacketReceived(ConnectedClient device, AbstractPacket packet){
-        Contact from = new Contact(device.getUserIdentity()); // den som sender pakken
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-        mainActivity.get().getConnectionHandler().getAppClient().getConnectionListeners();
-
-        for(ConnectionListener listeners: mainActivity.get().getConnectionHandler().getAppClient().getConnectionListeners()){
-            listeners.onServerPacket(packet);
-        }
-
-        if (packet instanceof MessagePacket) {
-            PublicKey to = ((MessagePacket)packet).getMessage().getTo(); // henter ut public key av meldingen dersom det er av type MessagePacket
-
-            if(clients.containsKey(to)){
-                ConnectedClient toClient = clients.get(to); // sjekker med listen av klienter for å finne match på public key
-                Runnable packetForwardingTask = () -> {
-                    toClient.send(packet);  // pakken sendes til klienten
-                };
-                Thread packetForwardingThred = new Thread(packetForwardingTask);
-                packetForwardingThred.start();
-            }
-        }
-    }*/
-
-
-
-    public void sendMessage(String message){
+    public void sendMessage(String message, long sendingMessageTime){
         if(client != null){
-            client.sendMessage(message);
+            client.sendMessage(message, sendingMessageTime);
         } else {
             Log.d(LOG, "Client is null");
         }
-       /* if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                MessagePacket messagePacket = (new MessagePacket(message));
-                Log.d(LOG, "outputstream " + message);
-                outputStream.writeObject(messagePacket);
-                outputStream.flush();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in AppServer  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;*/
     }
-
-
 }
 
 

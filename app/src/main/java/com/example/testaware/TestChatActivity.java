@@ -26,6 +26,8 @@ import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 
@@ -39,6 +41,8 @@ import java.util.Enumeration;
 import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
+
+import static java.lang.System.currentTimeMillis;
 
 public class TestChatActivity extends AppCompatActivity {
 
@@ -79,6 +83,7 @@ public class TestChatActivity extends AppCompatActivity {
     private Contact contact;
     private String role;
     private int port;
+    private int counterValue = 0;
 
 
     private Thread thread;
@@ -93,6 +98,7 @@ public class TestChatActivity extends AppCompatActivity {
         port = getIntent().getIntExtra("port", 1025);
 
         role = getIntent().getStringExtra("Role");
+        counterValue = getIntent().getIntExtra("counter", 0);
         TextView textView = findViewById(R.id.tvRole);
         textView.setText(role);
 
@@ -105,19 +111,31 @@ public class TestChatActivity extends AppCompatActivity {
         peerIpv6 = MainActivity.getPeerIpv6();
 
         if(role.equals("Client")){
-            appClient = new AppClient(keyPair, sslContext, port);
+
+            long clientStarted = currentTimeMillis();
+            Log.d("TESTING-LOG-TIME-TLS-CLIENT-STARTED",  String.valueOf(clientStarted));
+            appClient = new AppClient(keyPair, sslContext, port, clientStarted, counterValue);
+
+
             Log.d(LOG, "Port: " + port);
             mainActivity.get().getConnectionHandler().setAppClient(appClient);
 
             thread = new Thread(appClient);
             thread.start();
+
+
+            //long clientThreadStarted = currentTimeMillis();
+            //Log.d("TESTING-LOG-TIME-TLS-CLIENT-THREAD",  String.valueOf(clientThreadStarted));
         }
 
         this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
 
         Intent intent = getIntent();
-        contact = (Contact) intent.getSerializableExtra("contact");
+        //contact = (Contact) intent.getSerializableExtra("contact");
         setupUI();
+
+        TextView username = findViewById(R.id.tvName);
+        username.setText("User2");
 
 
     }
@@ -148,13 +166,13 @@ public class TestChatActivity extends AppCompatActivity {
                 String messageToSend = messageText.getText().toString();
                 sendMessage(messageToSend);
                 messageText.getText().clear();
-                if(appClient != null){
+               /* if(appClient != null){
                    //appClient.sendMessage(messageToSend);
                     //sendMessage(messageToSend);
                 }
                 else{
                     //sendMessage(messageToSend);
-                    /*//clientHandelerWeakReference.sendMessage(messageToSend);
+                    //clientHandelerWeakReference.sendMessage(messageToSend);
                     try {
                         WeakReference<ClientHandeler> clientHandeler = clientHandelerWeakReference;
                         String [] msg = new String[0];
@@ -163,8 +181,8 @@ public class TestChatActivity extends AppCompatActivity {
                         Log.i(LOG, "Send MEssage Client Handler");
                     } catch (NoSuchMethodException e) {
                         e.printStackTrace();
-                    }*/
-                }
+                    }
+                }*/
             }
             Log.i(LOG, "Send btn pressed");
         });
@@ -173,10 +191,27 @@ public class TestChatActivity extends AppCompatActivity {
 
 
 
-    public static void setChat(String message){
-        MessageListItem chatMsg = new MessageListItem(message, "Elise");    //TODO: GET USERNAME FROM CHATLISTITEM
+    public static void setChat(String message, int counterValueStatic){
+        MessageListItem chatMsg = new MessageListItem(message, "User2");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
+
+        long settingMessage = currentTimeMillis();
+        //Log.d("TESTING-LOG-TIME-TLS-MESSAGE-SET",  String.valueOf(settingMessage));
+
+        BufferedWriter writer = null;
+        try {
+            String outputText = String.valueOf(settingMessage);
+            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageReceived", true));
+            writer.append("Counter:" + counterValueStatic);
+            writer.append("\n");
+            writer.append(outputText);
+            writer.append("\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         //mMessageAdapter.add(message);
     }
 
@@ -212,6 +247,13 @@ public class TestChatActivity extends AppCompatActivity {
 */
 
     private void sendMessage(String msg) {
+
+        long sendingMessage = currentTimeMillis();
+        Log.d("TESTING-LOG-TIME-TLS-SEND-MESSAGE-PRESSED",  String.valueOf(sendingMessage));
+
+
+
+
         Log.d(LOG, "Sending message: " + msg);
         MessageListItem chatMsg = new MessageListItem(msg, "Deg");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
@@ -227,9 +269,9 @@ public class TestChatActivity extends AppCompatActivity {
 
         //mainActivity.get().getConnectionHandler().sendMessage(message);
         if(role.equals("Client")){
-            appClient.sendMessage(msg);
+            appClient.sendMessage(msg, sendingMessage);
         } else {
-            appServer.sendMessage(msg);
+            appServer.sendMessage(msg, sendingMessage);
         }
     }
 
@@ -246,28 +288,10 @@ public class TestChatActivity extends AppCompatActivity {
         Log.d(LOG, "ChatActivity onStop");
     }
 
-    /*
-    KOMMENTERT UT 06.04
     @Override
-    public void onConnect() {
-
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d("TESTING-LOG-TIME-TLS-onDestroy", "App destroyed");
+        //TODO: remove peer from list
     }
-
-    @Override
-    public void onDisconnect() {
-
-    }
-
-    @Override
-    public void onPacket(Message message) {
-        Log.d(LOG, "onPacket in ChatAct");
-
-    }
-
-    @Override
-    public void onServerPacket(AbstractPacket packet) {
-
-    }
-*/
-
 }

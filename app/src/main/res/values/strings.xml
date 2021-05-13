@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">TestAware</string>
+    <string name="app_name">WiFiAwareAutCom</string>
     <string name="write_a_message">Write a message</string>
     <string name="send_message_btn">Send message button</string>
     <string name="my_chat_bubble">My chat bubble</string>
     <string name="message_text_sent_by_other">Message text sent by other</string>
-    <string name="User_name_elise">Elise</string>
+    <string name="User_name_elise">User2</string>
     <string name="My_message">This my Message</string>
     <string name="Btn_send_msg">Send</string>
 
