@@ -9,7 +9,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -57,8 +57,7 @@ public class AppClient implements Runnable{
     private DataOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
-    @Getter
-    private List<ConnectionListener> connectionListeners;
+
 
     private String LOG = "Log-Client";
     @Getter
@@ -83,7 +82,7 @@ public class AppClient implements Runnable{
         //Thread thread = new Thread(this);
         //thread.start();
 
-        connectionListeners = new ArrayList<>();
+
     }
 
 
@@ -231,9 +230,7 @@ public class AppClient implements Runnable{
         } catch (IOException  e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
-            for (ConnectionListener connectionListener: connectionListeners){
-                connectionListener.onDisconnect();
-            }
+
             if(sslSocket != null){
                 try {
                     sslSocket.close();
@@ -258,14 +255,6 @@ public class AppClient implements Runnable{
     }
 
 
-
-    void registerConnectionListener(ConnectionListener listener) {
-        connectionListeners.add(listener);
-    }
-
-    void removeConnectionListener(ConnectionListener listener) {
-        connectionListeners.remove(listener);
-    }
 
 
       /*boolean send(AbstractPacket packet) {

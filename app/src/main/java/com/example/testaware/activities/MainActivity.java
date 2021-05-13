@@ -46,7 +46,7 @@ import com.example.testaware.IdentityHandler;
 import com.example.testaware.TestChatActivity;
 import com.example.testaware.listeners.BooleanChangedListener;
 import com.example.testaware.listeners.BooleanObserver;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -85,7 +85,7 @@ import lombok.Getter;
 import static java.lang.System.currentTimeMillis;
 
 
-public class MainActivity extends AppCompatActivity implements ConnectionListener {
+public class MainActivity extends AppCompatActivity  {
 
 
     private WifiAwareManager wifiAwareManager;
@@ -1184,7 +1184,7 @@ private List<PeerHandle> peerHandlesStartChat;
         return ((bytes[1] & 0xFF) << 8 | (bytes[0] & 0xFF));
     }
 
-
+/*
     @Override
     public void onConnect() {
 
@@ -1205,8 +1205,12 @@ private List<PeerHandle> peerHandlesStartChat;
 
     }
 
+ */
+
     public KeyPair getKeyPair(){
         return keyPair;
     }
+
+
 
 }
