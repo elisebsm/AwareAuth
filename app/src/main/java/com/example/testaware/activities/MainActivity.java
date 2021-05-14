@@ -37,6 +37,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -172,8 +173,9 @@ public class MainActivity extends AppCompatActivity  {
     private String signedKeyReceived;
     private String signedKeyBroadcasted;
     private ArrayList<String> peerSignedKeyReceived = new ArrayList<>();
-
     private HashMap<String, Boolean> dontAuhtenticate = new HashMap<>();
+
+    private ArrayList<PeerHandle> peerHandlesToUse = new ArrayList<>();
 
     @Getter
     private String certSelfSigned="false";
@@ -256,12 +258,7 @@ public class MainActivity extends AppCompatActivity  {
 
     private BooleanObserver booleanObserver;
 
-    private boolean wait = true;
-    private int counterRetriedSendMessagePort = 0;
-    private int counterRetriedSendMessageOpenChat = 0;
-    private boolean sendMessageOpenChatFailed;
 
-    byte [] serviceSpecificInfoText = "StartingConnection".getBytes();
 
 
     @Getter
@@ -439,7 +436,8 @@ public class MainActivity extends AppCompatActivity  {
                 macAddresses.add(mac);
             }
         }*/
-        String macAddress ="";
+
+
         for (String mac : hashMapPeerHandleKeyAndMac.values()){
             if(!macAddresses.contains(mac)){
                 String status = "Not discovered";
@@ -450,7 +448,6 @@ public class MainActivity extends AppCompatActivity  {
                 } else if(counter == 2){
                     cert = "Certificate: Not valid";
                 }
-                macAddress =mac;  //TODO: untill elise fixes peerhandle to string
                 List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(mac);
                 if(peerHandles.size()>1){
                     if((discoveredDevices.contains(peerHandles.get(0)))||(discoveredDevices.contains(peerHandles.get(1)))){
@@ -469,6 +466,24 @@ public class MainActivity extends AppCompatActivity  {
                 ChatListItem chatListDevices = new ChatListItem("MAC:", mac, status, cert);
                 userList.add(chatListDevices);
                 macAddresses.add(mac);
+
+                if(certSelfSigned=="true"){
+                    Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
+                    reqPeerAuthConnBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                requestPeerAuthConn();
+                                if(peerHandlesToUse.contains(peerHandles.get(0))){
+                                    sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
+                                }
+                                else{
+                                    sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
+                                }
+                            }
+                        }
+                    });
+                }
             }
             counter +=1;
         }
@@ -484,17 +499,6 @@ public class MainActivity extends AppCompatActivity  {
             MainActivity.this.openChat(position, peerIpv6);
         });
 
-        List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(macAddress);  //TODO: fix to string
-        Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
-        reqPeerAuthConnBtn.setOnClickListener(v -> {
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                requestPeerAuthConn();
-
-                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));  //TODO: fix peerhandle to string
-
-            }
-        });
     }
 
 
@@ -529,7 +533,12 @@ public class MainActivity extends AppCompatActivity  {
             }
         }, null);
     }
+    private boolean wait = true;
+    private int counterRetriedSendMessagePort = 0;
+    private int counterRetriedSendMessageOpenChat = 0;
+    private boolean sendMessageOpenChatFailed;
 
+    byte [] serviceSpecificInfoText = "StartingConnection".getBytes();
 
 
     private void publish () {
@@ -542,35 +551,34 @@ public class MainActivity extends AppCompatActivity  {
         if(wifiAwareSession!=null){
             wifiAwareSession.publish(publishConfig, new DiscoverySessionCallback() {
                 @Override
-                public void onMessageSendFailed(int messageId) {
-                    if (messageId == MESSAGEPORT && counterRetriedSendMessagePort <= 5) {
+                public void onMessageSendFailed (int messageId){
+                    if(messageId==MESSAGEPORT && counterRetriedSendMessagePort <=5){
                         counterRetriedSendMessagePort++;
                         publishDiscoverySession.sendMessage(peer, MESSAGEPORT, msg);
-                    } else if (messageId == MESSAGEGOTOCHAT && counterRetriedSendMessageOpenChat <= 5) {
+                    } else if(messageId == MESSAGEGOTOCHAT && counterRetriedSendMessageOpenChat <=5 ){
                         counterRetriedSendMessageOpenChat += 1;
                         Log.d(LOG, "Sending message goToChat failed");
-                        byte[] message = "goToChat".getBytes();
+                        byte [] message = "goToChat".getBytes();
                         publishDiscoverySession.sendMessage(peerHandlesStartChat.get(1), MESSAGEGOTOCHAT, message);
                         //sendMessageOpenChatFailed = true;
                         //booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
 
 
-                    } else if (counterRetriedSendMessagePort > 5) {
+                    } else if( counterRetriedSendMessagePort >5){
                         localPortServer = 1025;
-                    } else if (counterRetriedSendMessageOpenChat > 1) {
+                    } else if(counterRetriedSendMessageOpenChat >1) {
                         sendMessageOpenChatFailed = true;
                         booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
                     }
                 }
 
                 @Override
-                public void onMessageSendSucceeded(int messageId) {
-                    if (messageId == MESSAGEPORT) {
+                public void onMessageSendSucceeded (int messageId){
+                    if(messageId==MESSAGEPORT){
                         peer = null;
                         msg = null;
                         Log.d(LOG, "Sending message port success");
-                    }
-                    if (messageId == MESSAGEGOTOCHAT) {
+                    } if(messageId == MESSAGEGOTOCHAT){
                         sendMessageOpenChatFailed = false;
                         booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
                     }
@@ -626,6 +634,7 @@ public class MainActivity extends AppCompatActivity  {
                                 long peerMacDeci = getMacInDecimal(message);
 
                                 if (myMacDeci >= peerMacDeci) {
+                                    peerHandlesToUse.add(peerHandle);
                                     requestWiFiConnection(peerHandle, role);
                                     Log.d(LOG, "requesting Connection for Publisher");
 
@@ -1149,6 +1158,7 @@ public class MainActivity extends AppCompatActivity  {
                     }
                 }
                 for (PeerHandle peerToRemove: peersToRemove){
+                    peerHandlesToUse.remove(peerToRemove);
                     hashMapPeerHandleKeyAndMac.remove(peerToRemove);
                     listOfPeersPortIsSentTo.remove(peerToRemove);
                     publishDiscoveredPeers.remove(peerToRemove);
@@ -1227,8 +1237,14 @@ public class MainActivity extends AppCompatActivity  {
         List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(peerMac);
 
         if(peerAuthenticated=="false"){
-            broadcastSignedKey("sigKeyList", peerHandles.get(0)); //TODO: change to correct intex, should only be one peerhandle in list because other is removed when not used. Change to string not list
-            broadcastAuthenticatorKey(peerHandles.get(0)); //TODO: change to correct intex, should only be one peerhandle in list because other is removed when not used. Change to String not list
+            if(peerHandlesToUse.contains(peerHandles.get(0))){
+                broadcastSignedKey("sigKeyList", peerHandles.get(0));
+                broadcastAuthenticatorKey(peerHandles.get(0));
+            }
+            else{
+                broadcastSignedKey("sigKeyList", peerHandles.get(1));
+                broadcastAuthenticatorKey(peerHandles.get(1));
+            }
 
         }
         //hashMapMacWithPort.put(peerMac, portToServer);
@@ -1378,6 +1394,7 @@ public class MainActivity extends AppCompatActivity  {
             }
 
         }
+
         else{
             Log.i(LOG,"Certificate is null");
         }
@@ -1535,7 +1552,7 @@ public class MainActivity extends AppCompatActivity  {
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setMessage("Authenticate user:"+macAddress+"?").setPositiveButton("Yes", dialogClickListener)  //TODO change to mac add from list to include several connections
+        builder.setMessage("Authenticate user:"+macAddress+"?").setPositiveButton("Yes", dialogClickListener)
                 .setNegativeButton("No", dialogClickListener).show();
 
     }
@@ -1581,7 +1598,7 @@ public class MainActivity extends AppCompatActivity  {
                 peerAuthenticated = "true";
                 if (role == "publisher") {
                     Toast.makeText(this, "Starting peerAuthConn", Toast.LENGTH_SHORT).show();
-                    peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT_NO_AUTH, clientPubKey, peerIpv6.toString());           //TODO: change to no auth server port ?
+                    peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT_NO_AUTH, clientPubKey, peerIpv6.toString());           //TODO: change to no auth server port to 0?
 
                 }
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);

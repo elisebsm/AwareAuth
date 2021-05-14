@@ -38,16 +38,18 @@
     </LinearLayout>
 
 
-
-
     <Button
         android:id="@+id/btnReqPeerAuthConn"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackground"
+        android:backgroundTint="#7A7485"
+        android:backgroundTintMode="add"
         android:contentDescription="@string/Request_Peer_Auth_Conn"
         android:text="Request Peer Auth"
-        android:textColor="@color/colorPrimary" />
+        android:textColor="@color/colorPrimary"
+        android:focusable= "false"
+        android:visibility="invisible"/>
 
 
 

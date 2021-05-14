@@ -202,7 +202,7 @@ public class AppClient implements Runnable{
                     Log.d(LOG, "Connecting to NO_AUTH_SERVER PORT");
                 }
                 else{
-                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, Constants.SERVER_PORT);
+                    sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
                 }
                 Log.d(LOG, "port: " + port);
                 sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);

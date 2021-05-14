@@ -74,12 +74,7 @@ public class AppServer {
 
     private boolean running;
     private final String [] tlsVersion;
-    private Map<PublicKey, ConnectedClient> clients;
-    private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
-    private ExecutorService sendService = Executors.newSingleThreadExecutor();
-    private String [] protocol;
-    private PublicKey pubKey;
-    private SSLSocket sslClientSocket;
+    private SSLSocket sslClientSocket;  //remove
     private boolean userCertificateCorrect =true;
 
 
@@ -137,7 +132,7 @@ public class AppServer {
 
 
                while (running) {
-                    SSLSocket sslClientSocket = (SSLSocket) serverSocket.accept();
+                    sslClientSocket = (SSLSocket) serverSocket.accept();
                     serverSocket.getEnabledCipherSuites();
                     sslClientSocket.getPort();
 
@@ -182,7 +177,7 @@ public class AppServer {
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");
-                    //outputStream.flush(); //TODO: check if we need this, is flused in clienthandeler
+                    outputStream.flush(); //TODO: check if we need this, is flused in clienthandeler
                }
             }  catch (IOException  e) {
                 Log.d(LOG, Objects.requireNonNull(e.getMessage()));
