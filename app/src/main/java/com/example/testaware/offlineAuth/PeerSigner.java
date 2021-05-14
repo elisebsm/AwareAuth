@@ -88,7 +88,7 @@ public class PeerSigner {
     }
 
     public static ArrayList<String> getSavedSignedKeysFromFile(){
-        ArrayList<String> signedKeys=new ArrayList();
+        ArrayList<String> signedKeys=new ArrayList<>();
         String line = null;
         try{
             File file = new File("/data/data/com.example.testaware/signedKeys.txt");
@@ -160,7 +160,7 @@ public class PeerSigner {
     }
 
     public static ArrayList<String> getTmpPeerAuthInfo(boolean reqSignedKeyList){
-        ArrayList<String> peerAuthInfoList =new ArrayList();
+        ArrayList<String> peerAuthInfoList =new ArrayList<>();
         String line=null;
         try{
             File file = new File("/data/data/com.example.testaware/tmpSavedPeerAuthInfo.txt");

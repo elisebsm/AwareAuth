@@ -1,4 +1,4 @@
-package com.example.activities.testaware;
+package com.example.testaware.activities;
 
 import android.content.Context;
 import android.content.Intent;
@@ -24,6 +24,7 @@ import com.example.testaware.AppServer;
 import com.example.testaware.ClientHandler;
 import com.example.testaware.User;
 //import com.example.testaware.adapters.MessageAdapter;
+import com.example.testaware.activities.MainActivity;
 import com.example.testaware.adapters.MessageListAdapter;
 
 import com.example.testaware.listeners.SSLContextedObserver;
@@ -282,7 +283,7 @@ public class TestChatActivity extends AppCompatActivity {
             if(mainActivity.get().getPeerAuthenticated().equals("true") ) {
                 Log.d(LOG, "Sending message from peerAuthServer" + msg);
                 if(peerAuthServer != null){
-                    peerAuthServer.sendMessage(msg);//TODO: add sending message
+                    peerAuthServer.sendMessage(msg,sendingMessage );
                 }
                 else{
                     Log.d(LOG, "Peer auth server obj null");

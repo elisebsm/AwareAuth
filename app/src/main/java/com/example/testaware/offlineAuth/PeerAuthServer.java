@@ -11,7 +11,6 @@ import com.example.testaware.ConnectedClient;
 import com.example.testaware.Constants;
 import com.example.testaware.activities.MainActivity;
 
-import com.example.testaware.activities.TestChatActivity;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -39,6 +38,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
+import com.example.testaware.activities.TestChatActivity;
 
 import lombok.Getter;
 
@@ -56,6 +56,8 @@ public class PeerAuthServer {
     private ClientHandler noAuthClient;
     private SSLSocket sslClientSocket;
     private boolean userPeerAuth=false;
+    private int counterValue = 0;
+    private final String [] tlsVersion;
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -74,14 +76,23 @@ public class PeerAuthServer {
     public PeerAuthServer(SSLContext serverSSLContext, int serverPort,  PublicKey pubKey, String connectedPeerIP){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
-        protocol= new String[1];
-        protocol [0]= Constants.SUPPORTED_CIPHER_GCM;
+
+        String[] protocolGCM = new String[1];
+        protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
+
+        String[] protocolCHACHA = new String[1];
+        protocolCHACHA[0]= Constants.SUPPORTED_CIPHER_CHACHA;
+
+        tlsVersion = new String[1];
+        tlsVersion [0] = "TLSv1.2";
+        counterValue = mainActivity.get().getCountervalue();
 
         Runnable serverTask = () -> {
             running  = true;
             try {
-                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);
-                serverSocket.setEnabledCipherSuites(protocol);  // no need for client auth
+                SSLServerSocket serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(serverPort);  //TODO: change to 0 ?
+                serverSocket.setEnabledProtocols(tlsVersion);
+                serverSocket.setEnabledCipherSuites(protocolCHACHA);
 
                 while (running) {
                     Log.d(LOG, "Starting peer aut server");
@@ -100,7 +111,7 @@ public class PeerAuthServer {
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                         outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
-                        noAuthClient = new ClientHandler(inputStream, outputStream, sslClientSocket);
+                        noAuthClient = new ClientHandler(inputStream, outputStream, sslClientSocket, counterValue);
                         Thread t = new Thread(noAuthClient);
                         t.start();
                         Log.d(LOG, "Starting new peer auth client Thread -");
@@ -148,8 +159,8 @@ public class PeerAuthServer {
 
 
 
-    public void sendMessage(String message){
-        noAuthClient.sendMessage(message);
+    public void sendMessage(String message, long sendingMessageTime){
+        noAuthClient.sendMessage(message, sendingMessageTime);
 
     }
 

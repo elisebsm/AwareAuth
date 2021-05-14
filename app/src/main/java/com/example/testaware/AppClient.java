@@ -12,7 +12,7 @@ import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
 
-import com.example.testaware.activities.TestChatActivity;
+//import com.example.testaware.activities.TestChatActivity;
 
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
@@ -24,7 +24,7 @@ import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyUser;
 
 import java.io.BufferedInputStream;
-
+import com.example.testaware.activities.TestChatActivity;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -82,7 +82,9 @@ public class AppClient implements Runnable{
     private Inet6Address inet6Address;
 
     private int port;
-    @Getter
+    private long clientStartedTime;
+    public int counterValue;
+    /*@Getter
     private static WeakReference<TestChatActivity> testChatActivity;
     private long clientStartedTime;
     public int counterValue;
@@ -90,7 +92,7 @@ public class AppClient implements Runnable{
     public static void updateTestChatActivity(TestChatActivity activity) {
           testChatActivity = new WeakReference<>(activity);
         }
-
+*/
     public AppClient(KeyPair keyPair, SSLContext sslContext, int port, long clientStartedTime, int counterValue){
         this.keyPair = keyPair;
         this.sslContext = sslContext;

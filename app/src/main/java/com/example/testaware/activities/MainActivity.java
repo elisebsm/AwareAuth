@@ -47,10 +47,9 @@ import com.example.testaware.AppServer;
 import com.example.testaware.ConnectionHandler;
 import com.example.testaware.IdentityHandler;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
-import com.example.testaware.activities.TestChatActivity;
 import com.example.testaware.listeners.BooleanChangedListener;
 import com.example.testaware.listeners.BooleanObserver;
-
+import com.example.testaware.activities.TestChatActivity;
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -257,6 +256,13 @@ public class MainActivity extends AppCompatActivity  {
 
     private BooleanObserver booleanObserver;
 
+    private boolean wait = true;
+    private int counterRetriedSendMessagePort = 0;
+    private int counterRetriedSendMessageOpenChat = 0;
+    private boolean sendMessageOpenChatFailed;
+
+    byte [] serviceSpecificInfoText = "StartingConnection".getBytes();
+
 
     @Getter
     private  int countervalue;
@@ -272,6 +278,7 @@ public class MainActivity extends AppCompatActivity  {
             start = currentTimeMillis();
             Log.d("TESTING-LOG-TIME-START", String.valueOf(start));
         }
+
         wifiAwareManager = null;
         wifiAwareSession = null;
         connectivityManager = null;
@@ -342,15 +349,7 @@ public class MainActivity extends AppCompatActivity  {
         TestChatActivity.updateActivityMain(this);
         AppServer.updateActivity(this);
         PeerAuthServer.updateActivity(this);
-        Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
-        reqPeerAuthConnBtn.setOnClickListener(v -> {
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                requestPeerAuthConn();
-                sendPeerAuthMsg(IamPeerAuth);
-
-            }
-        });
 
     }
 
@@ -440,6 +439,7 @@ public class MainActivity extends AppCompatActivity  {
                 macAddresses.add(mac);
             }
         }*/
+        String macAddress ="";
         for (String mac : hashMapPeerHandleKeyAndMac.values()){
             if(!macAddresses.contains(mac)){
                 String status = "Not discovered";
@@ -450,7 +450,7 @@ public class MainActivity extends AppCompatActivity  {
                 } else if(counter == 2){
                     cert = "Certificate: Not valid";
                 }
-
+                macAddress =mac;  //TODO: untill elise fixes peerhandle to string
                 List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(mac);
                 if(peerHandles.size()>1){
                     if((discoveredDevices.contains(peerHandles.get(0)))||(discoveredDevices.contains(peerHandles.get(1)))){
@@ -482,6 +482,18 @@ public class MainActivity extends AppCompatActivity  {
         listViewChats.setOnItemClickListener((parent, view, position, id) -> {
             String peerIpv6 = chatListAdapter.getChats().get(position).getPeerIpv6();
             MainActivity.this.openChat(position, peerIpv6);
+        });
+
+        List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(macAddress);  //TODO: fix to string
+        Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
+        reqPeerAuthConnBtn.setOnClickListener(v -> {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                requestPeerAuthConn();
+
+                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));  //TODO: fix peerhandle to string
+
+            }
         });
     }
 
@@ -517,12 +529,9 @@ public class MainActivity extends AppCompatActivity  {
             }
         }, null);
     }
-    private boolean wait = true;
-private int counterRetriedSendMessagePort = 0;
-    private int counterRetriedSendMessageOpenChat = 0;
-    private boolean sendMessageOpenChatFailed;
 
-    byte [] serviceSpecificInfoText = "StartingConnection".getBytes();
+
+
     private void publish () {
 
         PublishConfig publishConfig = new PublishConfig.Builder()
@@ -533,34 +542,35 @@ private int counterRetriedSendMessagePort = 0;
         if(wifiAwareSession!=null){
             wifiAwareSession.publish(publishConfig, new DiscoverySessionCallback() {
                 @Override
-                public void onMessageSendFailed (int messageId){
-                    if(messageId==MESSAGEPORT && counterRetriedSendMessagePort <=5){
+                public void onMessageSendFailed(int messageId) {
+                    if (messageId == MESSAGEPORT && counterRetriedSendMessagePort <= 5) {
                         counterRetriedSendMessagePort++;
                         publishDiscoverySession.sendMessage(peer, MESSAGEPORT, msg);
-                    } else if(messageId == MESSAGEGOTOCHAT && counterRetriedSendMessageOpenChat <=5 ){
+                    } else if (messageId == MESSAGEGOTOCHAT && counterRetriedSendMessageOpenChat <= 5) {
                         counterRetriedSendMessageOpenChat += 1;
                         Log.d(LOG, "Sending message goToChat failed");
-                        byte [] message = "goToChat".getBytes();
+                        byte[] message = "goToChat".getBytes();
                         publishDiscoverySession.sendMessage(peerHandlesStartChat.get(1), MESSAGEGOTOCHAT, message);
                         //sendMessageOpenChatFailed = true;
                         //booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
 
 
-                    } else if( counterRetriedSendMessagePort >5){
+                    } else if (counterRetriedSendMessagePort > 5) {
                         localPortServer = 1025;
-                    } else if(counterRetriedSendMessageOpenChat >1) {
+                    } else if (counterRetriedSendMessageOpenChat > 1) {
                         sendMessageOpenChatFailed = true;
                         booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
                     }
                 }
 
                 @Override
-                public void onMessageSendSucceeded (int messageId){
-                    if(messageId==MESSAGEPORT){
+                public void onMessageSendSucceeded(int messageId) {
+                    if (messageId == MESSAGEPORT) {
                         peer = null;
                         msg = null;
                         Log.d(LOG, "Sending message port success");
-                    } if(messageId == MESSAGEGOTOCHAT){
+                    }
+                    if (messageId == MESSAGEGOTOCHAT) {
                         sendMessageOpenChatFailed = false;
                         booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
                     }
@@ -568,61 +578,61 @@ private int counterRetriedSendMessagePort = 0;
 
                 @Override
                 public void onServiceDiscovered(PeerHandle peerHandle_, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
-                super.onServiceDiscovered(peerHandle_, serviceSpecificInfo, matchFilter);
-                Log.i("LOG-Test-Debugging", "publish onServiceDiscovered");
-               // publishDiscoveredPeers.add(peerHandle_);
-            }
-
-            @Override
-            public void onPublishStarted(PublishDiscoverySession session) {
-                super.onPublishStarted(session);
-                publishDiscoverySession = session;
-            }
-
-            @RequiresApi(api = Build.VERSION_CODES.Q)
-            @Override
-            public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
-                super.onMessageReceived(peerHandle, message);
-                if(!publishDiscoveredPeers.contains(peerHandle)){
-                    publishDiscoveredPeers.add(peerHandle);
-                    publishDiscoverySession.sendMessage(peerHandle, MESSAGE, myMac);  //TODO : check peerhandle_ vs peerhandle
+                    super.onServiceDiscovered(peerHandle_, serviceSpecificInfo, matchFilter);
+                    Log.i("LOG-Test-Debugging", "publish onServiceDiscovered");
+                    // publishDiscoveredPeers.add(peerHandle_);
                 }
 
-                if(!discoveredDevices.contains(peerHandle)){
-                    discoveredDevices.add(peerHandle);
-                    addPeersToChatList();
+                @Override
+                public void onPublishStarted(PublishDiscoverySession session) {
+                    super.onPublishStarted(session);
+                    publishDiscoverySession = session;
                 }
-                publishDiscoverySession.sendMessage(peerHandle, MESSAGE, myMac);
-                if (!listOfPeersPortIsSentTo.contains(peerHandle)){
-                    if(appServer!=null){
-                        sendPort(peerHandle);
+
+                @RequiresApi(api = Build.VERSION_CODES.Q)
+                @Override
+                public void onMessageReceived(PeerHandle peerHandle, byte[] message) {
+                    super.onMessageReceived(peerHandle, message);
+                    if (!publishDiscoveredPeers.contains(peerHandle)) {
+                        publishDiscoveredPeers.add(peerHandle);
+                        publishDiscoverySession.sendMessage(peerHandle, MESSAGE, myMac);  //TODO : check peerhandle_ vs peerhandle
                     }
-                }
-                String messageIn = new String(message);
+
+                    if (!discoveredDevices.contains(peerHandle)) {
+                        discoveredDevices.add(peerHandle);
+                        addPeersToChatList();
+                    }
+                    publishDiscoverySession.sendMessage(peerHandle, MESSAGE, myMac);
+                    if (!listOfPeersPortIsSentTo.contains(peerHandle)) {
+                        if (appServer != null) {
+                            sendPort(peerHandle);
+                        }
+                    }
+                    String messageIn = new String(message);
                /* if (message.length == 2) {
                     portToUse = byteToPortInt(message);
                     Log.d(LOG, "subscribe, will use port number " + portToUse);
                 } else*/
-                if (messageIn.contains("goToChat")) {
-                    Toast.makeText(context, "A Peer Client wants to talk to you", Toast.LENGTH_SHORT).show();
-                    connectionInitiatedMac.add(hashMapPeerHandleKeyAndMac.get(peerHandle));
-                } else if (message.length == 6) {
-                    setOtherMacAddress(message);
-                    String macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", message[0], message[1], message[2], message[3], message[4], message[5]);
-                    if(!hashMapPeerHandleKeyAndMac.containsKey(peerHandle)){
-                        hashMapPeerHandleKeyAndMac.put(peerHandle, macAddress);
-                        if(!listConnectionInitiatedMacs.contains(macAddress)){
+                    if (messageIn.contains("goToChat")) {
+                        Toast.makeText(context, "A Peer Client wants to talk to you", Toast.LENGTH_SHORT).show();
+                        connectionInitiatedMac.add(hashMapPeerHandleKeyAndMac.get(peerHandle));
+                    } else if (message.length == 6) {
+                        setOtherMacAddress(message);
+                        String macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", message[0], message[1], message[2], message[3], message[4], message[5]);
+                        if (!hashMapPeerHandleKeyAndMac.containsKey(peerHandle)) {
+                            hashMapPeerHandleKeyAndMac.put(peerHandle, macAddress);
+                            if (!listConnectionInitiatedMacs.contains(macAddress)) {
 
-                            long peerMacDeci = getMacInDecimal(message);
+                                long peerMacDeci = getMacInDecimal(message);
 
-                            if(myMacDeci >= peerMacDeci){
-                                requestWiFiConnection(peerHandle, role);
-                                Log.d(LOG, "requesting Connection for Publisher");
+                                if (myMacDeci >= peerMacDeci) {
+                                    requestWiFiConnection(peerHandle, role);
+                                    Log.d(LOG, "requesting Connection for Publisher");
 
-                                listConnectionInitiatedMacs.add(macAddress);
-                                byte[] msgtosend = "startConnection".getBytes();
-                                publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-                            }
+                                    listConnectionInitiatedMacs.add(macAddress);
+                                    byte[] msgtosend = "startConnection".getBytes();
+                                    publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
+                                }
 
                            /* requestWiFiConnection(peerHandle, role);
 
@@ -633,9 +643,49 @@ private int counterRetriedSendMessagePort = 0;
                             byte[] msgtosend = "startConnection".getBytes();
                             publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);   //OK*/
 
+                            }
+                        }
+
+
+                    } else if (message.length == 16) {
+                        //setOtherIPAddress(message);
+                        //Log.d(LOG, "setOtherIPAddress " + message);
+                    } else if (message.length > 16) {
+
+                        if (messageIn.contains("signedString")) {
+                            receivedSignedString = messageIn.replace("signedString", "");
+                            Log.d(LOG, "Signed string : " + receivedSignedString);
+                        } else if (messageIn.contains("randomString")) {
+                            receivedString = messageIn.replace("randomString", "");
+                            Log.d(LOG, "random String: " + receivedString);
+
+                        } else if (messageIn.contains("SelfSigKey")) {
+                            String msg = messageIn.replace("SelfSigKey", "");
+                            peerSignedKeyReceived.add(msg);
+
+                        } else if (messageIn.contains("pubKey")) {
+                            receivedPubKey = messageIn.replace("pubKey", "");
+                            dontAuhtenticate.put(receivedPubKey, false);
+                            startPeerAuthServer(receivedPubKey, peerHandle);
+                        } else if (messageIn.contains("reqAuth")) {    //request authentication
+                            receivedPubKeyToBeSigned = messageIn.replace("reqAuth", "");
+                            setDialogBox(receivedPubKeyToBeSigned, peerHandle);
+                        } else if (messageIn.contains("PACompleted")) {
+                            IamPeerAuth = true;
+                            signedKeyReceived = messageIn.replace("PACompleted", "");
+                            tvRole.setText(role + "    PeerAuth: " + IamPeerAuth);
+                            PeerSigner.setSignedKeySelf(signedKeyReceived);
+                            connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+                            Toast.makeText(context, "Peer authenticated! Starting server", Toast.LENGTH_LONG).show();
+                        } else if (messageIn.contains("sigKeyList")) {
+                            Log.i(LOG, "sigKeyList received");
+                            setBroadcastPeerAuthInfo(messageIn);
+                        } else if (messageIn.contains("authUser")) {
+                            Log.i(LOG, "trusted authenticator key received");
+                            setBroadcastPeerAuthInfo(messageIn);
                         }
                     }
-                   /* if (!hashMapPeerHandleAndMac.containsKey(macAddress)) {
+                         /* if (!hashMapPeerHandleAndMac.containsKey(macAddress)) {
                         hashMapPeerHandleAndMac.put(macAddress, peerHandle_);
                         addPeersToChatList();
                     }*/
@@ -664,52 +714,11 @@ private int counterRetriedSendMessagePort = 0;
                         publishDiscoverySession.sendMessage(peerHandle_, MESSAGE, msgtosend);       //OK
                     }*/
 
+                }
 
-                } else if (message.length == 16) {
-                    //setOtherIPAddress(message);
-                    //Log.d(LOG, "setOtherIPAddress " + message);
-                }else if (message.length > 16) {
 
-                    if(messageIn.contains("signedString")) {
-                        receivedSignedString = messageIn.replace("signedString","");
-                        Log.d(LOG, "Signed string : " + receivedSignedString);
-                    }
-                    else if(messageIn.contains("randomString")) {
-                        receivedString = messageIn.replace("randomString","");
-                        Log.d(LOG, "random String: " + receivedString);
 
-                    }
-                    else if(messageIn.contains("SelfSigKey")){
-                        String msg = messageIn.replace("SelfSigKey", "");
-                        peerSignedKeyReceived.add(msg);
 
-                    }
-                    else if(messageIn.contains("pubKey")){
-                        receivedPubKey= messageIn.replace("pubKey", "");
-                        dontAuhtenticate.put(receivedPubKey, false);
-                        startPeerAuthServer(receivedPubKey);
-                    }
-                    else if(messageIn.contains("reqAuth")){    //request authentication
-                        receivedPubKeyToBeSigned= messageIn.replace("reqAuth", "");
-                        setDialogBox(receivedPubKeyToBeSigned);
-                    }
-                    else if(messageIn.contains("PACompleted")){
-                        IamPeerAuth= true;
-                        signedKeyReceived= messageIn.replace("PACompleted", "");
-                        tvRole.setText(role+ "    PeerAuth: "+ IamPeerAuth);
-                        PeerSigner.setSignedKeySelf(signedKeyReceived);
-                        connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
-                        Toast.makeText(context, "Peer authenticated! Starting server", Toast.LENGTH_LONG).show();
-                    }
-                    else if(messageIn.contains("sigKeyList")){
-                        Log.i(LOG,"sigKeyList received");
-                        setBroadcastPeerAuthInfo(messageIn);
-                    }
-                    else if (messageIn.contains("authUser")){
-                        Log.i(LOG,"trusted authenticator key received");
-                        setBroadcastPeerAuthInfo(messageIn);
-                    }
-            }
 
             @Override
             public void onSessionConfigFailed () {
@@ -843,7 +852,7 @@ private int counterRetriedSendMessagePort = 0;
                     else if (message.length > 16) {
                         Log.d(LOG, "Message IN:" + messageIn);
 
-                        else if(messageIn.contains("signedString")) { //cverify user has private key
+                        if(messageIn.contains("signedString")) { //cverify user has private key
                             receivedSignedString = messageIn.replace("signedString","");
                         }
                         else if(messageIn.contains("randomString")) {
@@ -857,11 +866,11 @@ private int counterRetriedSendMessagePort = 0;
                         else if(messageIn.contains("pubKey")){
                             receivedPubKey= messageIn.replace("pubKey", "");
                             dontAuhtenticate.put(receivedPubKey, false);
-                            startPeerAuthServer(receivedPubKey);
+                            startPeerAuthServer(receivedPubKey, peerHandle);
                         }
                         else if(messageIn.contains("reqAuth")){
                             receivedPubKeyToBeSigned= messageIn.replace("reqAuth", "");
-                            setDialogBox(receivedPubKeyToBeSigned);
+                            setDialogBox(receivedPubKeyToBeSigned, peerHandle);
                         }
                         else if(messageIn.contains("PACompleted")){
                             IamPeerAuth= true;
@@ -1211,19 +1220,21 @@ private int counterRetriedSendMessagePort = 0;
         return 1025;
     }
 
-private List<PeerHandle> peerHandlesStartChat;
+    private List<PeerHandle> peerHandlesStartChat;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void openChat(int position, String peerMac){
+        List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(peerMac);
+
         if(peerAuthenticated=="false"){
-            broadcastSignedKey("sigKeyList");
-            broadcastAuthenticatorKey();
+            broadcastSignedKey("sigKeyList", peerHandles.get(0)); //TODO: change to correct intex, should only be one peerhandle in list because other is removed when not used. Change to string not list
+            broadcastAuthenticatorKey(peerHandles.get(0)); //TODO: change to correct intex, should only be one peerhandle in list because other is removed when not used. Change to String not list
+
         }
         //hashMapMacWithPort.put(peerMac, portToServer);
         Intent intentChat = new Intent(this, TestChatActivity.class);  //TODO: change back to chat activity just testing
         intentChat.putExtra("position", position);
         intentChat.putExtra("counter", countervalue);
-        List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(peerMac);
 
         int port = getPortFromMac(peerMac);
         /*while(wait){
@@ -1395,7 +1406,7 @@ private List<PeerHandle> peerHandlesStartChat;
         }
     }
 
-    private void broadcastSignedKey(String typeOfSignedKeyList){
+    private void broadcastSignedKey(String typeOfSignedKeyList, PeerHandle peerHandle){
         ArrayList<String> signedKeyList;
         if(typeOfSignedKeyList.equals("SelfSigKey")) {
             signedKeyList = PeerSigner.getSignedKeySelf();
@@ -1425,7 +1436,7 @@ private List<PeerHandle> peerHandlesStartChat;
         }
     }
 
-    private void broadcastAuthenticatorKey() {
+    private void broadcastAuthenticatorKey(PeerHandle peerHandle) {
         ArrayList<PublicKey> authenticatorList =  VerifyUser.getValidatedAuthenticator();
         if(authenticatorList != null) {
             if (role == "publisher") {
@@ -1453,7 +1464,7 @@ private List<PeerHandle> peerHandlesStartChat;
 
 
 
-    private void sendPeerAuthMsg(boolean IamAuth){
+    private void sendPeerAuthMsg(boolean IamAuth, PeerHandle peerHandle){
         byte[] peerSignedKeyToSend=null;
         if(certSelfSigned.equals("true")) {
             byte[] msgSignedtosend = ("signedString" + signedStringToSend).getBytes();
@@ -1463,7 +1474,7 @@ private List<PeerHandle> peerHandlesStartChat;
             if (!IamAuth) {
                 publicKey = "reqAuth" + encodedPubKeyToSend;
             } else {
-                broadcastSignedKey("SelfSigKey");
+                broadcastSignedKey("SelfSigKey", peerHandle);
                 publicKey = "pubKey" + encodedPubKeyToSend;
             }
             byte[] pubKeyToSend = publicKey.getBytes();
@@ -1500,19 +1511,24 @@ private List<PeerHandle> peerHandlesStartChat;
         signedStringToSend = PeerSigner.signString(randomStringToSend, keyPair);
     }
 
-    private void setDialogBox(String keyReceived){
+    private void setDialogBox(String keyReceived, PeerHandle peerHandle){
+        String macAddress= "";
+        if(hashMapPeerHandleKeyAndMac.containsKey(peerHandle)){
+            macAddress = hashMapPeerHandleKeyAndMac.get(peerHandle);
+        }
+
 
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 switch (which){
                     case DialogInterface.BUTTON_POSITIVE:
-                        authenticatePeer(keyReceived);
+                        authenticatePeer(keyReceived, peerHandle);
                         break;
 
                     case DialogInterface.BUTTON_NEGATIVE:
                         Log.i(LOG,"Dont want to peer authenticate user");
-                        startPeerAuthServer(keyReceived);
+                        startPeerAuthServer(keyReceived, peerHandle);
                         break;
                 }
             }
@@ -1524,7 +1540,7 @@ private List<PeerHandle> peerHandlesStartChat;
 
     }
 
-    private void authenticatePeer(String encodedKey){
+    private void authenticatePeer(String encodedKey, PeerHandle peerHandle){
         PublicKey peerPubKey = Decoder.getPubKeyGenerated(encodedKey);
         if(VerifyCredentials.verifyString(receivedString,receivedSignedString,peerPubKey))  {
 
@@ -1553,7 +1569,7 @@ private List<PeerHandle> peerHandlesStartChat;
     }
 
 
-    private void startPeerAuthServer(String key) {
+    private void startPeerAuthServer(String key, PeerHandle peerHandle) {
         PublicKey clientPubKey = Decoder.getPubKeyGenerated(key);
         boolean userIsAuthenticated=false;
         if(peerIpv6 != null && peerSignedKeyReceived != null) {
@@ -1574,7 +1590,7 @@ private List<PeerHandle> peerHandlesStartChat;
                 Log.i(LOG,"User not authenticated.");
                 if (dontAuhtenticate != null && dontAuhtenticate.get(key) != null && !dontAuhtenticate.get(key)) {  //user not yet been asked if he/she wants to authenticate user
                     dontAuhtenticate.remove(key);
-                    setDialogBox(key);
+                    setDialogBox(key, peerHandle);
 
 
                 }
@@ -1587,6 +1603,6 @@ private List<PeerHandle> peerHandlesStartChat;
     }
 
 
-
-
 }
+
+
