@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.testaware.activities.MainActivity;
 //import com.example.testaware.adapters.MessageAdapter;
 import com.example.testaware.adapters.MessageListAdapter;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.listitems.MessageListItem;
 import com.example.testaware.models.AbstractPacket;

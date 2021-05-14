@@ -10,7 +10,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.MessageReceivedObserver;
 import com.example.testaware.listeners.OnMessageReceivedListener;
 import com.example.testaware.listeners.OnSSLContextChangedListener;
@@ -65,7 +65,7 @@ public class AppServer {
 
     private final String [] tlsVersion;
 
-    private final List<ConnectionListener> connectionListeners;
+
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
@@ -99,7 +99,7 @@ public class AppServer {
 
 
         counterValue = mainActivity.get().getCountervalue();
-        connectionListeners = new ArrayList<>();
+
 
         Runnable serverTask = () -> {
             running  = true;
@@ -150,7 +150,7 @@ public class AppServer {
                     inputStream = new DataInputStream(sslClientSocket.getInputStream());
                     outputStream = new DataOutputStream(sslClientSocket.getOutputStream());
 
-                    client = new ClientHandler(inputStream, outputStream , sslClientSocket, connectionListeners, counterValue );
+                    client = new ClientHandler(inputStream, outputStream , sslClientSocket, counterValue );
                     Thread t = new Thread(client);
                     t.start();
                     Log.d(LOG, "Starting new Thread -");

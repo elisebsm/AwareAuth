@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
@@ -49,19 +48,18 @@ public class ClientHandler extends Thread  {
 
     private SSLSocket sslSocket;
 
-    @Getter
-    private List<ConnectionListener> connectionListeners;
+
 
     private int counterValue;
 
-    public ClientHandler(DataInputStream in, DataOutputStream out, SSLSocket sslSocket, List<ConnectionListener> listener, int counterValue)  {
+    public ClientHandler(DataInputStream in, DataOutputStream out, SSLSocket sslSocket, int counterValue)  {
         this.in = in;
         this.out = out;
         this.sslSocket = sslSocket;
         this.counterValue = counterValue;
 
         TestChatActivity.updateActivityClientHandler(this);
-        connectionListeners = listener;
+
         //connectionListeners.add(listener);
     }
 
