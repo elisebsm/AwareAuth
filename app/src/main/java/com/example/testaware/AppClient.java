@@ -9,7 +9,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.listeners.SSLContextedObserver;
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
@@ -18,8 +18,10 @@ import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -33,12 +35,16 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 import lombok.Getter;
+
+import static java.lang.System.currentTimeMillis;
 
 public class AppClient implements Runnable{
 
@@ -51,8 +57,7 @@ public class AppClient implements Runnable{
     private DataOutputStream outputStream;
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
-    @Getter
-    private List<ConnectionListener> connectionListeners;
+
 
     private String LOG = "Log-Client";
     @Getter
@@ -61,19 +66,23 @@ public class AppClient implements Runnable{
     private Inet6Address inet6Address;
 
     private int port;
+    private long clientStartedTime;
+    public int counterValue;
 
 
-    public AppClient(KeyPair keyPair, SSLContext sslContext, int port){
+    public AppClient(KeyPair keyPair, SSLContext sslContext, int port, long clientStartedTime, int counterValue){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
         this.port = port;
+        this.clientStartedTime = clientStartedTime;
+        this.counterValue = counterValue;
         Log.d(LOG, "port: " + port);
 
         //Thread thread = new Thread(this);
         //thread.start();
 
-        connectionListeners = new ArrayList<>();
+
     }
 
 
@@ -92,7 +101,7 @@ public class AppClient implements Runnable{
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message){
+    public boolean sendMessage(String message, long sendingMessageTime){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
@@ -112,6 +121,18 @@ public class AppClient implements Runnable{
             }
         };
         sendService.submit(sendMessageRunnable);
+        BufferedWriter writer = null;
+        try {
+            String outputText = String.valueOf(sendingMessageTime);
+            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageSentClient", true));
+            writer.append("Counter:" + counterValue);
+            writer.append("\n");
+            writer.append(outputText);
+            writer.append("\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return true;
     }
 
@@ -119,17 +140,25 @@ public class AppClient implements Runnable{
     private void onPacket(AbstractPacket packet) {
         Contact from = new Contact(getServerIdentity());
         Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
- /* TORSDAG      for(ConnectionListener connectionListener : connectionListeners) {
-            connectionListener.onPacket(from, packet);
-        }*/
+
     }
 
+    private String [] protocolGCM;
+    private String [] protocolCHACHA;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void run() {
         running = true;
         sslSocket = null;
+        String [] tlsVersion = new String[1];
+        tlsVersion [0] = "TLSv1.2";
+
+        protocolGCM = new String[1];
+        protocolGCM [0]= Constants.SUPPORTED_CIPHER_GCM;
+
+        protocolCHACHA = new String[1];
+        protocolCHACHA [0]= Constants.SUPPORTED_CIPHER_CHACHA;
 
         //this.port = Constants.SERVER_PORT;
 
@@ -138,37 +167,70 @@ public class AppClient implements Runnable{
             while(running){
                 Log.d(LOG, "port: " + port);
                 sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
+                //sslSocket.setEnabledProtocols(tlsVersion);
+                sslSocket.setEnabledCipherSuites(protocolCHACHA);
+
+                sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                    @Override
+                    public void handshakeCompleted(HandshakeCompletedEvent event) {
+
+                        long handshakeCompletedClient = currentTimeMillis();
+                        //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-CLIENT",  String.valueOf(handshakeCompletedClient));
+
+                        BufferedWriter writer = null;
+                        try {
+                            String outputText = String.valueOf(handshakeCompletedClient);
+                            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/handshakeCompletedServer", true));
+                            writer.append("Counter:" + counterValue);
+                            writer.append("\n");
+                            writer.append(outputText);
+                            writer.append("\n");
+                            writer.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                outputStream = new DataOutputStream(sslSocket.getOutputStream());
 
 
-            /*for(ConnectionListener listener: connectionListeners){
-                listener.onConnect();
-            }*/
-            outputStream = new DataOutputStream(sslSocket.getOutputStream());
-
-
-            inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
+                inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
                 // SSLException: Read error: ssl=0x7c46091508: I/O error during system call, Software caused connection abort
                 //outputStream.writeU("clientHello");
-             outputStream.flush();
+                outputStream.flush();
 
-             while(running){
-                 if (inputStream != null){
-                     String message =  inputStream.readUTF();
+                BufferedWriter writer = null;
+                try {
+                    String outputText = String.valueOf(clientStartedTime);
+                    writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/clientStarted", true));
+                    writer.append("Counter:" + counterValue);
+                    writer.append("\n");
+                    writer.append(outputText);
+                    writer.append("\n");
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                while(running){
+                    if (inputStream != null){
+                        String message =  inputStream.readUTF();
+                        long readinMessageAtClient = currentTimeMillis();
+                        Log.d("TESTING-LOG-TIME-TLS-MESSAGE-INPUTSTREAM-CLIENT",  String.valueOf(readinMessageAtClient));
                      //MessagePacket messagePacket = (MessagePacket) abstractPacket;
                      //Message message = messagePacket.getMessage() ;
-                     new Handler(Looper.getMainLooper()).post(()-> {
-                         TestChatActivity.setChat(message);
+                        new Handler(Looper.getMainLooper()).post(()-> {
+                            TestChatActivity.setChat(message, counterValue);
 
-                     });
-                 }
-             }
+                        });
+                    }
+                }
             }
         } catch (IOException  e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
-            for (ConnectionListener connectionListener: connectionListeners){
-                connectionListener.onDisconnect();
-            }
+
             if(sslSocket != null){
                 try {
                     sslSocket.close();
@@ -193,14 +255,6 @@ public class AppClient implements Runnable{
     }
 
 
-
-    void registerConnectionListener(ConnectionListener listener) {
-        connectionListeners.add(listener);
-    }
-
-    void removeConnectionListener(ConnectionListener listener) {
-        connectionListeners.remove(listener);
-    }
 
 
       /*boolean send(AbstractPacket packet) {

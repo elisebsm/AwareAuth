@@ -4,7 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.example.testaware.activities.MainActivity;
-import com.example.testaware.listeners.ConnectionListener;
+
 import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.models.Message;
@@ -22,7 +22,7 @@ import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
 
-public class ConnectionHandler implements ConnectionListener {  //add this implements ConnectionListener
+public class ConnectionHandler  {  //add this implements ConnectionListener
 
     private String LOG = "LOG-Test-Aware-Connection-Handler";
 
@@ -41,8 +41,7 @@ public class ConnectionHandler implements ConnectionListener {  //add this imple
     private Map<PublicKey, List<Message>> messages;
 
     private ArrayList<AbstractPacket> packets;
-    @Getter
-    private List<ConnectionListener> connectionListeners;
+
 
     private boolean isPublisher;
 
@@ -55,7 +54,7 @@ public class ConnectionHandler implements ConnectionListener {  //add this imple
 
         this.appServer = appServer;
 
-        connectionListeners = new ArrayList<>();
+
 
         this.isPublisher = isPublisher;
 
@@ -78,20 +77,18 @@ public class ConnectionHandler implements ConnectionListener {  //add this imple
         Thread thread = new Thread(appClient);
         thread.start();
     }
+}
 
-    public void registerConnectionListener(ConnectionListener listener) {
+   /* public void registerConnectionListener(ConnectionListener listener) {
         if(isPublisher){
             appServer.setListener(this);
         } else {
             appClient.registerConnectionListener(listener);
         }
-    }
+    }*/
 
 
-    public void removeConnectionListener(ConnectionListener listener) {
-        appClient.removeConnectionListener(listener);
-    }
-
+/*
     @Override
     public void onConnect() {
 
@@ -109,8 +106,8 @@ public class ConnectionHandler implements ConnectionListener {  //add this imple
 
     @Override
     public void onServerPacket(AbstractPacket packet) {
+*/
 
-    }
 /*
 
     public void sendMessage(Message message) {
@@ -159,4 +156,5 @@ public class ConnectionHandler implements ConnectionListener {  //add this imple
     }
     */
 
-}
+
+

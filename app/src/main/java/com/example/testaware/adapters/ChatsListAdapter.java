@@ -55,6 +55,14 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
         // Populate the data into the template view using the data object
         tvName.setText(chat.getPeerIpv6());
 
+        TextView status = convertView.findViewById(R.id.tvStatus);
+
+        status.setText(chat.getStatus());
+
+        TextView certificate = convertView.findViewById(R.id.tvCertificateStatus);
+
+        status.setText(chat.getStatus());
+
         return convertView;
     }
 
