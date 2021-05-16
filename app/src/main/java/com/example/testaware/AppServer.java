@@ -156,16 +156,7 @@ public class AppServer {
                     Log.d(LOG, "Starting new Thread -");
                     outputStream.flush();
 
-                    /*while(running){
-                        if (inputStream != null ){
 
-                            Log.d(LOG, "inputstream AppServer");
-                            com.example.testaware.models.Message message = (com.example.testaware.models.Message) inputStream.readObject();
-                            messageReceivedObserver.setMessage(message);
-                            Log.d(LOG, "Setting mesage in observer");
-                        }
-                    }
-*/
                   /*  while(running){
                         if (inputStream != null){
 

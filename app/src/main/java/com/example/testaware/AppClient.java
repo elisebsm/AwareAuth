@@ -81,8 +81,6 @@ public class AppClient implements Runnable{
 
         //Thread thread = new Thread(this);
         //thread.start();
-
-
     }
 
 

@@ -279,6 +279,7 @@ public class MainActivity extends AppCompatActivity  {
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         context = this;
 
+        //attachToSession();
         final long[] sslContextChanged = new long[1];
 
         sslContextedObserver = new SSLContextedObserver();
@@ -549,6 +550,7 @@ private int counterRetriedSendMessagePort = 0;
                     setOtherMacAddress(message);
                     String macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", message[0], message[1], message[2], message[3], message[4], message[5]);
                     if(!hashMapPeerHandleKeyAndMac.containsKey(peerHandle)){
+                        getPeerHandlesFromMacAddress(macAddress);
                         hashMapPeerHandleKeyAndMac.put(peerHandle, macAddress);
                         if(!listConnectionInitiatedMacs.contains(macAddress)){
 
@@ -561,6 +563,7 @@ private int counterRetriedSendMessagePort = 0;
                                 listConnectionInitiatedMacs.add(macAddress);
                                 byte[] msgtosend = "startConnection".getBytes();
                                 publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
+
                             }
 
                            /* requestWiFiConnection(peerHandle, role);
@@ -746,7 +749,21 @@ private int counterRetriedSendMessagePort = 0;
     }
 
 
-    private long getMacInDecimal(byte [] mac){
+    private long getMacInDecimal(byte [] mac){/*final long[] sslContextChanged = new long[1];
+
+        sslContextedObserver = new SSLContextedObserver();
+        sslContextedObserver.setListener(sslContext -> {
+            sslContextChanged[0] = currentTimeMillis();
+            connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+            startAttached = currentTimeMillis();
+            attachToSession();
+
+            Log.d("ELISE", "attached started" );
+
+        });
+        long sslContextStart = currentTimeMillis();
+        sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
+        diffSSLContext = sslContextChanged[0] - sslContextStart;*/
         BigInteger one;
         one = new BigInteger(mac);
         String strResult = one.toString();
@@ -910,7 +927,9 @@ private int counterRetriedSendMessagePort = 0;
                     }
 */
 
-                    String outputText = "Discovery:" + diffStartDiscovered + ":Available:" + diffStartAvailable + ":SSLContext:" + diffSSLContext + "Cluster:"+ resultAttached;
+
+
+                    String outputText ="AppStarted:" + start +  ":Discovery:" + diffStartDiscovered + ":Available:" + diffStartAvailable + ":SSLContext:" + diffSSLContext + ":Cluster:"+ resultAttached;
                     try {
                         BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
                         BufferedWriter writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
