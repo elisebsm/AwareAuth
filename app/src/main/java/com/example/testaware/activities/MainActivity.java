@@ -16,8 +16,6 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.net.wifi.aware.AttachCallback;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.IdentityChangedListener;
@@ -32,6 +30,7 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CpuUsageInfo;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -57,12 +56,12 @@ import com.example.testaware.adapters.ChatsListAdapter;
 import com.example.testaware.models.Message;
 
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -70,11 +69,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.security.KeyPair;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -123,6 +118,7 @@ public class MainActivity extends AppCompatActivity  {
     private final int MESSAGEPORT = 9;
 
     private final int MESSAGEGOTOCHAT = 5;
+    private final int MESSAGESTARTCON = 11;
     private NetworkCapabilities networkCapabilities;
    //0 private Network network;
 
@@ -169,6 +165,8 @@ public class MainActivity extends AppCompatActivity  {
     long start = 0;
     long discovered = 0;
     long available = 0;
+    long onUnavailable = 0;
+
     long diffStartDiscovered;
     long diffStartAvailable;
     long diffSSLContext;
@@ -218,6 +216,7 @@ public class MainActivity extends AppCompatActivity  {
 
     @Getter
     private  int countervalue;
+    private boolean counterValueChanged = false;
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -280,6 +279,7 @@ public class MainActivity extends AppCompatActivity  {
         context = this;
 
         //attachToSession();
+
         final long[] sslContextChanged = new long[1];
 
         sslContextedObserver = new SSLContextedObserver();
@@ -446,6 +446,51 @@ public class MainActivity extends AppCompatActivity  {
             }
             @Override
             public void onAttachFailed() {
+                if(!counterValueChanged){
+                    long onAttachedFailed = currentTimeMillis();
+                    long resultAttachedFailed = onAttachedFailed - startAttached;
+
+                    String outputText = "Discovery:" + 0 + ":onUnavailable:" + 0 + ":SSLContext:" + diffSSLContext + ":onAttachFailed:"+ resultAttachedFailed;
+
+                    countervalue = 0;
+                    BufferedWriter writerCounter;
+
+                    try {
+                        writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+
+                        FileReader file = new FileReader("/data/data/com.example.testaware/counter");
+                        Scanner sc=new Scanner(file);
+                        while(sc.hasNextLine()){
+                            String line = sc.nextLine();
+                            countervalue = Integer.parseInt(line);
+                        }
+                        sc.close();;
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    try {
+                        BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
+                        writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                        writer.append("Counter:" + countervalue);
+                        writer.append("\n");
+                        writer.append(outputText);
+                        writer.append("\n");
+                        writer.close();
+
+                        String counterText = String.valueOf(countervalue+1);
+                        writerCounter.write(counterText);
+                        writerCounter.close();
+                        counterValueChanged = true;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
 
             }
         }, new IdentityChangedListener() {
@@ -487,11 +532,23 @@ private int counterRetriedSendMessagePort = 0;
                         //booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
 
 
-                    } else if( counterRetriedSendMessagePort >5){
+                    } else if(counterRetriedSendMessagePort >5){
                         localPortServer = 1025;
                     } else if(counterRetriedSendMessageOpenChat >1) {
                         sendMessageOpenChatFailed = true;
                         booleanObserver.setMessageSentStatus(sendMessageOpenChatFailed);
+                    } else if(messageId==MESSAGESTARTCON){
+                        try {
+                            BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/startConFailed", true));
+                            writer.append("Counter:" + countervalue);
+                            writer.append("\n");
+                            writer.append("messageStartConFailed");
+                            writer.append("\n");
+                            writer.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
                     }
                 }
 
@@ -550,7 +607,6 @@ private int counterRetriedSendMessagePort = 0;
                     setOtherMacAddress(message);
                     String macAddress = String.format("%02x:%02x:%02x:%02x:%02x:%02x", message[0], message[1], message[2], message[3], message[4], message[5]);
                     if(!hashMapPeerHandleKeyAndMac.containsKey(peerHandle)){
-                        getPeerHandlesFromMacAddress(macAddress);
                         hashMapPeerHandleKeyAndMac.put(peerHandle, macAddress);
                         if(!listConnectionInitiatedMacs.contains(macAddress)){
 
@@ -562,8 +618,7 @@ private int counterRetriedSendMessagePort = 0;
 
                                 listConnectionInitiatedMacs.add(macAddress);
                                 byte[] msgtosend = "startConnection".getBytes();
-                                publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgtosend);
-
+                                publishDiscoverySession.sendMessage(peerHandle, MESSAGESTARTCON, msgtosend);
                             }
 
                            /* requestWiFiConnection(peerHandle, role);
@@ -749,21 +804,7 @@ private int counterRetriedSendMessagePort = 0;
     }
 
 
-    private long getMacInDecimal(byte [] mac){/*final long[] sslContextChanged = new long[1];
-
-        sslContextedObserver = new SSLContextedObserver();
-        sslContextedObserver.setListener(sslContext -> {
-            sslContextChanged[0] = currentTimeMillis();
-            connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-            startAttached = currentTimeMillis();
-            attachToSession();
-
-            Log.d("ELISE", "attached started" );
-
-        });
-        long sslContextStart = currentTimeMillis();
-        sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
-        diffSSLContext = sslContextChanged[0] - sslContextStart;*/
+    private long getMacInDecimal(byte [] mac){
         BigInteger one;
         one = new BigInteger(mac);
         String strResult = one.toString();
@@ -893,46 +934,40 @@ private int counterRetriedSendMessagePort = 0;
                 Toast.makeText(context, "On Available!", Toast.LENGTH_SHORT).show();
                 //Log.d(LOG, "On available for " + peerRole);
 
+
                 if( available == 0){
                     available = currentTimeMillis();
                     //Log.d(LOG, String.valueOf(available));
                     diffStartAvailable = available - start;
                     diffStartDiscovered = discovered - start;
 
-                    countervalue = 0;
 
-                    FileReader file= null;  //address of the file
+                    String outputText = "Discovery:" + diffStartDiscovered + ":Available:" + diffStartAvailable + ":SSLContext:" + diffSSLContext + ":onAttached:"+ resultAttached;
+
+                    countervalue = 0;
+                    BufferedWriter writerCounter;
+
                     try {
-                        file = new FileReader("/data/data/com.example.testaware/counter");
-                        List<String> Lines=new ArrayList<>();  //to store all lines
+                        //writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                        //writerCounter.close();
+
+                        FileReader file = new FileReader("/data/data/com.example.testaware/counter");
                         Scanner sc=new Scanner(file);
-                        while(sc.hasNextLine()){  //checking for the presence of next Line
-                            String line = sc.nextLine();
+                        while(sc.hasNextLine()){
+                             String line = sc.nextLine();
                             countervalue = Integer.parseInt(line);
                         }
                         sc.close();;
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
-                    }
+                    } /*catch (IOException e) {
+                        e.printStackTrace();
+                    }*/
 
 
-                   /* try(BufferedReader bufferedReader = new BufferedReader(new FileReader("/data/data/com.example.testaware/counter"))) {
-                        String line = bufferedReader.readLine();
-                        bufferedReader.read();
-                        while(line != null) {
-                            countervalue = Integer.valueOf(line);
-                        }
-                    }  catch (IOException e) {
-                        // Exception handling
-                    }
-*/
-
-
-
-                    String outputText ="AppStarted:" + start +  ":Discovery:" + diffStartDiscovered + ":Available:" + diffStartAvailable + ":SSLContext:" + diffSSLContext + ":Cluster:"+ resultAttached;
                     try {
                         BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
-                        BufferedWriter writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                        writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
                         writer.append("Counter:" + countervalue);
                         writer.append("\n");
                         writer.append(outputText);
@@ -942,17 +977,19 @@ private int counterRetriedSendMessagePort = 0;
                         String counterText = String.valueOf(countervalue+1);
                         writerCounter.write(counterText);
                         writerCounter.close();
+                        counterValueChanged = true;
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
 
 
-                if(appServer == null){
+  /*              if(appServer == null){
                     appServer = new AppServer(sslContextedObserver.getSslContext(), network);
 
                 }
                 connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
+    */
             }
 
 
@@ -961,6 +998,55 @@ private int counterRetriedSendMessagePort = 0;
                 super.onUnavailable();
                 Log.d(LOG, "entering onUnavailable ");
                 Toast.makeText(context, "onUnavailable", Toast.LENGTH_SHORT).show();
+                if(!counterValueChanged){
+                    if( onUnavailable == 0){
+                        onUnavailable = currentTimeMillis();
+                        long diffStartUnAvailable = onUnavailable - start;
+                        diffStartDiscovered = discovered - start;
+
+
+                        String outputText = "Discovery:" + diffStartDiscovered + ":onUnavailable:" + diffStartUnAvailable + ":SSLContext:" + diffSSLContext + "Cluster:"+ resultAttached;
+
+                        countervalue = 0;
+                        BufferedWriter writerCounter;
+
+                        try {
+
+                            writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                            FileReader file = new FileReader("/data/data/com.example.testaware/counter");
+                            Scanner sc=new Scanner(file);
+                            while(sc.hasNextLine()){
+                                String line = sc.nextLine();
+                                countervalue = Integer.parseInt(line);
+                            }
+                            sc.close();;
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+
+                        try {
+                            BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
+                            writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                            writer.append("Counter:" + countervalue);
+                            writer.append("\n");
+                            writer.append(outputText);
+                            writer.append("\n");
+                            writer.close();
+
+                            String counterText = String.valueOf(countervalue+1);
+                            writerCounter.write(counterText);
+                            writerCounter.close();
+                            counterValueChanged = true;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+
+                }
             }
 
             @Override
@@ -1030,8 +1116,9 @@ private int counterRetriedSendMessagePort = 0;
                 });
                 if(hashMapPeerHandleKeyAndMac.isEmpty()){
                     Log.d(LOG, "HashMap empty? yes");
-                    appServer.stop();
+ /*                   appServer.stop();
                     appServer = null;
+   */
                     new Handler(Looper.getMainLooper()).post(()-> {
                         setUpNewConnection();
                     });
