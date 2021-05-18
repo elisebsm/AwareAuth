@@ -173,13 +173,16 @@ public class PeerSigner {
                             peerAuthInfoList.add(signedKey);
                         }
                     }
-                    else {
+                   /* else {
                         if (line.contains("authUser")) {
                             String trustedAuthenticator = line.replace("authUser", "");
                             peerAuthInfoList.add(trustedAuthenticator);
                         }
                     }
+
+                    */
                 }
+                file.delete();
             }
             
         }

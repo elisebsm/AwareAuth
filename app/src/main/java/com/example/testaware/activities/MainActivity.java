@@ -469,20 +469,21 @@ public class MainActivity extends AppCompatActivity  {
 
                 if(certSelfSigned=="true"){
                     Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
-                    reqPeerAuthConnBtn.setOnClickListener(new View.OnClickListener() {
-                        @Override
+
+                    Button button = (Button) findViewById(R.id.btnReqPeerAuthConn);
+                    button.setOnClickListener(new View.OnClickListener() {
                         public void onClick(View v) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                requestPeerAuthConn();
-                                if(peerHandlesToUse.contains(peerHandles.get(0))){
-                                    sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
-                                }
-                                else{
-                                    sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
-                                }
+                            requestPeerAuthConn();
+                            if(peerHandlesToUse.contains(peerHandles.get(0))){
+                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
+                            }
+                            else{
+                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
                             }
                         }
                     });
+
+
                 }
             }
             counter +=1;
@@ -690,8 +691,8 @@ public class MainActivity extends AppCompatActivity  {
                             Log.i(LOG, "sigKeyList received");
                             setBroadcastPeerAuthInfo(messageIn);
                         } else if (messageIn.contains("authUser")) {
-                            Log.i(LOG, "trusted authenticator key received");
-                            setBroadcastPeerAuthInfo(messageIn);
+                           // Log.i(LOG, "trusted authenticator key received");
+                         //   setBroadcastPeerAuthInfo(messageIn);
                         }
                     }
                          /* if (!hashMapPeerHandleAndMac.containsKey(macAddress)) {
@@ -894,8 +895,8 @@ public class MainActivity extends AppCompatActivity  {
                             setBroadcastPeerAuthInfo(messageIn);
                         }
                         else if (messageIn.contains("authUser")){
-                            Log.i(LOG,"trusted authenticator key received");
-                            setBroadcastPeerAuthInfo(messageIn);
+                            //Log.i(LOG,"trusted authenticator key received");
+                           // setBroadcastPeerAuthInfo(messageIn);
                         }
                     }
                 }
@@ -1239,11 +1240,11 @@ public class MainActivity extends AppCompatActivity  {
         if(peerAuthenticated=="false"){
             if(peerHandlesToUse.contains(peerHandles.get(0))){
                 broadcastSignedKey("sigKeyList", peerHandles.get(0));
-                broadcastAuthenticatorKey(peerHandles.get(0));
+                //broadcastAuthenticatorKey(peerHandles.get(0));
             }
             else{
                 broadcastSignedKey("sigKeyList", peerHandles.get(1));
-                broadcastAuthenticatorKey(peerHandles.get(1));
+                //broadcastAuthenticatorKey(peerHandles.get(1));
             }
 
         }
@@ -1446,13 +1447,13 @@ public class MainActivity extends AppCompatActivity  {
                     for (int i = 0; i < signedKeyList.size(); i++) {
                         byte[] msgSignedKey = (typeOfSignedKeyList + signedKeyList.get(i)).getBytes();
                         subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, msgSignedKey);
-                        Log.i(LOG,"Sent authenticator list item"+ typeOfSignedKeyList);
+                        Log.i(LOG,"Sent sigKeyList"+ typeOfSignedKeyList);
                     }
                 }
             }
         }
     }
-
+/*
     private void broadcastAuthenticatorKey(PeerHandle peerHandle) {
         ArrayList<PublicKey> authenticatorList =  VerifyUser.getValidatedAuthenticator();
         if(authenticatorList != null) {
@@ -1477,6 +1478,8 @@ public class MainActivity extends AppCompatActivity  {
             }
         }
     }
+
+ */
 
 
 

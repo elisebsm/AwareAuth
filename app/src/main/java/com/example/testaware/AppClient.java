@@ -205,7 +205,7 @@ public class AppClient implements Runnable{
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
                 }
                 Log.d(LOG, "port: " + port);
-                sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
+
                 //sslSocket.setEnabledProtocols(tlsVersion);
                 sslSocket.setEnabledCipherSuites(protocolCHACHA);
 
@@ -307,22 +307,26 @@ public class AppClient implements Runnable{
         PublicKey peerPubKey = peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
         ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
-        ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
+       // ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
         if (listOfSingedStrings != null) {
             for (int i = 0; i < listOfSingedStrings.size(); i++) {
                 PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
             }
         }
-        if(listOfTrustedAuthenticators != null){
+       /* if(listOfTrustedAuthenticators != null){
             for (int i = 0; i < listOfTrustedAuthenticators.size(); i++) {
                 PublicKey pubKeyDecoded = Decoder.getPubKeyGenerated(listOfTrustedAuthenticators.get(i));
                 VerifyUser.setValidatedAuthenticator(pubKeyDecoded);
             }
             PeerSigner.deleteTmpFile();
         }
+        */
+
         else{
+
             Log.d(LOG, "PeerCert is null");
         }
+        PeerSigner.deleteTmpFile();
 
     }
 

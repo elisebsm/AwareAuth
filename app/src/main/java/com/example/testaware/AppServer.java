@@ -240,6 +240,7 @@ public class AppServer {
                 PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
             }
         }
+        /*
         if(listOfTrustedAuthenticators != null){
             for (int i = 0; i < listOfTrustedAuthenticators.size(); i++) {
                 PublicKey pubKeyDecoded = Decoder.getPubKeyGenerated(listOfTrustedAuthenticators.get(i));
@@ -247,6 +248,8 @@ public class AppServer {
             }
             PeerSigner.deleteTmpFile();
         }
+
+         */
     }
 
 }
