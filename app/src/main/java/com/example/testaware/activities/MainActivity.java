@@ -12,6 +12,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
 import android.net.Network;
@@ -253,6 +254,7 @@ public class MainActivity extends AppCompatActivity  {
     private long startAttached;
     private long resultAttached;
 
+
     PeerHandle peer;
     byte [] msg;
 
@@ -298,6 +300,7 @@ public class MainActivity extends AppCompatActivity  {
 
         booleanObserver  = new BooleanObserver();
 
+        Log.i(LOG,"button");
         setupPermissions();
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
@@ -438,27 +441,27 @@ public class MainActivity extends AppCompatActivity  {
         }*/
 
 
-        for (String mac : hashMapPeerHandleKeyAndMac.values()){
-            if(!macAddresses.contains(mac)){
+        for (String mac : hashMapPeerHandleKeyAndMac.values()) {
+            if (!macAddresses.contains(mac)) {
                 String status = "Not discovered";
                 String cert = "Not discovered";
 
-                if(counter ==1){
+                if (counter == 1) {
                     cert = "Certificate: Valid";
-                } else if(counter == 2){
+                } else if (counter == 2) {
                     cert = "Certificate: Not valid";
                 }
                 List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(mac);
-                if(peerHandles.size()>1){
-                    if((discoveredDevices.contains(peerHandles.get(0)))||(discoveredDevices.contains(peerHandles.get(1)))){
+                if (peerHandles.size() > 1) {
+                    if ((discoveredDevices.contains(peerHandles.get(0))) || (discoveredDevices.contains(peerHandles.get(1)))) {
                         status = "Discovered";
-                    } else if((connectedDevices.contains(peerHandles.get(0)))||(connectedDevices.contains(peerHandles.get(1)))){
+                    } else if ((connectedDevices.contains(peerHandles.get(0))) || (connectedDevices.contains(peerHandles.get(1)))) {
                         status = "Data path established";
                     }
                 } else {
-                    if(discoveredDevices.contains(peerHandles.get(0))){
+                    if (discoveredDevices.contains(peerHandles.get(0))) {
                         status = "Discovered";
-                    } else if(connectedDevices.contains(peerHandles.get(0))){
+                    } else if (connectedDevices.contains(peerHandles.get(0))) {
                         status = "Data path established";
                     }
                 }
@@ -467,40 +470,45 @@ public class MainActivity extends AppCompatActivity  {
                 userList.add(chatListDevices);
                 macAddresses.add(mac);
 
-                if(certSelfSigned=="true"){
-                    Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
-
-                    Button button = (Button) findViewById(R.id.btnReqPeerAuthConn);
-                    button.setOnClickListener(new View.OnClickListener() {
-                        public void onClick(View v) {
-                            requestPeerAuthConn();
-                            if(peerHandlesToUse.contains(peerHandles.get(0))){
-                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
-                            }
-                            else{
-                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
-                            }
-                        }
-                    });
-
-
-                }
+                counter += 1;
             }
-            counter +=1;
-        }
        /* for (String macAddr : hashMapPeerHandleAndMac.keySet()){
             ChatListItem chatListDevices = new ChatListItem("MAC:", macAddr);
             userList.add(chatListDevices);
         }*/
-        ChatsListAdapter chatListAdapter = new ChatsListAdapter(this, userList);
-        ListView listViewChats = findViewById(R.id.listViewChats);
-        listViewChats.setAdapter(chatListAdapter);
-        listViewChats.setOnItemClickListener((parent, view, position, id) -> {
-            String peerIpv6 = chatListAdapter.getChats().get(position).getPeerIpv6();
-            MainActivity.this.openChat(position, peerIpv6);
-        });
+            ChatsListAdapter chatListAdapter = new ChatsListAdapter(this, userList);
+            ListView listViewChats = findViewById(R.id.listViewChats);
+            listViewChats.setAdapter(chatListAdapter);
+            List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(mac);
+            if(certSelfSigned=="true") {
+                Button reqPeerAuthConnBtn = findViewById(R.id.btnPeerAuthConn);
+                reqPeerAuthConnBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            requestPeerAuthConn();
+                            if (peerHandlesToUse.contains(peerHandles.get(0))) {
+                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
+                            } else {
+                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
+                            }
+                        }
+                    }
+                });
+
+            }
+            listViewChats.setOnItemClickListener((parent, view, position, id) -> {
+                String peerIpv6 = chatListAdapter.getChats().get(position).getPeerIpv6();
+                MainActivity.this.openChat(position, peerIpv6);
+
+
+            });
+
+
+        }
 
     }
+
 
 
     public void startPublishAndSubscribe(){
@@ -1404,11 +1412,14 @@ public class MainActivity extends AppCompatActivity  {
 
     private void setTextView(){
         if(certSelfSigned=="true"){
-            if (PeerSigner.getSignedKeySelf()==null){
+            if (PeerSigner.getSignedKeySelf().equals(null)){
                 IamPeerAuth = false;
+                Log.i(LOG,"no self siged keys");
             }
             else{
                 IamPeerAuth=true;
+
+                Log.i(LOG,"found self signed key");
             }
             tvRole.setText(role+ "   Not authenticated "  +  "     PeerAuth: "+ IamPeerAuth);
         }else{
