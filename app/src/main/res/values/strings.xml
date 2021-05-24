@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WiFiAwareAutCom</string>
+    <string name="app_name">WiFiAwareAuthCom</string>
     <string name="write_a_message">Write a message</string>
     <string name="send_message_btn">Send message button</string>
     <string name="my_chat_bubble">My chat bubble</string>

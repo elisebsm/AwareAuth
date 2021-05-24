@@ -102,42 +102,33 @@ public class AppClient implements Runnable{
         this.counterValue = counterValue;
         Log.d(LOG, "port: " + port);
 
-        //Thread thread = new Thread(this);
-        //thread.start();
-
-       // connectionListeners = new ArrayList<>();
-
     }
 
 
     private X509Certificate getServerIdentity() {
-
         try {
             Certificate[] certs = sslSocket.getSession().getPeerCertificates();
             if(certs.length > 0 && certs[0] instanceof X509Certificate) {
                 return (X509Certificate) certs[0];
             }
-
-        } catch (SSLPeerUnverifiedException ignored)       {
+        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
+            ignored.printStackTrace();
             userCertificateCorrect =false;
             Log.d(LOG, "Cert not valid");
 
-
-        }     catch(NullPointerException ignored){
-                ignored.printStackTrace();
         }
-
         return null;
     }
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message, long sendingMessageTime){
+    public boolean sendMessage(String message, long sendingMessageTime, long sendButtonPressed){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
         }
-        Runnable sendMessageRunnable = () -> {
+        long messageSent = currentTimeMillis();
+                Runnable sendMessageRunnable = () -> {
             try {
                 //MessagePacket messagePacket = (new MessagePacket(message));
                 Log.d(LOG, "outputstream " + message);
@@ -152,15 +143,25 @@ public class AppClient implements Runnable{
             }
         };
         sendService.submit(sendMessageRunnable);
-        BufferedWriter writer = null;
+        long timeFromSendButtonPressedToSendMessageMethod = messageSent - sendButtonPressed;
+        BufferedWriter writerMessageSent = null;
+        BufferedWriter writerTimeToPressSend = null;
         try {
-            String outputText = String.valueOf(sendingMessageTime);
-            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageSentClient", true));
-            writer.append("Counter:" + counterValue);
-            writer.append("\n");
-            writer.append(outputText);
-            writer.append("\n");
-            writer.close();
+            String outputTextSent = String.valueOf(sendingMessageTime);
+            writerMessageSent = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageSentClient", true));
+            writerMessageSent.append("Counter:" + counterValue);
+            writerMessageSent.append("\n");
+            writerMessageSent.append(outputTextSent);
+            writerMessageSent.append("\n");
+            writerMessageSent.close();
+
+            String outputTextSendButton = String.valueOf(timeFromSendButtonPressedToSendMessageMethod);
+            writerTimeToPressSend = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/timeToPressSendButton", true));
+            writerTimeToPressSend.append("Counter:" + counterValue);
+            writerTimeToPressSend.append("\n");
+            writerTimeToPressSend.append(outputTextSendButton);
+            writerTimeToPressSend.append("\n");
+            writerTimeToPressSend.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -266,10 +267,8 @@ public class AppClient implements Runnable{
                         String message =  inputStream.readUTF();
                         long readinMessageAtClient = currentTimeMillis();
                         Log.d("TESTING-LOG-TIME-TLS-MESSAGE-INPUTSTREAM-CLIENT",  String.valueOf(readinMessageAtClient));
-                     //MessagePacket messagePacket = (MessagePacket) abstractPacket;
-                     //Message message = messagePacket.getMessage() ;
                         new Handler(Looper.getMainLooper()).post(()-> {
-                            TestChatActivity.setChat(message, counterValue);
+                            TestChatActivity.setChat(message, counterValue, 0);
 
                         });
                     }
@@ -278,7 +277,6 @@ public class AppClient implements Runnable{
         } catch (IOException  e) {
             e.printStackTrace();
             Log.d(LOG, "Exception in Appclient  in run()");
-
 
             if(sslSocket != null){
                 try {
@@ -289,7 +287,6 @@ public class AppClient implements Runnable{
             }
         }
     }
-
     private X509Certificate getPeerIdentity()  {
         Certificate[] certificates = new Certificate[0];
         try {
@@ -307,7 +304,7 @@ public class AppClient implements Runnable{
         PublicKey peerPubKey = peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
         ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
-       // ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
+        // ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
         if (listOfSingedStrings != null) {
             for (int i = 0; i < listOfSingedStrings.size(); i++) {
                 PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
@@ -343,53 +340,6 @@ public class AppClient implements Runnable{
 
 }
 
-
-/*
-
-
-      boolean send(AbstractPacket packet) {
-        if (outputStream == null) return false;
-        Runnable runnable = () -> {
-            try {
-                outputStream.writeObject(packet);
-                outputStream.flush();
-            } catch (IOException e) {
-                Log.e(LOG, e.getMessage());
-                running = false;
-            }
-        };
-
-        sendService.submit(runnable);
-        return true;
-    }*/
-
-
-   /* @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(Message message){
-        if(outputStream == null){
-            Log.d(LOG, "outputstream is null");
-            return false;
-        }
-        Runnable sendMessageRunnable = () -> {
-            try {
-                Log.d(LOG, "outputstream " + message);
-                outputStream.writeObject(message);
-                outputStream.flush();
-
-                *//*MessageListItem chatMsg = new MessageListItem(message, ChatActivity.getLocalIp()); //TODO
-                ChatActivity.messageList.add(chatMsg);
-
-                //EditText textT = (EditText) findViewById(R.id.eTChatMsg);
-                //textT.getText().clear();*//*
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
-                running = false;
-            }
-        };
-        sendService.submit(sendMessageRunnable);
-        return true;
-    }*/
 
 
 

@@ -117,9 +117,7 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
-                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
-                localPort = serverSocket.getLocalPort();
-                mainActivity.get().setServerPort(network, "server", localPort);
+                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(1025);
                 serverSocket.setEnabledProtocols(tlsVersion);
                 Log.d(LOG, "Port: "+ localPort);
 
@@ -180,8 +178,8 @@ public class AppServer {
                     outputStream.flush(); //TODO: check if we need this, is flused in clienthandeler
                }
             }  catch (IOException  e) {
-                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
-                Log.d(LOG, "Printing message: " +  Objects.requireNonNull(e.getMessage()));
+
+
                 e.printStackTrace();
                 Log.d(LOG, "Exception in AppServer in constructor");
             }
