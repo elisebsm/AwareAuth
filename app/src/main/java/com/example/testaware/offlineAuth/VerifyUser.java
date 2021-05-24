@@ -95,8 +95,8 @@ public class VerifyUser {
 
     public static ArrayList<PublicKey> getValidatedAuthenticator() {
         ArrayList<PublicKey> authenticatorList = new ArrayList<>();
-        PublicKey keyDecodedFromFile = null;
-        String thisLine = null;
+        PublicKey keyDecodedFromFile ;
+        String thisLine;
         try {
             File file = new File("/data/data/com.example.testaware/validatedAuthenticators.txt");
             if (file.exists()) {

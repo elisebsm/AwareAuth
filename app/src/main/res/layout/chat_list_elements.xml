@@ -39,15 +39,7 @@
 
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btnPeerAuthConn"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:contentDescription="@string/Request_Peer_Auth_Conn"
-        android:text="Request Peer Auth"
-        android:textColor="@color/colorPrimary"
-        android:focusable= "false"
-        />
+
 
 
 

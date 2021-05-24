@@ -12,7 +12,7 @@ public class VerifyCredentials {
        public static boolean verifyCredentials(String sigPeerKey,PublicKey signerPubKey, PublicKey peerPubKey){
 
         if (verifySignature(sigPeerKey, signerPubKey, peerPubKey) ) {
-            String encodedKey= Base64.getEncoder().encodeToString(peerPubKey.getEncoded());
+
             return true;
         }
         else{

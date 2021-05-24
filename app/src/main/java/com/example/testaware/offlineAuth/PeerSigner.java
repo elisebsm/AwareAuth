@@ -13,6 +13,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 
 public class PeerSigner {
 
@@ -61,7 +62,7 @@ public class PeerSigner {
 
                 String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
                 signedString = Base64.getEncoder().encodeToString(signature);
-                //  boolean valid = VerifyCredentials.verifyString(stringToSign,signedString,pubKey);
+
             } catch (Exception e) {
                 // TODO: handle exception
                 e.printStackTrace();
@@ -105,30 +106,33 @@ public class PeerSigner {
         return signedKeys;
     }
 
-    public static ArrayList<String> getSignedKeySelf(){
+    public static HashMap<String, String> getSignedKeySelf(){
         String line = null;
-        ArrayList<String> signedKeysSelfList= new ArrayList<>();
+        HashMap<String, String> signedKeysAndAuthKey=new HashMap<>();
         try{
             File file = new File("/data/data/com.example.testaware/signedKeySelf.txt");
             if(file.exists()) {
                 BufferedReader reader = new BufferedReader(new FileReader("/data/data/com.example.testaware/signedKeySelf.txt"));
                 while ((line = reader.readLine()) != null) {
-                    signedKeysSelfList.add(line);
+                    String[] newSplitString = line.split("split");
+                    String authenticatorKey = newSplitString[0];
+                    String signedKey = newSplitString[1];
+                    signedKeysAndAuthKey.put(authenticatorKey,signedKey);
                 }
             }
         }
         catch(IOException e){
             e.printStackTrace();
         }
-        return signedKeysSelfList;
+        return signedKeysAndAuthKey;
     }
 
-    public static void setSignedKeySelf(String sigKey){
-       if(sigKey != null) {
+    public static void setSignedKeySelf(String sigKey, String authenticatorKey){
+       if(sigKey != null && authenticatorKey!= null) {
            try {
                BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeySelf.txt", true));
-               writer.write(sigKey+  "\n");
-               Log.i(LOG, "Setting signed key self");
+               writer.write(authenticatorKey + "split" + sigKey  + "\n");
+               Log.i(LOG, "Setting signed key self and authenticator");
                writer.close();
            } catch (Exception e) {
                e.printStackTrace();
@@ -173,14 +177,14 @@ public class PeerSigner {
                             peerAuthInfoList.add(signedKey);
                         }
                     }
-                   /* else {
+                    else {
                         if (line.contains("authUser")) {
                             String trustedAuthenticator = line.replace("authUser", "");
                             peerAuthInfoList.add(trustedAuthenticator);
                         }
                     }
 
-                    */
+
                 }
                 file.delete();
             }
