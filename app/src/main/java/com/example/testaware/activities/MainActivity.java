@@ -485,18 +485,21 @@ public class MainActivity extends AppCompatActivity  {
             List<PeerHandle> peerHandles = getPeerHandlesFromMacAddress(mac);
 
             //TODO: change and add button, just testing
-            if(certSelfSigned=="true"){
+          /*  if(certSelfSigned=="true"){
                 if (peerHandlesToUse.contains(peerHandles.get(0))) {
                     sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
                 } else {
                     sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
                 }
             }
-            /*if(certSelfSigned=="true") {
-                Button reqPeerAuthConnBtn = findViewById(R.id.btnPeerAuthConn);
+            */
+            if(certSelfSigned=="true") {
+                Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
+
                 reqPeerAuthConnBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        reqPeerAuthConnBtn.setVisibility(v.VISIBLE);
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             requestPeerAuthConn();
                             if (peerHandlesToUse.contains(peerHandles.get(0))) {
@@ -508,7 +511,7 @@ public class MainActivity extends AppCompatActivity  {
                     }
                 });
 
-            }*/
+            }
             listViewChats.setOnItemClickListener((parent, view, position, id) -> {
                 String peerIpv6 = chatListAdapter.getChats().get(position).getPeerIpv6();
                 MainActivity.this.openChat(position, peerIpv6);
