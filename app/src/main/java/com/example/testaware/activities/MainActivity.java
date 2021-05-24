@@ -202,11 +202,11 @@ public class MainActivity extends AppCompatActivity  {
     @Getter
     private ArrayList<Contact> contacts;
 
-    @Getter
-    private ConnectionHandler connectionHandler;
+   // @Getter
+   // private ConnectionHandler connectionHandler;
 
-    @Getter
-    private ConnectionHandler peerAuthConnectionHandler;
+   // @Getter
+   // private ConnectionHandler peerAuthConnectionHandler;
 
     @Getter
     private SSLContextedObserver sslContextedObserver;
@@ -266,6 +266,7 @@ public class MainActivity extends AppCompatActivity  {
     @Getter
     private  int countervalue;
     private boolean counterValueChanged = false;
+
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -489,36 +490,39 @@ public class MainActivity extends AppCompatActivity  {
                 }
             }
             */
+
             if(certSelfSigned=="true") {
-                Button reqPeerAuthConnBtn = findViewById(R.id.btnReqPeerAuthConn);
-
-                reqPeerAuthConnBtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        reqPeerAuthConnBtn.setVisibility(v.VISIBLE);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            requestPeerAuthConn();
-                            if (peerHandlesToUse.contains(peerHandles.get(0))) {
-                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
-                            } else {
-                                sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
-                            }
-                        }
-                    }
-                });
-
+                requestPeerAuthConn();
+                Log.i(LOG,"Peer auth conn called");
+                if (peerHandlesToUse.contains(peerHandles.get(0))) {
+                    sendPeerAuthMsg(IamPeerAuth, peerHandles.get(0));
+                } else {
+                    sendPeerAuthMsg(IamPeerAuth, peerHandles.get(1));
+                }
+            } else{
+                Toast.makeText(context, "Already authenticated", Toast.LENGTH_SHORT).show();
             }
+
             listViewChats.setOnItemClickListener((parent, view, position, id) -> {
                 String peerIpv6 = chatListAdapter.getChats().get(position).getPeerIpv6();
                 MainActivity.this.openChat(position, peerIpv6);
 
+                /*Button reqPeerAuthConnBtn = view.findViewById(R.id.btnReqPeerAuthConn);
 
+                reqPeerAuthConnBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Log.i(LOG,"onclick");
+
+
+                });
+                */
             });
-
 
         }
 
     }
+
 
 
 
@@ -769,7 +773,7 @@ public class MainActivity extends AppCompatActivity  {
                             signedKeyReceived = messageIn.replace("PACompletedS", "");
                             tvRole.setText(role + "    PeerAuth: " + IamPeerAuth);
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
-                            connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+                           // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
                             Toast.makeText(context, "Peer authenticated! Starting server", Toast.LENGTH_LONG).show();
                         } else if (messageIn.contains("sigKeyList")) {
                             Log.i(LOG, "sigKeyList received");
@@ -977,7 +981,7 @@ public class MainActivity extends AppCompatActivity  {
                             tvRole.setText(role+ "    PeerAuth: "+ IamPeerAuth);
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
                             Toast.makeText(context, "Peer authenticated! Starting server", Toast.LENGTH_LONG).show();
-                            connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+                        //    connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
                         }
                         else if(messageIn.contains("sigKeyList")){
                             Log.i(LOG,"sigKeyList received");
@@ -1185,7 +1189,8 @@ public class MainActivity extends AppCompatActivity  {
                     appServer = new AppServer(sslContextedObserver.getSslContext(), network);
 
                 }
-                //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
+
+                // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
 
             }
 
@@ -1546,7 +1551,7 @@ public class MainActivity extends AppCompatActivity  {
 
     private void setTextView(){
         if(certSelfSigned=="true"){
-            if (PeerSigner.getSignedKeySelf().equals(null)){
+            if (PeerSigner.getSignedKeySelf().isEmpty()){
                 IamPeerAuth = false;
                 Log.i(LOG,"no self siged keys");
             }
@@ -1741,7 +1746,7 @@ public class MainActivity extends AppCompatActivity  {
             Toast.makeText(this, "User authenticated", Toast.LENGTH_LONG).show();
 
             peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT_NO_AUTH,peerPubKey, peerIpv6.toString());
-            connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+          //  connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
 
             encodedPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
             byte[] signedKey= ("PACompletedS"+signedKeyByPeer).getBytes();
@@ -1783,7 +1788,7 @@ public class MainActivity extends AppCompatActivity  {
                 peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), Constants.SERVER_PORT_NO_AUTH, clientPubKey, peerIpv6.toString());           //TODO: change to no auth server port to 0?
 
                 //}
-                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+              //  connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
 
             } else {
                 Log.i(LOG,"User not authenticated.");

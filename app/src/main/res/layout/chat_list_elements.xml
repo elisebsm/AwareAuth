@@ -51,7 +51,8 @@
         android:text="Request Peer Auth"
         android:textColor="@color/colorPrimary"
         android:focusable= "false"
-        android:visibility="invisible"/>
+
+      />
 
 
 

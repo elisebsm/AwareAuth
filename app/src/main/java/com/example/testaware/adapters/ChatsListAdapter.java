@@ -1,11 +1,15 @@
 package com.example.testaware.adapters;
 
 import android.content.Context;
+import android.os.Build;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.R;
@@ -19,6 +23,8 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
     @Getter
     private ArrayList<ChatListItem> chats;
     Context context;
+
+
     public ChatsListAdapter(Context context, ArrayList<ChatListItem> chats) {
         super(context, R.layout.chat_list_elements, chats);
         this.chats = chats;
@@ -53,6 +59,10 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
 
         TextView peerIP = convertView.findViewById(R.id.tvPeerIP);
         // Populate the data into the template view using the data object
+
+
+
+
         tvName.setText(chat.getPeerIpv6());
 
         TextView status = convertView.findViewById(R.id.tvStatus);
