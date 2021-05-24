@@ -80,11 +80,11 @@ public class ClientHandler extends Thread  {
 
                  String message = in.readUTF();
                  long readinMessageAtServer = currentTimeMillis();
-                 Log.d("TESTING-LOG-TIME-TLS-MESSAGE-INPUTSTREAM-SERVER",  String.valueOf(readinMessageAtServer));
-                 Log.d(LOG, message);
+
+                 sendMessage("Hei!!", 0);
 
                  new Handler(Looper.getMainLooper()).post(()-> {
-                     TestChatActivity.setChat(message, counterValue);
+                     TestChatActivity.setChat(message, counterValue, readinMessageAtServer);
                  });
             }
 
@@ -115,12 +115,6 @@ public class ClientHandler extends Thread  {
         }
         Runnable sendMessageRunnable = () -> {
             try {
-                /*MessagePacket messagePacket = (new MessagePacket(message));
-                Log.d(LOG, "outputstream " + message);
-                out.writeObject(messagePacket);
-                out.flush();
-                Log.d(LOG, "I just flushed");*/
-
                 out.writeUTF(message);
                 out.flush();
 
@@ -132,7 +126,7 @@ public class ClientHandler extends Thread  {
         };
         sendService.submit(sendMessageRunnable);
 
-        BufferedWriter writer = null;
+     /*   BufferedWriter writer = null;
         try {
             String outputText = String.valueOf(sendingMessageTime);
             writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageSentServer", true));
@@ -143,7 +137,7 @@ public class ClientHandler extends Thread  {
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
         return true;
     }
 

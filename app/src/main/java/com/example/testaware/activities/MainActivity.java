@@ -8,6 +8,7 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -30,7 +31,6 @@ import android.net.wifi.aware.WifiAwareNetworkSpecifier;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.CpuUsageInfo;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -47,13 +47,11 @@ import com.example.testaware.listeners.BooleanChangedListener;
 import com.example.testaware.listeners.BooleanObserver;
 
 import com.example.testaware.listeners.SSLContextedObserver;
-import com.example.testaware.models.AbstractPacket;
 import com.example.testaware.models.Contact;
 import com.example.testaware.listitems.ChatListItem;
 import com.example.testaware.Constants;
 import com.example.testaware.R;
 import com.example.testaware.adapters.ChatsListAdapter;
-import com.example.testaware.models.Message;
 
 
 import java.io.BufferedWriter;
@@ -61,7 +59,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -162,13 +159,13 @@ public class MainActivity extends AppCompatActivity  {
     @Getter
     private SSLContextedObserver sslContextedObserver;
 
-    long start = 0;
+    long startApp = 0;
     long discovered = 0;
     long available = 0;
     long onUnavailable = 0;
 
-    long diffStartDiscovered;
-    long diffStartAvailable;
+    long timeToDiscoverServiceAfterAttacheToClusterStarted;
+    long timeToGetFullDataPathAfterAttacheToClusterStarted;
     long diffSSLContext;
 
     @Getter
@@ -206,7 +203,7 @@ public class MainActivity extends AppCompatActivity  {
     int data_init ;
     int data_resp ;
     private long startAttached;
-    private long resultAttached;
+    private long timeToAttachToCluster;
 
     PeerHandle peer;
     byte [] msg;
@@ -226,11 +223,10 @@ public class MainActivity extends AppCompatActivity  {
 
         super.onCreate(savedInstanceState);
 
-        Log.d("TESTING-LOG-TIME-BEGINNING", "PHONE: 7R");
-        if(start == 0){
-            start = currentTimeMillis();
-            Log.d("TESTING-LOG-TIME-START", String.valueOf(start));
+        if(startApp == 0){
+            startApp = currentTimeMillis();
         }
+
         wifiAwareManager = null;
         wifiAwareSession = null;
         connectivityManager = null;
@@ -280,13 +276,12 @@ public class MainActivity extends AppCompatActivity  {
 
         //attachToSession();
 
-        final long[] sslContextChanged = new long[1];
+       final long[] sslContextChanged = new long[1];
 
         sslContextedObserver = new SSLContextedObserver();
         sslContextedObserver.setListener(sslContext -> {
             sslContextChanged[0] = currentTimeMillis();
             connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-            startAttached = currentTimeMillis();
             attachToSession();
 
             Log.d("ELISE", "attached started" );
@@ -300,6 +295,13 @@ public class MainActivity extends AppCompatActivity  {
         addPeersToChatList();
         TestChatActivity.updateActivityMain(this);
         AppServer.updateActivity(this);
+
+
+
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = context.registerReceiver(null, ifilter);
+
+
 
     }
 
@@ -434,14 +436,15 @@ public class MainActivity extends AppCompatActivity  {
 
 
     private void attachToSession(){
+        startAttached = currentTimeMillis();
+
         wifiAwareManager.attach(new AttachCallback() {
             @Override
             public void onAttached(WifiAwareSession session) {
                 long onAttached = currentTimeMillis();
-                resultAttached = onAttached - startAttached;
+                timeToAttachToCluster = onAttached - startAttached;
                 super.onAttached(session);
                 wifiAwareSession = session;
-
 
             }
             @Override
@@ -450,7 +453,7 @@ public class MainActivity extends AppCompatActivity  {
                     long onAttachedFailed = currentTimeMillis();
                     long resultAttachedFailed = onAttachedFailed - startAttached;
 
-                    String outputText = "Discovery:" + 0 + ":onUnavailable:" + 0 + ":SSLContext:" + diffSSLContext + ":onAttachFailed:"+ resultAttachedFailed;
+                    String outputText = "AppStartedTime:" + startApp + ":Discovery:" + 0 + ":onUnavailable:" + 0 + ":SSLContext:" + diffSSLContext + ":onAttachFailed:"+ resultAttachedFailed;
 
                     countervalue = 0;
                     BufferedWriter writerCounter;
@@ -499,6 +502,7 @@ public class MainActivity extends AppCompatActivity  {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 myMacDeci = getMacInDecimal(mac);
+
                 startPublishAndSubscribe();
             }
         }, null);
@@ -917,6 +921,9 @@ private int counterRetriedSendMessagePort = 0;
         connectivityManager.requestNetwork(myNetworkRequest, new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(Network network) {
+                if( available == 0) {
+                    available = currentTimeMillis();
+                }
                 super.onAvailable(network);
 
                 //List<Network> listActiveNetworks = (List<Network>) connectivityManager.getActiveNetwork();
@@ -935,61 +942,64 @@ private int counterRetriedSendMessagePort = 0;
                 //Log.d(LOG, "On available for " + peerRole);
 
 
-                if( available == 0){
-                    available = currentTimeMillis();
-                    //Log.d(LOG, String.valueOf(available));
-                    diffStartAvailable = available - start;
-                    diffStartDiscovered = discovered - start;
 
 
-                    String outputText = "Discovery:" + diffStartDiscovered + ":Available:" + diffStartAvailable + ":SSLContext:" + diffSSLContext + ":onAttached:"+ resultAttached;
+                long timeBeforeAttachingToCluster = startAttached - startApp;
 
-                    countervalue = 0;
-                    BufferedWriter writerCounter;
+                /*startApp;
+                startAttached;
+                discovered;*/
 
-                    try {
+
+                timeToGetFullDataPathAfterAttacheToClusterStarted = available - startAttached;
+                timeToDiscoverServiceAfterAttacheToClusterStarted = discovered - startAttached;
+
+
+                String outputText = "AppStartedTime:" + startApp + ":TimeBeforeAttachingToCluster:" + timeBeforeAttachingToCluster + ":Discovery:" + timeToDiscoverServiceAfterAttacheToClusterStarted + ":Available:" + timeToGetFullDataPathAfterAttacheToClusterStarted + ":SSLContext:" + diffSSLContext + ":onAttached:"+ timeToAttachToCluster;
+
+                countervalue = 0;
+                BufferedWriter writerCounter;
+
+                try {
                         //writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
                         //writerCounter.close();
 
-                        FileReader file = new FileReader("/data/data/com.example.testaware/counter");
-                        Scanner sc=new Scanner(file);
-                        while(sc.hasNextLine()){
-                             String line = sc.nextLine();
-                            countervalue = Integer.parseInt(line);
-                        }
-                        sc.close();;
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    } /*catch (IOException e) {
-                        e.printStackTrace();
-                    }*/
-
-
-                    try {
-                        BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
-                        writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
-                        writer.append("Counter:" + countervalue);
-                        writer.append("\n");
-                        writer.append(outputText);
-                        writer.append("\n");
-                        writer.close();
-
-                        String counterText = String.valueOf(countervalue+1);
-                        writerCounter.write(counterText);
-                        writerCounter.close();
-                        counterValueChanged = true;
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    FileReader file = new FileReader("/data/data/com.example.testaware/counter");
+                    Scanner sc=new Scanner(file);
+                    while(sc.hasNextLine()){
+                        String line = sc.nextLine();
+                        countervalue = Integer.parseInt(line);
                     }
+                    sc.close();;
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/onAvailable", true));
+                    writerCounter = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/counter"));
+                    writer.append("Counter:" + countervalue);
+                    writer.append("\n");
+                    writer.append(outputText);
+                    writer.append("\n");
+                    writer.close();
+
+                    String counterText = String.valueOf(countervalue+1);
+                    writerCounter.write(counterText);
+                    writerCounter.close();
+                    counterValueChanged = true;
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
 
 
-  /*              if(appServer == null){
+
+                if(appServer == null){
                     appServer = new AppServer(sslContextedObserver.getSslContext(), network);
 
                 }
-                connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
-    */
+                //connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, appServer, isPublisher);
+
             }
 
 
@@ -1001,11 +1011,11 @@ private int counterRetriedSendMessagePort = 0;
                 if(!counterValueChanged){
                     if( onUnavailable == 0){
                         onUnavailable = currentTimeMillis();
-                        long diffStartUnAvailable = onUnavailable - start;
-                        diffStartDiscovered = discovered - start;
+                        long diffStartUnAvailable = onUnavailable - startApp;
+                        timeToDiscoverServiceAfterAttacheToClusterStarted = discovered - startApp;
 
 
-                        String outputText = "Discovery:" + diffStartDiscovered + ":onUnavailable:" + diffStartUnAvailable + ":SSLContext:" + diffSSLContext + "Cluster:"+ resultAttached;
+                        String outputText = "AppStartedTime:" + startApp + ":Discovery:"+ timeToDiscoverServiceAfterAttacheToClusterStarted + ":onUnavailable:" + diffStartUnAvailable + ":SSLContext:" + diffSSLContext + "Cluster:"+ timeToAttachToCluster;
 
                         countervalue = 0;
                         BufferedWriter writerCounter;

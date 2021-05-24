@@ -114,21 +114,18 @@ public class TestChatActivity extends AppCompatActivity {
 
             long clientStarted = currentTimeMillis();
             Log.d("TESTING-LOG-TIME-TLS-CLIENT-STARTED",  String.valueOf(clientStarted));
-            appClient = new AppClient(keyPair, sslContext, port, clientStarted, counterValue);
+            //20.05        appClient = new AppClient(keyPair, sslContext, port, clientStarted, counterValue);
+            appClient = new AppClient(keyPair, sslContext, 1025, clientStarted, counterValue);
 
 
             Log.d(LOG, "Port: " + port);
-            mainActivity.get().getConnectionHandler().setAppClient(appClient);
 
             thread = new Thread(appClient);
             thread.start();
 
-
-            //long clientThreadStarted = currentTimeMillis();
-            //Log.d("TESTING-LOG-TIME-TLS-CLIENT-THREAD",  String.valueOf(clientThreadStarted));
         }
 
-        this.appServer  = mainActivity.get().getConnectionHandler().getAppServer();
+        this.appServer  = mainActivity.get().getAppServer();
 
         Intent intent = getIntent();
         //contact = (Contact) intent.getSerializableExtra("contact");
@@ -151,38 +148,15 @@ public class TestChatActivity extends AppCompatActivity {
         mMessageRecycler.setLayoutManager(new LinearLayoutManager(this));
 
 
-
-
-       /* mMessageAdapter = new MessageAdapter(this, R.layout.other_message, messageList, keyPair);
-        ListView listView = findViewById(R.id.lvMessages);
-        listView.setAdapter(mMessageAdapter); */
-
-
         Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
         sendChatMsgbtn.setOnClickListener(v -> {
+            long sendButtonPressed = currentTimeMillis();
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 EditText messageText = findViewById(R.id.eTChatMsg);
                 String messageToSend = messageText.getText().toString();
-                sendMessage(messageToSend);
+                sendMessage(messageToSend, sendButtonPressed);
                 messageText.getText().clear();
-               /* if(appClient != null){
-                   //appClient.sendMessage(messageToSend);
-                    //sendMessage(messageToSend);
-                }
-                else{
-                    //sendMessage(messageToSend);
-                    //clientHandelerWeakReference.sendMessage(messageToSend);
-                    try {
-                        WeakReference<ClientHandeler> clientHandeler = clientHandelerWeakReference;
-                        String [] msg = new String[0];
-                        msg [0] = messageToSend;
-                        clientHandelerWeakReference.getClass().getMethod("sendMessage", msg);
-                        Log.i(LOG, "Send MEssage Client Handler");
-                    } catch (NoSuchMethodException e) {
-                        e.printStackTrace();
-                    }
-                }*/
             }
             Log.i(LOG, "Send btn pressed");
         });
@@ -191,26 +165,43 @@ public class TestChatActivity extends AppCompatActivity {
 
 
 
-    public static void setChat(String message, int counterValueStatic){
+    public static void setChat(String message, int counterValueStatic, long serverReadinTime){
         MessageListItem chatMsg = new MessageListItem(message, "User2");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
 
         long settingMessage = currentTimeMillis();
-        //Log.d("TESTING-LOG-TIME-TLS-MESSAGE-SET",  String.valueOf(settingMessage));
 
-        BufferedWriter writer = null;
-        try {
-            String outputText = String.valueOf(settingMessage);
-            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageReceived", true));
-            writer.append("Counter:" + counterValueStatic);
-            writer.append("\n");
-            writer.append(outputText);
-            writer.append("\n");
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(serverReadinTime==0){
+            BufferedWriter writer = null;
+            try {
+                String outputText = String.valueOf(settingMessage);
+                writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageReceived", true));
+                writer.append("Counter:" + counterValueStatic);
+                writer.append("\n");
+                writer.append(outputText);
+                writer.append("\n");
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            long timeToSetMessage = settingMessage - serverReadinTime;
+            BufferedWriter writer = null;
+            try {
+                String outputText = String.valueOf(timeToSetMessage);
+                writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/timeToSetMessage", true));
+                writer.append("Counter:" + counterValueStatic);
+                writer.append("\n");
+                writer.append(outputText);
+                writer.append("\n");
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+
+
 
         //mMessageAdapter.add(message);
     }
@@ -246,7 +237,7 @@ public class TestChatActivity extends AppCompatActivity {
     }
 */
 
-    private void sendMessage(String msg) {
+    private void sendMessage(String msg, long sendButtonPressed) {
 
         long sendingMessage = currentTimeMillis();
         Log.d("TESTING-LOG-TIME-TLS-SEND-MESSAGE-PRESSED",  String.valueOf(sendingMessage));
@@ -258,18 +249,9 @@ public class TestChatActivity extends AppCompatActivity {
         MessageListItem chatMsg = new MessageListItem(msg, "Deg");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
-       /* final Message message;
-        message = new Message(
-                contact.getCertificate().getPublicKey(),
-                keyPair.getPublic(),
-                msg,
-                keyPair.getPrivate());
-        mMessageAdapter.add(message);  */
 
-
-        //mainActivity.get().getConnectionHandler().sendMessage(message);
         if(role.equals("Client")){
-            appClient.sendMessage(msg, sendingMessage);
+            appClient.sendMessage(msg, sendingMessage, sendButtonPressed);
         } else {
             appServer.sendMessage(msg, sendingMessage);
         }

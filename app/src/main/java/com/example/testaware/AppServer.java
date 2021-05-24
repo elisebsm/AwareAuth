@@ -104,9 +104,12 @@ public class AppServer {
         Runnable serverTask = () -> {
             running  = true;
             try {
-                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
-                localPort = serverSocket.getLocalPort();
-                mainActivity.get().setServerPort(network, "server", localPort);
+                //20.05            //serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(0  );
+                serverSocket = (SSLServerSocket) serverSSLContext.getServerSocketFactory().createServerSocket(1025);
+                //20.05            //localPort = serverSocket.getLocalPort();
+     //20.05           mainActivity.get().setServerPort(network, "server", localPort);
+
+
                 serverSocket.setEnabledProtocols(tlsVersion);
                 Log.d(LOG, "Port: "+ localPort);
 
