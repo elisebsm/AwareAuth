@@ -100,7 +100,7 @@ public class AppClient implements Runnable{
         this.port = port;
         this.clientStartedTime = clientStartedTime;
         this.counterValue = counterValue;
-        Log.d(LOG, "port: " + port);
+
 
     }
 
@@ -205,7 +205,7 @@ public class AppClient implements Runnable{
                 else{
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
                 }
-                Log.d(LOG, "port: " + port);
+
 
                 //sslSocket.setEnabledProtocols(tlsVersion);
                 sslSocket.setEnabledCipherSuites(protocolCHACHA);

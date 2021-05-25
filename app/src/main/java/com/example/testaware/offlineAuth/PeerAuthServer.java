@@ -45,7 +45,7 @@ import lombok.Getter;
 //this class start server on diff port than other server, so one server that accepts connections to clients who dont have certificates (but are authenticated by peer)
 public class PeerAuthServer {
 
-    private String LOG = "LOG-Test-Aware-No-Auth-App-Server";
+    private String LOG = "Log-Test-Aware-No-Auth-App-Server";
     private DataInputStream inputStream;
     private DataOutputStream outputStream;   //TODO: use so client can also send messages
     private boolean running;
@@ -73,9 +73,10 @@ public class PeerAuthServer {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public PeerAuthServer(SSLContext serverSSLContext, int serverPort,  PublicKey pubKey, String connectedPeerIP){  //use SERVER_PORT_NO_AUTH
+    public PeerAuthServer(SSLContext serverSSLContext,  PublicKey pubKeyClient, String connectedPeerIP){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
+        int serverPort= Constants.SERVER_PORT_NO_AUTH;
 
         String[] protocolGCM = new String[1];
         protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
@@ -86,6 +87,7 @@ public class PeerAuthServer {
         tlsVersion = new String[1];
         tlsVersion [0] = "TLSv1.2";
         counterValue = mainActivity.get().getCountervalue();
+        Log.d(LOG, "----------------------------------------------");
 
         Runnable serverTask = () -> {
             running  = true;
@@ -97,15 +99,11 @@ public class PeerAuthServer {
                 while (running) {
                     Log.d(LOG, "Starting peer aut server");
                     sslClientSocket = (SSLSocket) serverSocket.accept();
-                    sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
-                        @Override
-                        public void handshakeCompleted(HandshakeCompletedEvent event) {
-                            PublicKey clientKey = getClientIdentity().getPublicKey();
-                            if (VerifyUser.isAuthenticatedUser(clientKey)) {
-                                userPeerAuth = true;
-                            }
-                        }
-                    });
+                    Log.d(LOG, "clientSocket" +sslClientSocket);
+                    if (VerifyUser.isAuthenticatedUser(pubKeyClient)) {
+                        Log.d(LOG, "setting peer auth true---------------");
+                        userPeerAuth = true;
+                    }
                     if(userPeerAuth) {
                         Log.d(LOG, "Peer auth client accepted");
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));

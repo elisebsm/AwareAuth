@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 public class InitPeerAuthConn {
     private static boolean userIsAuthenticated;
-    private static String LOG = "LOG-Test-Aware-InitPeerAuthConn";
+    private static String LOG = "Log-Test-Aware-InitPeerAuthConn";
     private static ArrayList<PublicKey> verifiedAuthenticatorList;
     private static PublicKey pubKeySelf;
 
@@ -24,11 +24,13 @@ public class InitPeerAuthConn {
             verifiedAuthenticatorList = VerifyUser.getValidatedAuthenticator();
             Log.d(LOG, "Signature provided is correct");
             PublicKey signerKey = Decoder.getPubKeyGenerated(encodedSignerKey);
+            Log.i(LOG,"Verify Credentials is correct");
 
             //check if user recently has had a peer auth conn with user
             if(VerifyUser.isAuthenticatedUser(clientPubKey)){
                 userIsAuthenticated=true;
-                Log.d(LOG, "Match found for key and IP. User is peer authenticated");
+                Log.d(LOG, "Match found for key. User is peer authenticated");
+
             }
             else if(verifiedAuthenticatorList.contains(signerKey)){
                 if(checkSignatureOnString(signerKey, peerSignedKey, clientPubKey)){

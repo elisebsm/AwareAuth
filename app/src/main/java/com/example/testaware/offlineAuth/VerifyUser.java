@@ -14,7 +14,7 @@ import java.util.Base64;
 
 public class VerifyUser {
 
-    private static String LOG = "LOG-Test-Aware-Verify-User";
+    private static String LOG = "Log-Test-Aware-Verify-User";
 
     public static void setAuthenticatedUser(String connectedPeerIP, String encodedPeerKey) {
 

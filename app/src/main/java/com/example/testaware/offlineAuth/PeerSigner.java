@@ -17,7 +17,7 @@ import java.util.HashMap;
 
 public class PeerSigner {
 
-    private static String LOG = "LOG-Test-Aware-Peer-Signer";
+    private static String LOG = "Log-Test-Aware-Peer-Signer";
 
 
     public static String signPeerKey(PublicKey peerKey, KeyPair signerKeyPair) {

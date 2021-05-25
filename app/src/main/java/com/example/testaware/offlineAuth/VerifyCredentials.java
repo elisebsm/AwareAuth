@@ -6,7 +6,7 @@ import java.security.Signature;
 import java.util.Base64;
 
 public class VerifyCredentials {
-    private static String LOG = "LOG-Test-Aware-Verify-Credentials";
+    private static String LOG = "Log-Test-Aware-Verify-Credentials";
 
 
        public static boolean verifyCredentials(String sigPeerKey,PublicKey signerPubKey, PublicKey peerPubKey){
