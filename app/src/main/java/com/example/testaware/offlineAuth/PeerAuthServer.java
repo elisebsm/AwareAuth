@@ -159,9 +159,13 @@ public class PeerAuthServer {
 
 
 
-    public void sendMessage(String message, long sendingMessageTime){
-        noAuthClient.sendMessage(message, sendingMessageTime);
 
+    public void sendMessage(String message, long sendingMessageTime){
+        if(noAuthClient != null){
+            noAuthClient.sendMessage(message, sendingMessageTime);
+        } else {
+            Log.d(LOG, "Client is null");
+        }
     }
 
 
