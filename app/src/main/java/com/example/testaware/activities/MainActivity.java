@@ -1585,6 +1585,7 @@ public class MainActivity extends AppCompatActivity  {
     private void setBroadcastPeerAuthInfo(String encodedPeerAuthInfo){
         if(!certSelfSigned.equals("true") ) {
             PeerSigner.setTmpPeerAuthInfo(encodedPeerAuthInfo);
+            Log.i(LOG, "Set broadcasted peer info" );
 
         }
     }
@@ -1679,10 +1680,6 @@ public class MainActivity extends AppCompatActivity  {
 
         }
     }
-
-
-
-
 
 
     private void sendPeerAuthMsg(boolean IamAuth, PeerHandle peerHandle, boolean usePublishDiscSession){
