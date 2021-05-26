@@ -21,7 +21,7 @@ public class VerifyUser {
         try {
             PublicKey clientPubKey = Decoder.getPubKeyGenerated(encodedPeerKey);
             if(isAuthenticatedUser(clientPubKey)){
-                Log.i(LOG, "User Already authenticated and in file");
+             //   Log.i(LOG, "User Already authenticated and in file");
             }
             else {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/AuthenticatedUsers.txt", true));
@@ -67,19 +67,19 @@ public class VerifyUser {
         try {
             if(authenticatorList != null) {
                 if (authenticatorList.contains(peerKey)) {
-                    Log.i(LOG, "Authenticator already verifyed");
+                  //  Log.i(LOG, "Authenticator already verifyed");
                 }
                 else{
                     BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/validatedAuthenticators.txt", true));
                     writer.write(encodedPeerKey + "\n");
-                    Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
+                  //  Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
                     writer.close();
                 }
             }
             else {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/validatedAuthenticators.txt", true));
                 writer.write(encodedPeerKey + "\n");
-                Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
+               // Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
                 writer.close();
             }
 

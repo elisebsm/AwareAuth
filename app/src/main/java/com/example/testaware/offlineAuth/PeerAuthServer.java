@@ -97,25 +97,25 @@ public class PeerAuthServer {
                 serverSocket.setEnabledCipherSuites(protocolCHACHA);
 
                 while (running) {
-                    Log.d(LOG, "Starting peer aut server");
+                 //   Log.d(LOG, "Starting peer aut server");
                     sslClientSocket = (SSLSocket) serverSocket.accept();
 
 
 
-                    Log.d(LOG, "clientSocket" +sslClientSocket);
+                  //  Log.d(LOG, "clientSocket" +sslClientSocket);
                     if (VerifyUser.isAuthenticatedUser(requestingClientKey)) {
-                        Log.d(LOG, "setting peer auth true---------------");
+                      //  Log.d(LOG, "setting peer auth true---------------");
                         userPeerAuth = true;
                     }
                     if(userPeerAuth) {
-                        Log.d(LOG, "Peer auth client accepted");
+                    //    Log.d(LOG, "Peer auth client accepted");
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                         outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
                         noAuthClient = new ClientHandler(inputStream, outputStream, sslClientSocket, counterValue);
                         Thread t = new Thread(noAuthClient);
                         t.start();
-                        Log.d(LOG, "Starting new peer auth client Thread -");
+                       // Log.d(LOG, "Starting new peer auth client Thread -");
                         outputStream.flush();
                     }
                     else{
@@ -125,9 +125,9 @@ public class PeerAuthServer {
                      }
                 }
             }catch (IOException e) {
-                Log.d(LOG, Objects.requireNonNull(e.getMessage()));
+             //   Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
-                Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
+             //   Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
 
             }
 
@@ -166,7 +166,7 @@ public class PeerAuthServer {
         if(noAuthClient != null){
             noAuthClient.sendMessage(message, sendingMessageTime);
         } else {
-            Log.d(LOG, "Client is null");
+          //  Log.d(LOG, "Client is null");
         }
     }
 

@@ -137,30 +137,6 @@ public class AppServer {
                     sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
                         @Override
                         public void handshakeCompleted(HandshakeCompletedEvent event) {
-                            long handshakeCompletedServer = currentTimeMillis();
-                            //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-SERVER",  String.valueOf(handshakeCompletedServer));
-                            BufferedWriter writer = null;
-                            try {
-                                String outputText = String.valueOf(handshakeCompletedServer);
-                                writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/handshakeCompletedServer", true));
-                                writer.append("Counter:" + counterValue);
-                                writer.append("\n");
-                                writer.append(outputText);
-                                writer.append("\n");
-                                writer.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            if(event.getSession().isValid() ){
-                                Log.d(LOG, "Handshake completed");
-                                X509Certificate peerCert = getClientIdentity();
-                                if(userCertificateCorrect && peerCert != null) {
-                                    addPeerAuthInfo(peerCert);
-                                }
-                            }
-                            else{
-                                Log.d(LOG, "Handshake failed");
-                            }
 
                         }
                     });

@@ -22,7 +22,7 @@ public class InitPeerAuthConn {
         //Verify signature of user
         if(VerifyCredentials.verifyString(receivedString, signature, clientPubKey)){
             verifiedAuthenticatorList = VerifyUser.getValidatedAuthenticator();
-            Log.d(LOG, "Signature provided is correct");
+         //   Log.d(LOG, "Signature provided is correct");
 
             PublicKey signerKey = Decoder.getPubKeyGenerated(encodedSignerKey);
             if(VerifyCredentials.verifyCredentials(peerSignedKey, pubKeySelf, clientPubKey)){
@@ -33,13 +33,13 @@ public class InitPeerAuthConn {
                 if(checkSignatureOnString(signerKey, peerSignedKey, clientPubKey)){
                     userIsAuthenticated=true;
                     VerifyUser.setAuthenticatedUser(clientEncodedKey);
-                    Log.d(LOG, "Signature on string is valid- user is peer auth");
+            //        Log.d(LOG, "Signature on string is valid- user is peer auth");
                 }
             }
 
             else{
                 userIsAuthenticated=false;
-                Log.d(LOG, "User not peer authenticated");
+            //    Log.d(LOG, "User not peer authenticated");
             }
 
             //check if user recently has had a peer auth conn with user
@@ -67,7 +67,7 @@ public class InitPeerAuthConn {
         }
         else{
             userIsAuthenticated=false;
-            Log.d(LOG, "Signature provided is not valid. No connection initialized");
+          //  Log.d(LOG, "Signature provided is not valid. No connection initialized");
         }
 
         return userIsAuthenticated;

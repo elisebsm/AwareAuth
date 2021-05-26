@@ -75,10 +75,11 @@ public class PeerSigner {
     public static void saveSignedKeyToFile(String sigKey){
         if(sigKey != null) {
             try {
-                if (!getSavedSignedKeysFromFile().contains(sigKey)) {  //dont save if it user is peer auth
+                if (!getSavedSignedKeysFromFile().contains(sigKey)) {  //dont save if it user is peer auth  //TODO: change just for testing.
                     BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeys.txt", true));
                     writer.write(sigKey);
-                    Log.i(LOG, "write signed key to file");
+
+               //     Log.i(LOG, "write signed key to file");
                     writer.close();
                 }
 
@@ -132,7 +133,7 @@ public class PeerSigner {
            try {
                BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/signedKeySelf.txt", true));
                writer.write(authenticatorKey + "split" + sigKey  + "\n");
-               Log.i(LOG, "Setting signed key self and authenticator");
+           //    Log.i(LOG, "Setting signed key self and authenticator");
                writer.close();
            } catch (Exception e) {
                e.printStackTrace();
@@ -152,9 +153,9 @@ public class PeerSigner {
                     writer.write(encodedTmpInfo+ "\n");
 
                     writer.close();
-                    Log.i(LOG, "wrote key to file");
+               //     Log.i(LOG, "wrote key to file");
                 } else {
-                    Log.i(LOG, "No keys to save to file. Already in file");
+                //    Log.i(LOG, "No keys to save to file. Already in file");
                 }
 
             } catch (Exception e) {
@@ -198,6 +199,13 @@ public class PeerSigner {
 
     public static void deleteTmpFile()  {
         File file = new File("/data/data/com.example.testaware/tmpSavedPeerAuthInfo.txt");
+        if (file.exists()){
+            file.delete();
+        }
+
+    }
+    public static void deleteFile(String fileName)  {
+        File file = new File("/data/data/com.example.testaware/"+fileName);
         if (file.exists()){
             file.delete();
         }
