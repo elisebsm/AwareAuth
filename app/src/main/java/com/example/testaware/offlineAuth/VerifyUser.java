@@ -16,7 +16,7 @@ public class VerifyUser {
 
     private static String LOG = "Log-Test-Aware-Verify-User";
 
-    public static void setAuthenticatedUser(String connectedPeerIP, String encodedPeerKey) {
+    public static void setAuthenticatedUser(String encodedPeerKey) {
 
         try {
             PublicKey clientPubKey = Decoder.getPubKeyGenerated(encodedPeerKey);
@@ -25,7 +25,7 @@ public class VerifyUser {
             }
             else {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/AuthenticatedUsers.txt", true));
-                writer.write(connectedPeerIP + "split" + encodedPeerKey + "\n");
+                writer.write(encodedPeerKey + "\n");
                 writer.close();
             }
         }
@@ -43,11 +43,9 @@ public class VerifyUser {
             if(file.exists()) {
                 BufferedReader myReader = new BufferedReader(new FileReader("/data/data/com.example.testaware/AuthenticatedUsers.txt"));
                 while ((thisLine = myReader.readLine()) != null) {
-                    String[] newSplitString = thisLine.split("split");
-                    String ip = newSplitString[0];
-                    String encodedKeyFromFile = newSplitString[1];
+                    String encodedKeyFromFile = thisLine;
                     keyDecodedFromFile = Decoder.getPubKeyGenerated(encodedKeyFromFile);
-                    if ( keyDecodedFromFile.equals(connectedPeerKey)) { //removed IP from checklist. Dont need this
+                    if ( keyDecodedFromFile.equals(connectedPeerKey)) {
                         isAuthenticated = true;
                     }
 

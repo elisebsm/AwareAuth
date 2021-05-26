@@ -260,6 +260,9 @@ public class MainActivity extends AppCompatActivity  {
     private long startAttached;
     private long timeToAttachToCluster;
 
+    private long requestPeerAuthConnStartTime;
+    private long requestPeerAuthConnStopTime ;
+
     PeerHandle peer;
     byte [] msg;
 
@@ -755,7 +758,7 @@ public class MainActivity extends AppCompatActivity  {
                             Log.d(LOG, "authenticator key " + authenticatorKey);
                         } else if (messageIn.contains("SelfSigKey")) {
                             String sigKey = messageIn.replace("SelfSigKey", "");
-                            peerSignedKeyAndAuthKeyReceived.put(sigKey, authenticatorKey);
+                            peerSignedKeyAndAuthKeyReceived.put(authenticatorKey,sigKey);
                             Log.i(LOG, "self singed key"+ sigKey+ "and auth key received"+ authenticatorKey);
 
                         } else if (messageIn.contains("pubKey")) {
@@ -777,8 +780,9 @@ public class MainActivity extends AppCompatActivity  {
                             signedKeyReceived = messageIn.replace("PACompletedS", "");
                             tvRole.setText(role+ "   Not authenticated "  +  "     PeerAuth: "+ IamPeerAuth);
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
+                            requestPeerAuthConnStopTime = currentTimeMillis();
                            // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
-                            Toast.makeText(context, "Peer authenticated! Starting server", Toast.LENGTH_LONG).show();
+                            Toast.makeText(context, "Authenticated! Starting PA server", Toast.LENGTH_LONG).show();
                         } else if (messageIn.contains("sigKeyList")) {
                             Log.i(LOG, "sigKeyList received");
                             setBroadcastPeerAuthInfo(messageIn);
@@ -786,6 +790,10 @@ public class MainActivity extends AppCompatActivity  {
                             Log.i(LOG, "trusted authenticator key received");
                             setBroadcastPeerAuthInfo(messageIn);
                         }
+                        else if (messageIn.contains("PAServerUP")) {
+                            Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
+                        }
+
                     }
                          /* if (!hashMapPeerHandleAndMac.containsKey(macAddress)) {
                         hashMapPeerHandleAndMac.put(macAddress, peerHandle_);
@@ -822,6 +830,7 @@ public class MainActivity extends AppCompatActivity  {
 
 
 
+
             @Override
             public void onSessionConfigFailed () {
                   /*  if(!firstTimeRestarted){
@@ -846,8 +855,6 @@ public class MainActivity extends AppCompatActivity  {
 
         }
     }
-
-
 
 
     private void subscribe(){
@@ -972,7 +979,7 @@ public class MainActivity extends AppCompatActivity  {
 
                         } else if (messageIn.contains("SelfSigKey")) {
                             String sigKey = messageIn.replace("SelfSigKey", "");
-                            peerSignedKeyAndAuthKeyReceived.put(sigKey, authenticatorKey);
+                            peerSignedKeyAndAuthKeyReceived.put(authenticatorKey,sigKey);
                             Log.i(LOG, "self singed key"+ sigKey+ "and auth key received"+ authenticatorKey);
 
                         }
@@ -995,7 +1002,7 @@ public class MainActivity extends AppCompatActivity  {
                             signedKeyReceived= messageIn.replace("PACompletedS", "");
                             tvRole.setText(role+ "    PeerAuth: "+ IamPeerAuth);
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
-                            Toast.makeText(context, "Peer authenticated! Starting server", Toast.LENGTH_LONG).show();
+                            Toast.makeText(context, "Authenticated! Starting PA server", Toast.LENGTH_LONG).show();
                         //    connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
                         }
                         else if(messageIn.contains("sigKeyList")){
@@ -1005,6 +1012,9 @@ public class MainActivity extends AppCompatActivity  {
                         else if (messageIn.contains("authUser")){
                             Log.i(LOG,"trusted authenticator key received");
                             setBroadcastPeerAuthInfo(messageIn);
+                        }
+                        else if (messageIn.contains("PAServerUP")) {
+                            Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
                         }
                     }
                 }
@@ -1149,7 +1159,6 @@ public class MainActivity extends AppCompatActivity  {
 
                 if(certSelfSigned=="true") {
                     requestPeerAuthConn();
-
                     boolean usePublisherSession= peerHandlesToUse.get(peerHandle);
                     Log.i(LOG,"Peer auth conn called in onAvaliable and peerisPublisher is "+ usePublisherSession);
                     Log.i(LOG,"IAMPEERAUT IS :"+ IamPeerAuth);
@@ -1209,7 +1218,7 @@ public class MainActivity extends AppCompatActivity  {
 
 
                 if(appServer == null){
-                    appServer = new AppServer(sslContextedObserver.getSslContext(), network);
+                   // appServer = new AppServer(sslContextedObserver.getSslContext(), network);
 
                 }
 
@@ -1605,6 +1614,8 @@ public class MainActivity extends AppCompatActivity  {
                         Log.i(LOG, "Sent signed key self in broadcastSignedKeySelf" + msgSignedKey);
                         publishDiscoverySession.sendMessage(peerHandle, MESSAGE, msgSignedKey);
                         Log.i(LOG, "Sent authenticator key from broadcastSignedKeySelf " + msgAutKey);
+
+                        Log.i(LOG, "AuthKey is " + msgAutKey);
                         it.remove(); // avoids a ConcurrentModificationException
                     }
                 }
@@ -1692,11 +1703,15 @@ public class MainActivity extends AppCompatActivity  {
             if (!IamAuth) {
                 publicKey = "reqAuth" + encodedPubKeyToSend;
                 Log.i(LOG,"requesting authentication");
+                Toast.makeText(this, "Requesting PA", Toast.LENGTH_LONG).show();
 
             } else {
                 Log.i(LOG,"sending peer auth conn request");
                 broadcastSignedKeySelf(peerHandle);
+
                 publicKey = "pubKey" + encodedPubKeyToSend;
+                Toast.makeText(this, "Requesting Pa Conn", Toast.LENGTH_LONG).show();
+
             }
             byte[] pubKeyToSend = publicKey.getBytes();
             if(usePublishDiscSession){
@@ -1720,9 +1735,6 @@ public class MainActivity extends AppCompatActivity  {
                 }
             }
 
-
-
-
         }
         else {
             Toast.makeText(this, "Already authenticated", Toast.LENGTH_LONG).show();
@@ -1731,6 +1743,7 @@ public class MainActivity extends AppCompatActivity  {
 
 
     private void requestPeerAuthConn(){
+        requestPeerAuthConnStartTime = currentTimeMillis();
         encodedPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
         randomStringToSend = Decoder.generateRandomString(7);
         signedStringToSend = PeerSigner.signString(randomStringToSend, keyPair);
@@ -1772,12 +1785,12 @@ public class MainActivity extends AppCompatActivity  {
 
             String signedKeyByPeer= PeerSigner.signPeerKey(peerPubKey,IdentityHandler.getKeyPair());
             PeerSigner.saveSignedKeyToFile(signedKeyByPeer);
-            VerifyUser.setAuthenticatedUser(peerIpv6.toString(),encodedKey);
+            VerifyUser.setAuthenticatedUser(encodedKey);
             peerAuthenticated="true";
             Log.i(LOG,"authenticatePeer done:");
             Toast.makeText(this, "User authenticated", Toast.LENGTH_LONG).show();
 
-            peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(),peerPubKey, peerIpv6.toString());
+            peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(),peerPubKey);
           //  connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
 
             encodedPubKeyToSend = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
@@ -1789,7 +1802,7 @@ public class MainActivity extends AppCompatActivity  {
                     publishDiscoverySession.sendMessage(peerHandle, MESSAGE, signedKey);
                     Log.i(LOG,"pub session sent message"+ signedKey +" auth key" + authenticatorKey);
                 }
-                } else {
+            } else {
                     if(subscribeDiscoverySession != null && peerHandle != null) {
                         subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE,authenticatorKey);
                         subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE,signedKey);
@@ -1811,14 +1824,13 @@ public class MainActivity extends AppCompatActivity  {
         boolean userIsAuthenticated=false;
         boolean usePublishDiscSession = peerHandlesToUse.get(peerHandle);
 
-        if(peerIpv6 != null && peerSignedKeyAndAuthKeyReceived != null) {
+        if(peerSignedKeyAndAuthKeyReceived != null) {
 
             Iterator it = peerSignedKeyAndAuthKeyReceived.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry pair = (Map.Entry)it.next();
-                System.out.println(pair.getKey() + " = " + pair.getValue());
                 it.remove(); // avoids a ConcurrentModificationException
-                userIsAuthenticated = InitPeerAuthConn.checkPeerAuthCredentials(receivedString, receivedSignedString, clientPubKey, key, peerIpv6.toString(), pair.getKey().toString(), pair.getValue().toString());
+                userIsAuthenticated = InitPeerAuthConn.checkPeerAuthCredentials(receivedString, receivedSignedString, clientPubKey, key, pair.getKey().toString(), pair.getValue().toString());
 
             }
             Log.i(LOG,"Credentials correct is" +userIsAuthenticated);
@@ -1828,8 +1840,19 @@ public class MainActivity extends AppCompatActivity  {
                 peerAuthenticated = "true";
                 //if (role == "publisher") {
                 Toast.makeText(this, "Starting peerAuthConn", Toast.LENGTH_SHORT).show();
-                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), clientPubKey, peerIpv6.toString());           //TODO: change to no auth server port to 0?
+                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), clientPubKey);
+                byte[] PAServerUP= ("PAServerUP").getBytes();
+                if(usePublishDiscSession){
+                    if (publishDiscoverySession != null && peerHandle != null) {
+                        publishDiscoverySession.sendMessage(peerHandle, MESSAGE,PAServerUP);
 
+                    }
+                } else {
+                    if(subscribeDiscoverySession != null && peerHandle != null) {
+                        subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, PAServerUP);
+
+                    }
+                }
                 //}
               //   connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
 

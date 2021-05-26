@@ -73,7 +73,7 @@ public class PeerAuthServer {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public PeerAuthServer(SSLContext serverSSLContext,  PublicKey pubKeyClient, String connectedPeerIP){  //use SERVER_PORT_NO_AUTH
+    public PeerAuthServer(SSLContext serverSSLContext,  PublicKey requestingClientKey){  //use SERVER_PORT_NO_AUTH
         running = true;
         clients = new ConcurrentHashMap<>();
         int serverPort= Constants.SERVER_PORT_NO_AUTH;
@@ -99,8 +99,11 @@ public class PeerAuthServer {
                 while (running) {
                     Log.d(LOG, "Starting peer aut server");
                     sslClientSocket = (SSLSocket) serverSocket.accept();
+
+
+
                     Log.d(LOG, "clientSocket" +sslClientSocket);
-                    if (VerifyUser.isAuthenticatedUser(pubKeyClient)) {
+                    if (VerifyUser.isAuthenticatedUser(requestingClientKey)) {
                         Log.d(LOG, "setting peer auth true---------------");
                         userPeerAuth = true;
                     }
@@ -125,6 +128,7 @@ public class PeerAuthServer {
                 Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
                 Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
+
             }
 
             };
@@ -167,19 +171,6 @@ public class PeerAuthServer {
     }
 
 
-    private X509Certificate getClientIdentity() {
-        try {
-            Certificate[] certs = sslClientSocket.getSession().getPeerCertificates();
-            if(certs.length > 0 && certs[0] instanceof X509Certificate) {
-                return (X509Certificate) certs[0];
-            }
-
-        } catch (SSLPeerUnverifiedException | NullPointerException ignored) {
-            ignored.printStackTrace();
-
-        }
-        return null;
-    }
 
 
 
