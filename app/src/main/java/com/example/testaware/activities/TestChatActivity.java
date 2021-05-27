@@ -186,7 +186,7 @@ public class TestChatActivity extends AppCompatActivity {
         MessageListItem chatMsg = new MessageListItem(message, "User2");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
-
+/*
         long settingMessage = currentTimeMillis();
 
         if(serverReadinTime==0){
@@ -217,7 +217,7 @@ public class TestChatActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
+*/
         //mMessageAdapter.add(message);
     }
 
