@@ -325,17 +325,19 @@ public class MainActivity extends AppCompatActivity  {
             requestPermissions(LOCATION_PERMS_COARSE, LOCATION_REQUEST_COARSE);
         }
 
-      //  if(PeerSigner.getSignedKeySelf().isEmpty()){
-        IamPeerAuth = false;  //TODO: change just for testing
-       // }
-        //else{
-       //     IamPeerAuth = true;
-       // }
+        if(PeerSigner.getSignedKeySelf().isEmpty()){
+            IamPeerAuth = false;
+        }
+        else{
+            IamPeerAuth = true;
+        }
 
 
         this.keyPair = IdentityHandler.getKeyPair();
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         context = this;
+
+      //  attachToSession();
 
         final long[] sslContextChanged = new long[1];
 
@@ -733,23 +735,24 @@ public class MainActivity extends AppCompatActivity  {
                             signedKeyReceived = messageIn.replace("PACompletedS", "");
                             tvRole.setText( "Peer Authenticated: "+ IamPeerAuth);
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
-                            requestPeerAuthStopTime = currentTimeMillis();
-                            writeTestingTimeVerifyPeer();
-                            PeerSigner.deleteFile("signedKeySelf.txt");
+                           // requestPeerAuthStopTime = currentTimeMillis();
+                           // writeTestingTimeVerifyPeer();
+                           // PeerSigner.deleteFile("signedKeySelf.txt");
 
                            // connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
                             Toast.makeText(context, "Authenticated! PA server started", Toast.LENGTH_LONG).show();
-                        } else if (messageIn.contains("sigKeyList")) {
+                        } else if (messageIn.contains("PAServerUP")) {
+                            Log.i(LOG,"testing-----------");
+                            requestPeerAuthConnStopTime = currentTimeMillis();
+                            writeTestingTimeStartPAServer();
+                            Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
+                        }
+                        else if (messageIn.contains("sigKeyList")) {
                             //(LOG, "sigKeyList received");
                             setBroadcastPeerAuthInfo(messageIn);
                         } else if (messageIn.contains("authUser")) {
                             //(LOG, "trusted authenticator key received");
                             setBroadcastPeerAuthInfo(messageIn);
-                        }
-                        else if (messageIn.contains("PAServerUP")) {
-                            requestPeerAuthConnStopTime = currentTimeMillis();
-                            writeTestingTimeStartPAServer();
-                            Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
                         }
 
                     }
@@ -961,10 +964,17 @@ public class MainActivity extends AppCompatActivity  {
                             signedKeyReceived= messageIn.replace("PACompletedS", "");
                             tvRole.setText("Peer Authenticated: "+ IamPeerAuth);
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
-                            requestPeerAuthStopTime = currentTimeMillis();
-                            writeTestingTimeVerifyPeer();
+                            //requestPeerAuthStopTime = currentTimeMillis();
+                          //  writeTestingTimeVerifyPeer();
                             Toast.makeText(context, "Authenticated! PA server started", Toast.LENGTH_LONG).show();
                         //    connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
+                        }
+                        else if (messageIn.contains("PAServerUP")) {
+                            Log.i(LOG,"testing-----------");
+                            requestPeerAuthConnStopTime = currentTimeMillis();
+                            Log.i(LOG,"PA server is running");
+                            writeTestingTimeStartPAServer();
+                            //  Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
                         }
                         else if(messageIn.contains("sigKeyList")){
                          //   //(LOG,"sigKeyList received");
@@ -974,11 +984,7 @@ public class MainActivity extends AppCompatActivity  {
                       //      //(LOG,"trusted authenticator key received");
                             setBroadcastPeerAuthInfo(messageIn);
                         }
-                        else if (messageIn.contains("PAServerUP")) {
-                            requestPeerAuthConnStopTime = currentTimeMillis();
-                            writeTestingTimeStartPAServer();
-                            Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
-                        }
+
                     }
                 }
             }, null);
@@ -1582,13 +1588,13 @@ public class MainActivity extends AppCompatActivity  {
             if (!IamAuth) {
                 publicKey = "reqAuth" + encodedPubKeyToSend;
               //  //(LOG,"requesting authentication");
-                Toast.makeText(this, "Requesting PA", Toast.LENGTH_LONG).show();
+             //   Toast.makeText(this, "Requesting PA", Toast.LENGTH_LONG).show();
 
             } else {
                 //(LOG,"sending peer auth conn request");  //TODO: change. just testing
                 broadcastSignedKeySelf(peerHandle);
                 publicKey = "pubKey" + encodedPubKeyToSend;
-                Toast.makeText(this, "Requesting Pa Conn", Toast.LENGTH_LONG).show();
+             //   Toast.makeText(this, "Requesting Pa Conn", Toast.LENGTH_LONG).show();
             }
             byte[] pubKeyToSend = publicKey.getBytes();
             if(usePublishDiscSession){
@@ -1682,11 +1688,11 @@ public class MainActivity extends AppCompatActivity  {
                 }
 
             }
-
+            Log.i(LOG,"starting peer auth server");
             peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(),peerPubKey);  //TODO : testing, move up?
 
-            PeerSigner.deleteFile("signedKeys.txt");
-            PeerSigner.deleteFile("AuthenticatedUsers.txt");
+           // PeerSigner.deleteFile("signedKeys.txt");
+           // PeerSigner.deleteFile("AuthenticatedUsers.txt");
 
         }
         else{
@@ -1715,10 +1721,12 @@ public class MainActivity extends AppCompatActivity  {
             if (userIsAuthenticated) {
                 peerAuthenticated = "true";
                 byte[] PAServerUP= ("PAServerUP").getBytes();
+
                 Toast.makeText(this, "Starting peerAuthConn", Toast.LENGTH_SHORT).show();
-                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), clientPubKey);
+
                 if(usePublishDiscSession){
                     if (publishDiscoverySession != null && peerHandle != null) {
+
                         publishDiscoverySession.sendMessage(peerHandle, MESSAGE,PAServerUP);
 
                     }
@@ -1727,7 +1735,7 @@ public class MainActivity extends AppCompatActivity  {
                         subscribeDiscoverySession.sendMessage(peerHandle, MESSAGE, PAServerUP);
                     }
                 }
-
+                peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), clientPubKey);
 
               //   connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
 
@@ -1777,7 +1785,7 @@ public class MainActivity extends AppCompatActivity  {
         BufferedWriter writer = null;
         long requestPeerAuthConnDiffTime = requestPeerAuthConnStopTime-requestPeerAuthStartTime;
         // long totalTime = startPeerAuthServerAfterVerifyTime- requestPeerAuthStartTime;
-        int count=0;
+
         try {
             String startTime = String.valueOf(requestPeerAuthStartTime);
             String stopTime = String.valueOf(requestPeerAuthConnStopTime);
@@ -1785,12 +1793,10 @@ public class MainActivity extends AppCompatActivity  {
             // String startServerTime= String.valueOf(startPeerAuthServerAfterVerifyTime);
             // String startServerTimeTotal = String.valueOf(totalTime);
             writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/startPAServerLoggingTime.txt", true));
-            writer.append("Counter:" + count);
-            writer.append("\n");
-            writer.append(startTime + "----"+ stopTime+ "diff time"+ diffTime );
+            writer.append(startTime + "----"+ stopTime+ "diffTime"+ diffTime);
             writer.append("\n");
             writer.close();
-            Log.i(LOG, "write to file"+ count);
+            Log.i(LOG, "write to file");
         } catch (IOException e) {
             e.printStackTrace();
         }
