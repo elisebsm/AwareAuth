@@ -1727,7 +1727,7 @@ public class MainActivity extends AppCompatActivity  {
                // Log.i(LOG, "peer auth server started. Sending mgs to ");
               //  Toast.makeText(this, "Starting peerAuthConn", Toast.LENGTH_SHORT).show();
                 peerAuthServer = new PeerAuthServer(sslContextedObserver.getSslContext(), clientPubKey);
-                requestPeerAuthConnStopTime = currentTimeMillis();
+               // requestPeerAuthConnStopTime = currentTimeMillis();
                 if(usePublishDiscSession){
                     if (publishDiscoverySession != null && peerHandle != null) {
                         Log.i(LOG, "peer auth server started. Sending mgs to "+ peerHandle);
@@ -1743,7 +1743,7 @@ public class MainActivity extends AppCompatActivity  {
 
                     }
                 }
-                serverWriteTestingTimeStartPAServer();
+              //  serverWriteTestingTimeStartPAServer();
 
                 PeerSigner.deleteFile("AuthenticatedUsers.txt");
 
@@ -1813,28 +1813,28 @@ public class MainActivity extends AppCompatActivity  {
 
     }
 
-    private void serverWriteTestingTimeStartPAServer(){
-        //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-SERVER",  String.valueOf(handshakeCompletedServer));
-        BufferedWriter writer = null;
-        long requestPeerAuthConnDiffTime = requestPeerAuthConnStopTime-requestPeerAuthStartTime;
-        // long totalTime = startPeerAuthServerAfterVerifyTime- requestPeerAuthStartTime;
-
-        try {
-            String startTime = String.valueOf(requestPeerAuthStartTime);
-            String stopTime = String.valueOf(requestPeerAuthConnStopTime);
-            String diffTime= String.valueOf(requestPeerAuthConnDiffTime);
-            // String startServerTime= String.valueOf(startPeerAuthServerAfterVerifyTime);
-            // String startServerTimeTotal = String.valueOf(totalTime);
-            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/ServerStartPAServerLoggingTime.txt", true));
-            writer.append(startTime + "----"+ stopTime+ "diffTime"+ diffTime);
-            writer.append("\n");
-            writer.close();
-            Log.i(LOG, "write to file");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
+//    private void serverWriteTestingTimeStartPAServer(){
+//        //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-SERVER",  String.valueOf(handshakeCompletedServer));
+//        BufferedWriter writer = null;
+//        long requestPeerAuthConnDiffTime = requestPeerAuthConnStopTime-requestPeerAuthStartTime;
+//        // long totalTime = startPeerAuthServerAfterVerifyTime- requestPeerAuthStartTime;
+//
+//        try {
+//            String startTime = String.valueOf(requestPeerAuthStartTime);
+//            String stopTime = String.valueOf(requestPeerAuthConnStopTime);
+//            String diffTime= String.valueOf(requestPeerAuthConnDiffTime);
+//            // String startServerTime= String.valueOf(startPeerAuthServerAfterVerifyTime);
+//            // String startServerTimeTotal = String.valueOf(totalTime);
+//            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/ServerStartPAServerLoggingTime.txt", true));
+//            writer.append(startTime + "----"+ stopTime+ "diffTime"+ diffTime);
+//            writer.append("\n");
+//            writer.close();
+//            Log.i(LOG, "write to file");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//    }
 
 
 
