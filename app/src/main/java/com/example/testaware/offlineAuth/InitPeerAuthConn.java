@@ -26,6 +26,7 @@ public class InitPeerAuthConn {
 
             PublicKey signerKey = Decoder.getPubKeyGenerated(encodedSignerKey);
             if(VerifyCredentials.verifyCredentials(peerSignedKey, pubKeySelf, clientPubKey)){
+                userIsAuthenticated=true;
                 Log.d(LOG, "Key signed by me");
             }
 
@@ -33,7 +34,7 @@ public class InitPeerAuthConn {
                 if(checkSignatureOnString(signerKey, peerSignedKey, clientPubKey)){
                     userIsAuthenticated=true;
                     VerifyUser.setAuthenticatedUser(clientEncodedKey);
-            //        Log.d(LOG, "Signature on string is valid- user is peer auth");
+                    Log.d(LOG, "Signature on string is valid- user is peer auth");
                 }
             }
 

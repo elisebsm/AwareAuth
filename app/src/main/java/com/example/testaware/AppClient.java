@@ -217,18 +217,6 @@ public class AppClient implements Runnable{
                         long handshakeCompletedClient = currentTimeMillis();
                         //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-CLIENT",  String.valueOf(handshakeCompletedClient));
 
-                        BufferedWriter writer = null;
-                        try {
-                            String outputText = String.valueOf(handshakeCompletedClient);
-                            writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/handshakeCompletedServer", true));
-                            writer.append("Counter:" + counterValue);
-                            writer.append("\n");
-                            writer.append(outputText);
-                            writer.append("\n");
-                            writer.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
                         if(event.getSession().isValid()){
                             Log.d(LOG, "Handshake completed");
                             X509Certificate peerCert = getServerIdentity();
@@ -236,10 +224,6 @@ public class AppClient implements Runnable{
                                 addPeerAuthInfo(peerCert);
                             }
                         }
-                        else{
-                            Log.d(LOG, "Handshake failed");
-                        }
-
                     }
                 });
 
@@ -303,13 +287,14 @@ public class AppClient implements Runnable{
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey = peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
-        ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
+        PeerSigner.deleteTmpFile();
+       // ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
         // ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
-        if (listOfSingedStrings != null) {
-            for (int i = 0; i < listOfSingedStrings.size(); i++) {
-                PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
-            }
-        }
+      //  if (listOfSingedStrings != null) {
+        //    for (int i = 0; i < listOfSingedStrings.size(); i++) {
+        //        PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
+        //    }
+      //  }
        /* if(listOfTrustedAuthenticators != null){
             for (int i = 0; i < listOfTrustedAuthenticators.size(); i++) {
                 PublicKey pubKeyDecoded = Decoder.getPubKeyGenerated(listOfTrustedAuthenticators.get(i));
@@ -319,11 +304,11 @@ public class AppClient implements Runnable{
         }
         */
 
-        else{
+      //  else{
 
-            Log.d(LOG, "PeerCert is null");
-        }
-        PeerSigner.deleteTmpFile();
+      //      Log.d(LOG, "PeerCert is null");
+      //  }
+      //  PeerSigner.deleteTmpFile();
 
     }
 

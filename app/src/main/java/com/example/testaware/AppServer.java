@@ -137,7 +137,13 @@ public class AppServer {
                     sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
                         @Override
                         public void handshakeCompleted(HandshakeCompletedEvent event) {
-
+                            if(event.getSession().isValid() ){
+                                Log.d(LOG, "Handshake completed");
+                                X509Certificate peerCert = getClientIdentity();
+                                if(userCertificateCorrect && peerCert != null) {
+                                    addPeerAuthInfo(peerCert);
+                                }
+                            }
                         }
                     });
 
@@ -207,14 +213,15 @@ public class AppServer {
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey= peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
-        ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
-        ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
+        PeerSigner.deleteTmpFile();
+     //   ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
+       /*  ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
         if(listOfSingedStrings!= null) {
             for (int i = 0; i < listOfSingedStrings.size(); i++) {
                 PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
             }
         }
-        /*
+
         if(listOfTrustedAuthenticators != null){
             for (int i = 0; i < listOfTrustedAuthenticators.size(); i++) {
                 PublicKey pubKeyDecoded = Decoder.getPubKeyGenerated(listOfTrustedAuthenticators.get(i));
@@ -225,6 +232,7 @@ public class AppServer {
 
          */
     }
+
 
 }
 
