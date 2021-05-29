@@ -338,8 +338,8 @@ public class MainActivity extends AppCompatActivity  {
         context = this;
 
         attachToSession();
-
-   /*     final long[] sslContextChanged = new long[1];
+/*
+        final long[] sslContextChanged = new long[1];
 
         sslContextedObserver = new SSLContextedObserver();
         sslContextedObserver.setListener(sslContext -> {
@@ -356,7 +356,9 @@ public class MainActivity extends AppCompatActivity  {
         sslContextedObserver.setSslContext(IdentityHandler.getSSLContext(this.context));
 
         certSelfSigned = certSelfSigned(IdentityHandler.getCertificate());
-        diffSSLContext = sslContextChanged[0] - sslContextStart;*/
+        diffSSLContext = sslContextChanged[0] - sslContextStart;
+
+ */
 
         setTextView();
 
@@ -565,7 +567,7 @@ public class MainActivity extends AppCompatActivity  {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 myMacDeci = getMacInDecimal(mac);
-                //startPublishAndSubscribe();
+              //  startPublishAndSubscribe();
             }
         }, null);
     }
