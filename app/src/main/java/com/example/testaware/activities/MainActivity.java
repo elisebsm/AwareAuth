@@ -36,6 +36,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -135,6 +136,7 @@ public class MainActivity extends AppCompatActivity  {
     private final int MAC_ADDRESS_MESSAGE = 11;
     private ConnectivityManager connectivityManager;
     private NetworkSpecifier networkSpecifier;
+
 
 
     private final int MESSAGE = 7;
@@ -338,10 +340,10 @@ public class MainActivity extends AppCompatActivity  {
         context = this;
 
         attachToSession();
-/*
+
         final long[] sslContextChanged = new long[1];
 
-        sslContextedObserver = new SSLContextedObserver();
+        /*sslContextedObserver = new SSLContextedObserver();
         sslContextedObserver.setListener(sslContext -> {
             sslContextChanged[0] = currentTimeMillis();
             connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -357,8 +359,8 @@ public class MainActivity extends AppCompatActivity  {
 
         certSelfSigned = certSelfSigned(IdentityHandler.getCertificate());
         diffSSLContext = sslContextChanged[0] - sslContextStart;
+*/
 
- */
 
         setTextView();
 
@@ -369,9 +371,55 @@ public class MainActivity extends AppCompatActivity  {
 
 
         booleanObserver  = new BooleanObserver();
+      //  getMacAddress();
 
 
     }
+  /*  private void getMacAddress() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                Log.i(LOG, "network"+ networkInterface.getName());
+                if (networkInterface.getHardwareAddress() != null) {
+                    byte[] bytes = networkInterface.getHardwareAddress();
+                    StringBuilder builder = new StringBuilder();
+                    for (byte b : bytes) {
+                        builder.append(String.format("%02X:", b));
+                    }
+
+                    if (builder.length() > 0) {
+                        builder.deleteCharAt(builder.length() - 1);
+                    }
+                    Log.i(LOG, "network" + builder.toString());
+                }
+
+/*
+                if (TextUtils.equals(networkInterface.getName(), interfaceName)) {
+                    byte[] bytes = networkInterface.getHardwareAddress();
+                    StringBuilder builder = new StringBuilder();
+                    for (byte b : bytes) {
+                        builder.append(String.format("%02X:", b));
+                    }
+
+                    if (builder.length() > 0) {
+                        builder.deleteCharAt(builder.length() - 1);
+                    }
+
+                    return builder.toString();
+
+
+                }
+
+
+            }
+
+        } catch (SocketException e) {
+
+        }
+    }
+    */
+
 
     private boolean hasRequestedConnection(PeerHandle peerHandle){ //TODO:
         for (PeerHandle peer : requestedConnectionList)
@@ -567,7 +615,7 @@ public class MainActivity extends AppCompatActivity  {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 myMacDeci = getMacInDecimal(mac);
-              //  startPublishAndSubscribe();
+               // startPublishAndSubscribe();
             }
         }, null);
     }
@@ -1083,15 +1131,15 @@ public class MainActivity extends AppCompatActivity  {
 
         if(role.equals("subscriber")){
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
-                    .setPskPassphrase("password")
+                  //  .setPskPassphrase("password")
                     .build();
 
             //Log.d(LOG, "This devices is subscriber");
         } else {
            // listConnectionWifiRequestedMacs.add(hashMapPeerHandleKeyAndMac.get(peerHandle));
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
-                    .setPskPassphrase("password")
-                    .setTransportProtocol(6)
+                   // .setPskPassphrase("password")
+                    //.setTransportProtocol(6)
                   //  .setPort(.getLocalPort())
                     .build();
 
