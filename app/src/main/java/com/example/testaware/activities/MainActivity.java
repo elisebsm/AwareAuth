@@ -339,11 +339,11 @@ public class MainActivity extends AppCompatActivity  {
         wifiAwareManager = (WifiAwareManager) getSystemService(Context.WIFI_AWARE_SERVICE);
         context = this;
 
-        attachToSession();
+      //  attachToSession();
 
         final long[] sslContextChanged = new long[1];
 
-        /*sslContextedObserver = new SSLContextedObserver();
+        sslContextedObserver = new SSLContextedObserver();
         sslContextedObserver.setListener(sslContext -> {
             sslContextChanged[0] = currentTimeMillis();
             connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -359,7 +359,7 @@ public class MainActivity extends AppCompatActivity  {
 
         certSelfSigned = certSelfSigned(IdentityHandler.getCertificate());
         diffSSLContext = sslContextChanged[0] - sslContextStart;
-*/
+
 
 
         setTextView();
@@ -615,7 +615,7 @@ public class MainActivity extends AppCompatActivity  {
                 super.onIdentityChanged(mac);
                 setMacAddress(mac);
                 myMacDeci = getMacInDecimal(mac);
-               // startPublishAndSubscribe();
+                startPublishAndSubscribe();
             }
         }, null);
     }
@@ -1019,7 +1019,7 @@ public class MainActivity extends AppCompatActivity  {
                             PeerSigner.setSignedKeySelf(signedKeyReceived, authenticatorKey);
                             //requestPeerAuthStopTime = currentTimeMillis();
                           //  writeTestingTimeVerifyPeer();
-                            Toast.makeText(context, "Authenticated! PA server started", Toast.LENGTH_LONG).show();
+                            Toast.makeText(context, "Authentication Credentials Received!", Toast.LENGTH_LONG).show();
                         //    connectionHandler = new ConnectionHandler(getApplicationContext(), sslContextedObserver.getSslContext(), keyPair, null, isPublisher, peerAuthenticated, peerAuthServer);
                         }
                         else if (messageIn.contains("PAServerUP")) {
@@ -1027,7 +1027,7 @@ public class MainActivity extends AppCompatActivity  {
                             requestPeerAuthConnStopTime = currentTimeMillis();
                             Log.i(LOG,"PA server is running");
                             writeTestingTimeStartPAServer();
-                            //  Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
+                            Toast.makeText(context, "Starting PA server", Toast.LENGTH_LONG).show();
                         }
                         else if(messageIn.contains("sigKeyList")){
                          //   //(LOG,"sigKeyList received");
@@ -1131,15 +1131,15 @@ public class MainActivity extends AppCompatActivity  {
 
         if(role.equals("subscriber")){
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeDiscoverySession, peerHandle)
-                  //  .setPskPassphrase("password")
+                    .setPskPassphrase("password123")
                     .build();
 
             //Log.d(LOG, "This devices is subscriber");
         } else {
            // listConnectionWifiRequestedMacs.add(hashMapPeerHandleKeyAndMac.get(peerHandle));
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishDiscoverySession, peerHandle)
-                   // .setPskPassphrase("password")
-                    //.setTransportProtocol(6)
+                    .setPskPassphrase("password123")
+                    .setTransportProtocol(6)
                   //  .setPort(.getLocalPort())
                     .build();
 
