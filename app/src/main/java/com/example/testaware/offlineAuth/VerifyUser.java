@@ -21,9 +21,10 @@ public class VerifyUser {
         try {
             PublicKey clientPubKey = Decoder.getPubKeyGenerated(encodedPeerKey);
             if(isAuthenticatedUser(clientPubKey)){
-             //   Log.i(LOG, "User Already authenticated and in file");
+                Log.i(LOG, "User Already authenticated and in file");
             }
             else {
+                Log.i(LOG, "Saving key to file");
                 BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/AuthenticatedUsers.txt", true));
                 writer.write(encodedPeerKey + "\n");
                 writer.close();

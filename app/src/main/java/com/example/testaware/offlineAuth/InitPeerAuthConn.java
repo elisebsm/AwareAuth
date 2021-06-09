@@ -36,12 +36,12 @@ public class InitPeerAuthConn {
                     VerifyUser.setAuthenticatedUser(clientEncodedKey);
                     Log.d(LOG, "Signature on string is valid- user is peer auth");
                 }
+            }else{
+                userIsAuthenticated=false;
+                Log.d(LOG, "No match for authenticator key. Not starting server.");
             }
 
-            else{
-                userIsAuthenticated=false;
-            //    Log.d(LOG, "User not peer authenticated");
-            }
+
 
             //check if user recently has had a peer auth conn with user
             //  if(VerifyUser.isAuthenticatedUser(clientPubKey)){
@@ -68,7 +68,7 @@ public class InitPeerAuthConn {
         }
         else{
             userIsAuthenticated=false;
-          //  Log.d(LOG, "Signature provided is not valid. No connection initialized");
+            Log.d(LOG, "Signature provided is not valid. No connection ");
         }
 
         return userIsAuthenticated;

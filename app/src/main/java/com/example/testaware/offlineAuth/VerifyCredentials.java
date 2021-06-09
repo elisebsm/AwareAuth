@@ -34,7 +34,7 @@ public class VerifyCredentials {
 
 
                    if (ecdsaSign.verify(decodedSignature)) {
-                     //  Log.i(LOG, "valid");
+                       Log.i(LOG, "valid");
                        valid = true;
                    } else {
                      //  Log.i(LOG, "invalid");
@@ -61,7 +61,7 @@ public class VerifyCredentials {
                 byte[] bytes = message.getBytes();  // message
                 ecdsaSign.update(bytes);
                 if (ecdsaSign.verify(decodedSignature)) {
-                   // Log.i(LOG, "Signed string is valid!!!!!!!!");
+                    Log.i(LOG, "Signed string is valid!");
                     valid = true;
                 } else {
                  //   Log.i(LOG, "Signed string isnot valid");

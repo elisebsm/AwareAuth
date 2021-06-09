@@ -36,6 +36,7 @@ public class PeerSigner {
 
                 String pub = Base64.getEncoder().encodeToString(pubKey.getEncoded());
                 signedKey = Base64.getEncoder().encodeToString(signature);
+                Log.i(LOG, "Signing Peer Key");
 
             } catch (Exception e) {
                 // TODO: handle exception
@@ -187,7 +188,7 @@ public class PeerSigner {
 
 
                 }
-                file.delete();
+             //   file.delete();
             }
             
         }

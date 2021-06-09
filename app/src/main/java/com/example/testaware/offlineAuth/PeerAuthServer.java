@@ -87,7 +87,6 @@ public class PeerAuthServer {
         tlsVersion = new String[1];
         tlsVersion [0] = "TLSv1.2";
         counterValue = mainActivity.get().getCountervalue();
-        Log.d(LOG, "----------------------------------------------");
 
         Runnable serverTask = () -> {
             running  = true;
@@ -104,6 +103,7 @@ public class PeerAuthServer {
 
                   //  Log.d(LOG, "clientSocket" +sslClientSocket);
                     if (VerifyUser.isAuthenticatedUser(requestingClientKey)) {
+                        Log.d(LOG, "User is PA. Accepting connection ");
                       //  Log.d(LOG, "setting peer auth true---------------");
                         userPeerAuth = true;
                     }
@@ -120,7 +120,7 @@ public class PeerAuthServer {
                     }
                     else{
                           sslClientSocket.close();
-                          Log.d(LOG, "Socket closing, user not peer authenticated ");
+                          Log.d(LOG, "Server socket closing, user not peer authenticated");
                           running =false;
                      }
                 }
