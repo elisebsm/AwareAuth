@@ -1,7 +1,5 @@
 package com.example.testaware.listitems;
 
-import java.net.Inet6Address;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,7 +26,4 @@ public class ChatListItem {
         return username;
     }
 
-  /*  public String getPeerIpv6(){
-        return peerIpv6;
-    }*/
 }

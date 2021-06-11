@@ -2,12 +2,8 @@ package com.example.testaware;
 
 import android.content.Context;
 
-import com.example.testaware.models.Contact;
-
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.Key;
 import java.security.KeyManagementException;
@@ -21,18 +17,14 @@ import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Objects;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.security.auth.x500.X500Principal;
 
 public class IdentityHandler {
     SSLContext sslContext;
@@ -79,54 +71,6 @@ public class IdentityHandler {
     }
 
 
-    private static File getCA(Context context){
-        File [] files = context.getExternalFilesDirs("ca")[0].listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".pem");
-            }
-        });
-        //TODO: get ca file (.pem file)
-        return Objects.requireNonNull(files)[0];
-    }
-
-
-    private static File getPKCS(Context context){
-        File [] files = context.getExternalFilesDirs("keystore")[0].listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".pk12");
-            }
-        });
-        return null;
-    }
-
-
-    private static File [] getContactFile(Context context){
-        return context.getExternalFilesDirs("contacts")[0].listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".pem");
-            }
-        });
-    }
-
-
-    public static ArrayList<Contact> getContacts(Context context){
-        ArrayList<Contact> contacts = new ArrayList<>();
-        for (File contactFile: getContactFile(context)){
-            try {
-                FileInputStream fileInputStream = new FileInputStream(contactFile);
-                CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-                X509Certificate x509Certificate = (X509Certificate) certificateFactory.generateCertificate(fileInputStream);
-                contacts.add(new Contact(x509Certificate));
-            } catch (FileNotFoundException | CertificateException e) {
-                e.printStackTrace();
-            }
-
-        }
-        return contacts;
-    }
 
 
     public static KeyPair getKeyPair(){

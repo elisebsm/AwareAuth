@@ -9,13 +9,8 @@ import androidx.annotation.RequiresApi;
 import com.example.testaware.ClientHandler;
 import com.example.testaware.ConnectedClient;
 import com.example.testaware.Constants;
+import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
-
-import com.example.testaware.listitems.MessageListItem;
-import com.example.testaware.models.AbstractPacket;
-import com.example.testaware.models.Contact;
-import com.example.testaware.models.Message;
-import com.example.testaware.models.MessagePacket;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -24,21 +19,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.security.PublicKey;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.net.ssl.HandshakeCompletedEvent;
-import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
-import com.example.testaware.activities.TestChatActivity;
 
 import lombok.Getter;
 
@@ -63,12 +51,12 @@ public class PeerAuthServer {
     private static WeakReference<MainActivity> mainActivity;
 
     @Getter
-    private static WeakReference<TestChatActivity> testChatActivity;
+    private static WeakReference<ChatActivity> testChatActivity;
 
     public static void updateActivity(MainActivity activity) {
         mainActivity = new WeakReference<>(activity);
     }
-    public static void updateTestChatActivity(TestChatActivity activity) {
+    public static void updateTestChatActivity(ChatActivity activity) {
         testChatActivity = new WeakReference<>(activity);
     }
 
@@ -136,44 +124,13 @@ public class PeerAuthServer {
         serverThread.start();
     }
 
-/*
-    protected void addClient(SSLSocket sslClientSocket){
-        ConnectedClient clientTask = new ConnectedClient(this, sslClientSocket);
-        clients.put(clientTask.getUserIdentity().getPublicKey(), clientTask);
-        clientProcessingPool.submit(clientTask);
-    }
-*/
-
-    protected void removeClient(ConnectedClient connectedClient){
-        if(clients.containsKey(connectedClient.getUserIdentity().getPublicKey())){
-            connectedClient.stop();
-            clients.remove(connectedClient.getUserIdentity().getPublicKey());
-        }
-    }
-
-
-    public void stop(){
-        for (ConnectedClient client: clients.values()){
-            removeClient(client);
-        }
-        running = false;
-    }
-
-
 
 
     public void sendMessage(String message, long sendingMessageTime){
         if(noAuthClient != null){
             noAuthClient.sendMessage(message, sendingMessageTime);
-        } else {
-          //  Log.d(LOG, "Client is null");
         }
     }
-
-
-
-
-
 }
 
 

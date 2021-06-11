@@ -21,12 +21,6 @@ public class MessageListItem {
         return ipv6Address;
     }
 
-    public void setIpv6Address(String ipv6Address){
-        this.ipv6Address = ipv6Address;
-
-    }
-
-
 }
 
 

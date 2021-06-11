@@ -5,49 +5,23 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.os.Build;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 
 import com.example.testaware.activities.MainActivity;
 
-import com.example.testaware.listeners.MessageReceivedObserver;
-import com.example.testaware.listeners.OnMessageReceivedListener;
-import com.example.testaware.listeners.OnSSLContextChangedListener;
-import com.example.testaware.listeners.SSLContextedObserver;
-import com.example.testaware.listitems.MessageListItem;
-import com.example.testaware.models.Message;
-import com.example.testaware.models.MessagePacket;
-import com.example.testaware.offlineAuth.Decoder;
-import com.example.testaware.offlineAuth.PeerAuthServer;
 import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyUser;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
-import java.net.Inet6Address;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
@@ -58,16 +32,12 @@ import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
-import static java.lang.System.currentTimeMillis;
-
 
 //client can also instantiate connection.
 //implements runnable in order to be extecuted by a thread. must implement run(). Intended for objects that need to execute code while they are active.
 public class AppServer {
 
     private final String LOG = "Log-App-Server";
-    //private ObjectInputStream inputStream;
-    //private ObjectOutputStream outputStream;   //TODO: use so client can also send messages
 
     private DataInputStream inputStream;
     private DataOutputStream outputStream;
@@ -98,7 +68,6 @@ public class AppServer {
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public AppServer(SSLContext serverSSLContext, Network network){
-    //public AppServer(SSLContext serverSSLContext){
         running = true;
         String[] protocolGCM = new String[1];
         protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
@@ -134,15 +103,12 @@ public class AppServer {
                     serverSocket.getEnabledCipherSuites();
                     sslClientSocket.getPort();
 
-                    sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
-                        @Override
-                        public void handshakeCompleted(HandshakeCompletedEvent event) {
-                            if(event.getSession().isValid() ){
-                                Log.d(LOG, "Handshake completed");
-                                X509Certificate peerCert = getClientIdentity();
-                                if(userCertificateCorrect && peerCert != null) {
-                                    addPeerAuthInfo(peerCert);
-                                }
+                    sslClientSocket.addHandshakeCompletedListener(event -> {
+                        if(event.getSession().isValid() ){
+                            Log.d(LOG, "Handshake completed");
+                            X509Certificate peerCert = getClientIdentity();
+                            if(userCertificateCorrect && peerCert != null) {
+                                addPeerAuthInfo(peerCert);
                             }
                         }
                     });
@@ -169,19 +135,6 @@ public class AppServer {
         };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
-    }
-
-
-    public void stop(){
-        running = false;
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if(client!=null){
-            client.setRunning(false);
-        }
     }
 
 

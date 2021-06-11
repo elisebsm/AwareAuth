@@ -1,46 +1,29 @@
 package com.example.testaware;
 
 
-import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 
+import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
 
-//import com.example.testaware.activities.TestChatActivity;
-
-import com.example.testaware.listeners.SSLContextedObserver;
-import com.example.testaware.models.AbstractPacket;
-import com.example.testaware.models.Contact;
-import com.example.testaware.models.Message;
-import com.example.testaware.models.MessagePacket;
-import com.example.testaware.offlineAuth.Decoder;
 import com.example.testaware.offlineAuth.PeerSigner;
 import com.example.testaware.offlineAuth.VerifyUser;
 
-import java.io.BufferedInputStream;
-import com.example.testaware.activities.TestChatActivity;
-import java.io.BufferedWriter;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
-import java.lang.ref.WeakReference;
 import java.net.Inet6Address;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -70,9 +53,6 @@ public class AppClient implements Runnable{
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
     private boolean userCertificateCorrect =true;
-
- //   @Getter
-   // private List<ConnectionListener> connectionListeners;
 
 
     private String LOG = "Log-Client";
@@ -122,15 +102,13 @@ public class AppClient implements Runnable{
 
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public boolean sendMessage(String message, long sendingMessageTime, long sendButtonPressed){
+    public boolean sendMessage(String message){
         if(outputStream == null){
             Log.d(LOG, "outputstream is null");
             return false;
         }
-        long messageSent = currentTimeMillis();
                 Runnable sendMessageRunnable = () -> {
             try {
-                //MessagePacket messagePacket = (new MessagePacket(message));
                 Log.d(LOG, "outputstream " + message);
                 outputStream.writeUTF(message);
                 outputStream.flush();
@@ -143,40 +121,9 @@ public class AppClient implements Runnable{
             }
         };
         sendService.submit(sendMessageRunnable);
-        long timeFromSendButtonPressedToSendMessageMethod = messageSent - sendButtonPressed;
-        BufferedWriter writerMessageSent = null;
-        BufferedWriter writerTimeToPressSend = null;
-        try {
-            String outputTextSent = String.valueOf(sendingMessageTime);
-            writerMessageSent = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/messageSentClient", true));
-            writerMessageSent.append("Counter:" + counterValue);
-            writerMessageSent.append("\n");
-            writerMessageSent.append(outputTextSent);
-            writerMessageSent.append("\n");
-            writerMessageSent.close();
-
-            String outputTextSendButton = String.valueOf(timeFromSendButtonPressedToSendMessageMethod);
-            writerTimeToPressSend = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/timeToPressSendButton", true));
-            writerTimeToPressSend.append("Counter:" + counterValue);
-            writerTimeToPressSend.append("\n");
-            writerTimeToPressSend.append(outputTextSendButton);
-            writerTimeToPressSend.append("\n");
-            writerTimeToPressSend.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         return true;
     }
 
-
-    private void onPacket(AbstractPacket packet) {
-        Contact from = new Contact(getServerIdentity());
-        Log.d(LOG, packet.getClass().getSimpleName() + " from " + from.getCommonName());
-
-    }
-
-    private String [] protocolGCM;
-    private String [] protocolCHACHA;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -187,11 +134,11 @@ public class AppClient implements Runnable{
         String [] tlsVersion = new String[1];
         tlsVersion [0] = "TLSv1.2";
 
-        protocolGCM = new String[1];
-        protocolGCM [0]= Constants.SUPPORTED_CIPHER_GCM;
+        String[] protocolGCM = new String[1];
+        protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
 
-        protocolCHACHA = new String[1];
-        protocolCHACHA [0]= Constants.SUPPORTED_CIPHER_CHACHA;
+        String[] protocolCHACHA = new String[1];
+        protocolCHACHA[0]= Constants.SUPPORTED_CIPHER_CHACHA;
 
         //this.port = Constants.SERVER_PORT;
 
@@ -228,23 +175,8 @@ public class AppClient implements Runnable{
                 });
 
                 outputStream = new DataOutputStream(sslSocket.getOutputStream());
-                inputStream = new DataInputStream (sslSocket.getInputStream()); //FEIL: .StreamCorruptedException: invalid stream header
-                // SSLException: Read error: ssl=0x7c46091508: I/O error during system call, Software caused connection abort
-                //outputStream.writeU("clientHello");
+                inputStream = new DataInputStream (sslSocket.getInputStream());
                 outputStream.flush();
-
-                BufferedWriter writer = null;
-                try {
-                    String outputText = String.valueOf(clientStartedTime);
-                    writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/clientStarted", true));
-                    writer.append("Counter:" + counterValue);
-                    writer.append("\n");
-                    writer.append(outputText);
-                    writer.append("\n");
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
                 while(running){
                     if (inputStream != null){
@@ -252,8 +184,7 @@ public class AppClient implements Runnable{
                         long readinMessageAtClient = currentTimeMillis();
                         Log.d("TESTING-LOG-TIME-TLS-MESSAGE-INPUTSTREAM-CLIENT",  String.valueOf(readinMessageAtClient));
                         new Handler(Looper.getMainLooper()).post(()-> {
-                            TestChatActivity.setChat(message, counterValue, 0);
-
+                            ChatActivity.setChat(message);
                         });
                     }
                 }
@@ -271,18 +202,7 @@ public class AppClient implements Runnable{
             }
         }
     }
-    private X509Certificate getPeerIdentity()  {
-        Certificate[] certificates = new Certificate[0];
-        try {
-            certificates = sslSocket.getSession().getPeerCertificates();
-        } catch (SSLPeerUnverifiedException e) {
-            e.printStackTrace();
-        }
-        if (certificates.length > 0 && certificates[0] instanceof X509Certificate){
-            return (X509Certificate) certificates[0];
-        }
-        return null;
-    }
+
 
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey = peerCert.getPublicKey();
@@ -321,7 +241,6 @@ public class AppClient implements Runnable{
         }
         return certSelfSigned;
     }
-
 
 }
 

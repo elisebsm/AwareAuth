@@ -15,7 +15,6 @@ import java.util.ArrayList;
 
 public class MessageListAdapter extends RecyclerView.Adapter{
     private ArrayList<MessageListItem> mMessageListItemList;    //list of messages beeing sent
-    Context context;
 
 
     private static final int VIEW_TYPE_MESSAGE_SENT = 1;
@@ -23,10 +22,7 @@ public class MessageListAdapter extends RecyclerView.Adapter{
 
 
     public MessageListAdapter(Context context, ArrayList<MessageListItem> messageListItemList) {
-
         mMessageListItemList = messageListItemList;
-        context = context;
-
     }
 
     @Override
@@ -73,7 +69,6 @@ public class MessageListAdapter extends RecyclerView.Adapter{
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         MessageListItem messageListItem = (MessageListItem) mMessageListItemList.get(position);
-        //String message = messageListItem.getMessage();
 
         switch (holder.getItemViewType()) {
             case VIEW_TYPE_MESSAGE_SENT:
