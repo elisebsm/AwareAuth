@@ -7,7 +7,6 @@ import androidx.annotation.RequiresApi;
 
 
 import com.example.testaware.ClientHandler;
-import com.example.testaware.ConnectedClient;
 import com.example.testaware.Constants;
 import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
@@ -19,10 +18,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.security.PublicKey;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -37,10 +32,6 @@ public class PeerAuthServer {
     private DataInputStream inputStream;
     private DataOutputStream outputStream;   //TODO: use so client can also send messages
     private boolean running;
-    private Map<PublicKey, ConnectedClient> clients;
-    private final ExecutorService clientProcessingPool = Executors.newFixedThreadPool(10);
-    private ExecutorService sendService = Executors.newSingleThreadExecutor();
-    private String [] protocol;
     private ClientHandler noAuthClient;
     private SSLSocket sslClientSocket;
     private boolean userPeerAuth=false;
@@ -63,7 +54,6 @@ public class PeerAuthServer {
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public PeerAuthServer(SSLContext serverSSLContext,  PublicKey requestingClientKey){  //use SERVER_PORT_NO_AUTH
         running = true;
-        clients = new ConcurrentHashMap<>();
         int serverPort= Constants.SERVER_PORT_NO_AUTH;
 
         String[] protocolGCM = new String[1];

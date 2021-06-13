@@ -108,9 +108,6 @@ public class ChatActivity extends AppCompatActivity {
 
         setupUI();
 
-        TextView username = findViewById(R.id.tvName);
-        username.setText("User2");
-
 
     }
 

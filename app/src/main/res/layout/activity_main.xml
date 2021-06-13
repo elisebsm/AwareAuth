@@ -11,28 +11,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <!--<Button
-            android:id="@+id/btnPublish"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:text="Publisher"
-            app:layout_constraintBottom_toTopOf="@+id/eTYourMac"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toEndOf="@+id/btnSubscribe"
-            app:layout_constraintTop_toBottomOf="@+id/btnSendLongMessage" />
-        <Button
-            android:id="@+id/btnSubscribe"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:text="Subscribe"
-            app:layout_constraintBottom_toTopOf="@+id/eTYourMac"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.344" />-->
+
+
         <TextView
             android:id="@+id/tvRole"
             android:layout_width="wrap_content"
@@ -78,36 +58,6 @@
             app:layout_constraintVertical_bias="0.078" />
 
     </LinearLayout>
-
-
-<LinearLayout
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal">
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Other mac"
-        app:layout_constraintBottom_toTopOf="@+id/eTMsg"
-        app:layout_constraintEnd_toStartOf="@+id/eTOtherMac"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView3" />
-
-    <EditText
-        android:id="@+id/eTOtherMac"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:text="Other mac"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.701"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/eTYourMac"
-        app:layout_constraintVertical_bias="0.035" />
-</LinearLayout>
 
 <!--<LinearLayout
     android:layout_width="wrap_content"

@@ -15,12 +15,6 @@
             android:text="Username"
             android:textSize="20dp"/>
 
-        <TextView
-            android:id="@+id/tvPeerIP"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="user1@gmail.com"
-            android:textSize="18sp"/>
 
         <TextView
             android:id="@+id/tvStatus"
@@ -28,14 +22,8 @@
             android:layout_height="match_parent"
             android:text="Status"
             android:textSize="18sp"
+            android:visibility="gone"
             />
-        <TextView
-            android:id="@+id/tvCertificateStatus"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="Certificate: unknown"
-            android:textSize="18sp"/>
-
 
 
     </LinearLayout>
