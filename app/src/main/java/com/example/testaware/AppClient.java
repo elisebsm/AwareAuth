@@ -202,7 +202,18 @@ public class AppClient implements Runnable{
             }
         }
     }
-
+    private X509Certificate getPeerIdentity()  {
+        Certificate[] certificates = new Certificate[0];
+        try {
+            certificates = sslSocket.getSession().getPeerCertificates();
+        } catch (SSLPeerUnverifiedException e) {
+            e.printStackTrace();
+        }
+        if (certificates.length > 0 && certificates[0] instanceof X509Certificate){
+            return (X509Certificate) certificates[0];
+        }
+        return null;
+    }
 
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey = peerCert.getPublicKey();
