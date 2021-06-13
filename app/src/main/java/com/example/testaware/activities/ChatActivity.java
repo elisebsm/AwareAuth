@@ -25,16 +25,13 @@ import com.example.testaware.offlineAuth.PeerAuthServer;
 
 import java.lang.ref.WeakReference;
 import com.example.testaware.R;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.Enumeration;
 
 import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -43,15 +40,16 @@ public class ChatActivity extends AppCompatActivity {
     private String LOG = "LOG-Test-Aware-Test-Chat-Activity";
     public static MessageListAdapter mMessageAdapter;
 
-    public static ArrayList<MessageListItem> messageList;
-    @Getter
-    private Context context;
+   public static ArrayList<MessageListItem> messageList;
+   @Getter
+   private Context context;
 
     @Getter
     private AppClient appClient;
 
     private AppServer appServer;
     private PeerAuthServer peerAuthServer;
+
 
 
     private static WeakReference<MainActivity> mainActivity;
@@ -74,6 +72,7 @@ public class ChatActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         this.context = this;
 
+       // myIpvAddr = getLocalIp();
         int port = getIntent().getIntExtra("port", 1025);
 
         role = getIntent().getStringExtra("Role");
@@ -86,6 +85,7 @@ public class ChatActivity extends AppCompatActivity {
 
 
         KeyPair keyPair = mainActivity.get().getKeyPair();
+//        peerIpv6 = MainActivity.getPeerIpv6();
 
         if(role.equals("Client")){
 
@@ -106,16 +106,19 @@ public class ChatActivity extends AppCompatActivity {
         this.peerAuthServer = mainActivity.get().getPeerAuthServer(); //TODO:
 
 
+
+        //contact = (Contact) intent.getSerializableExtra("contact");
         setupUI();
+
+        TextView username = findViewById(R.id.tvName);
+        username.setText("User2");
 
 
     }
 
     private void setupUI(){
-        EditText editChatText = findViewById(R.id.eTChatMsg);
         messageList = new ArrayList<>();
         RecyclerView mMessageRecycler = findViewById(R.id.recyclerChat);
-        editChatText = findViewById(R.id.eTChatMsg);
         messageList = new ArrayList<>();
         mMessageAdapter = new MessageListAdapter(this, messageList);
         mMessageRecycler.setAdapter(mMessageAdapter);
@@ -129,7 +132,7 @@ public class ChatActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 EditText messageText = findViewById(R.id.eTChatMsg);
                 String messageToSend = messageText.getText().toString();
-                sendMessage(messageToSend, sendButtonPressed);
+                sendMessage(messageToSend);
                 messageText.getText().clear();
             }
             Log.i(LOG, "Send btn pressed");
@@ -137,40 +140,15 @@ public class ChatActivity extends AppCompatActivity {
     }
 
 
-
-
     public static void setChat(String message){
         MessageListItem chatMsg = new MessageListItem(message, "User2");
+        messageList.add(chatMsg);
         mMessageAdapter.notifyDataSetChanged();
     }
 
 
-    public static String getLocalIp() {
-        try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface
-                    .getNetworkInterfaces(); en.hasMoreElements(); ) {
-                NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf
-                        .getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-                    InetAddress inetAddress = enumIpAddr.nextElement();
-                    System.out.println("ip1--:" + inetAddress);
-                    System.out.println("ip2--:" + inetAddress.getHostAddress());
 
-                    if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet6Address) {
-                        String ipaddress = inetAddress.getHostAddress();
-                        return ipaddress;
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            Log.e("IP Address", ex.toString());
-        }
-        return null;
-    }
-
-
-
-    private void sendMessage(String msg, long sendButtonPressed) {
+    private void sendMessage(String msg) {
 
         long sendingMessage = currentTimeMillis();
         Log.d("TESTING-LOG-TIME-TLS-SEND-MESSAGE-PRESSED",  String.valueOf(sendingMessage));
@@ -201,11 +179,13 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+
     @Override
     protected void onStop() {
         super.onStop();
         Log.d(LOG, "ChatActivity onStop");
     }
+
 
     @Override
     protected void onDestroy() {

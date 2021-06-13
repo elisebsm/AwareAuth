@@ -55,18 +55,7 @@ public class ClientHandler extends Thread  {
          try {
              while (running) {
                  Log.d(LOG, "inputstream ClientHandler");
-
-
-                 /*AbstractPacket abstractPacket = (AbstractPacket) in.readObject();
-                 MessagePacket messagePacket = (MessagePacket) abstractPacket;
-                 Message message = messagePacket.getMessage() ;
-                 String plainText = message.getPlaintext(IdentityHandler.getKeyPair().getPrivate());
-                 Log.d(LOG, "Plaintext:" +  plainText);*/
-
                  String message = in.readUTF();
-                 long readinMessageAtServer = currentTimeMillis();
-
-                 sendMessage("Hei!!", 0);
 
                  new Handler(Looper.getMainLooper()).post(()-> {
                      ChatActivity.setChat(message);
@@ -78,18 +67,7 @@ public class ClientHandler extends Thread  {
          }
     }
 
-    //TODO: close socket
 
-   /* @RequiresApi(api = Build.VERSION_CODES.Q)
-    public static void setOutputStream(String msgToSend){
-        try {
-            out.writeObject(msgToSend);
-            out.flush();
-          //TODO: set  ChatActivity.setChat(msgToSend, ChatActivity.getLocalIp());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
 
     private ExecutorService sendService = Executors.newSingleThreadExecutor();
 
@@ -114,6 +92,5 @@ public class ClientHandler extends Thread  {
 
         return true;
     }
-
 
 }
