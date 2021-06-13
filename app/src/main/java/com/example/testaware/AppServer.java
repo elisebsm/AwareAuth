@@ -103,12 +103,15 @@ public class AppServer {
                     serverSocket.getEnabledCipherSuites();
                     sslClientSocket.getPort();
 
-                    sslClientSocket.addHandshakeCompletedListener(event -> {
-                        if(event.getSession().isValid() ){
-                            Log.d(LOG, "Handshake completed");
-                            X509Certificate peerCert = getClientIdentity();
-                            if(userCertificateCorrect && peerCert != null) {
-                                addPeerAuthInfo(peerCert);
+                    sslClientSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+                        @Override
+                        public void handshakeCompleted(HandshakeCompletedEvent event) {
+                            if(event.getSession().isValid() ){
+                                Log.d(LOG, "Handshake completed");
+                                X509Certificate peerCert = getClientIdentity();
+                                if(userCertificateCorrect && peerCert != null) {
+                                    addPeerAuthInfo(peerCert);
+                                }
                             }
                         }
                     });
@@ -135,6 +138,19 @@ public class AppServer {
         };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
+    }
+
+
+    public void stop(){
+        running = false;
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(client!=null){
+            client.setRunning(false);
+        }
     }
 
 
