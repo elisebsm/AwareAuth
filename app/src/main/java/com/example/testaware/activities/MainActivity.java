@@ -135,8 +135,8 @@ public class MainActivity extends AppCompatActivity  {
 
 
     private static final int MY_PERMISSION_COARSE_LOCATION_REQUEST_CODE = 88;
-   // private static final int MY_PERMISSION_FINE_LOCATION_CODE = 99;
-    //private static final int MY_PERMISSION_NETWORK_STATE_CODE = 77;
+    private static final int MY_PERMISSION_FINE_LOCATION_CODE = 99;
+    private static final int MY_PERMISSION_NETWORK_STATE_CODE = 77;
 
     private static final int MY_PERMISSION_EXTERNAL_REQUEST_CODE = 99;
 
@@ -178,6 +178,13 @@ public class MainActivity extends AppCompatActivity  {
     @Getter
     private PeerAuthServer peerAuthServer;
 
+
+
+   // @Getter
+   // private ConnectionHandler connectionHandler;
+
+   // @Getter
+   // private ConnectionHandler peerAuthConnectionHandler;
 
     @Getter
     private SSLContextedObserver sslContextedObserver;
@@ -996,6 +1003,8 @@ public class MainActivity extends AppCompatActivity  {
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private void requestWiFiConnection(PeerHandle peerHandle, String role) {
+        //Log.d(LOG, "requestWiFiConnection");
+        String peerRole = role;
 
         if(hashMapOfNetworks.keySet().equals(hashMapPeerHandleKeyAndMac.get(peerHandle))){
             //Log.d(LOG, "There already exists a network with this peer");
