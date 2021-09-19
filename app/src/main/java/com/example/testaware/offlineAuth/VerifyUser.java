@@ -53,14 +53,12 @@ public class VerifyUser {
                 }
             }
 
-    } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+    } catch (IOException e) {
             e.printStackTrace();
         }
         return isAuthenticated;
-
     }
+
 
     public static void setValidatedAuthenticator(PublicKey peerKey) {
         String encodedPeerKey= Base64.getEncoder().encodeToString(peerKey.getEncoded());
@@ -68,25 +66,19 @@ public class VerifyUser {
         try {
             if(authenticatorList != null) {
                 if (authenticatorList.contains(peerKey)) {
-                  //  Log.i(LOG, "Authenticator already verifyed");
+                    //do nothing
                 }
                 else{
                     BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/validatedAuthenticators.txt", true));
                     writer.write(encodedPeerKey + "\n");
-                  //  Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
                     writer.close();
                 }
             }
             else {
                 BufferedWriter writer = new BufferedWriter(new FileWriter("/data/data/com.example.testaware/validatedAuthenticators.txt", true));
                 writer.write(encodedPeerKey + "\n");
-               // Log.i(LOG, "setValidatedAuthenticator : " + encodedPeerKey);
                 writer.close();
             }
-
-        }
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -106,13 +98,13 @@ public class VerifyUser {
                     authenticatorList.add(keyDecodedFromFile);
                 }
             }
-
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
         return authenticatorList;
-
     }
+
+
 }

@@ -1,7 +1,5 @@
 package com.example.testaware;
 
-import android.content.Context;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,11 +25,9 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 public class IdentityHandler {
-    SSLContext sslContext;
 
 
-    public static SSLContext getSSLContext(Context context) {
-        //FileInputStream inputStreamCertificate = context.openFileInput("rsacert.pem")
+    public static SSLContext getSSLContext() {
             try {
                 //keystore containing certificate
                 KeyStore keyStore = KeyStore.getInstance("PKCS12");
@@ -42,7 +38,6 @@ public class IdentityHandler {
                 keyManagerFactory.init(keyStore, "elise123".toCharArray());
 
                 KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
-
 
 
                 X509Certificate rootCertificate = (X509Certificate) keyStore.getCertificate("root");
@@ -58,8 +53,7 @@ public class IdentityHandler {
                 trustManagerFactory.init(trustStore);
                 TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
 
-                SSLContext sslContext = SSLContext.getInstance("TLS");
-                //SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
+                SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
                 sslContext.init(keyManagers, trustManagers, null);
 
 
@@ -71,10 +65,8 @@ public class IdentityHandler {
     }
 
 
-
-
     public static KeyPair getKeyPair(){
-        KeyStore keyStore = null;
+        KeyStore keyStore;
         try {
             keyStore = KeyStore.getInstance("PKCS12");
             FileInputStream fileInputStream = new FileInputStream( new File(Constants.KEYSTORE_PATH));
@@ -101,7 +93,6 @@ public class IdentityHandler {
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             e.printStackTrace();
         }
-        //return Objects.requireNonNull(files)[0];
         return null;
     }
 
@@ -135,6 +126,4 @@ public class IdentityHandler {
         }
         return null;
     }
-
-
 }

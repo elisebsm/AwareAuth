@@ -26,12 +26,7 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
         this.chats = chats;
         this.context = context;
     }
-/*
-    //inner class to hold views for each row
-    public class ViewHolder{
-        TextView name;
-    }*/
-//TODO: change to recyclerview
+
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
@@ -42,14 +37,10 @@ public class ChatsListAdapter extends ArrayAdapter<ChatListItem> {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.chat_list_elements, parent, false);
         }
 
-        /*// viewholder object
-        final ViewHolder holder = new ViewHolder();
-        holder.name = convertView.findViewById(R.id.tvUsername);
-        holder.name.setText(chat.getUsername());*/
-
         // Lookup view for data population
         TextView tvName = convertView.findViewById(R.id.tvUsername);
         // Populate the data into the template view using the data object
+        assert chat != null;
         tvName.setText(chat.getUsername());
         // Return the completed view to render on screen
 

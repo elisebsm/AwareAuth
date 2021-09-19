@@ -27,8 +27,6 @@ import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.net.ssl.HandshakeCompletedEvent;
-import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
@@ -36,8 +34,6 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.security.auth.x500.X500Principal;
 
 import lombok.Getter;
-
-import static java.lang.System.currentTimeMillis;
 
 public class AppClient implements Runnable{
 
@@ -54,34 +50,17 @@ public class AppClient implements Runnable{
 
     private boolean userCertificateCorrect =true;
 
-
     private String LOG = "Log-Client";
     @Getter
     private KeyPair keyPair;
-
     private Inet6Address inet6Address;
-
     private int port;
-    private long clientStartedTime;
-    public int counterValue;
-    /*@Getter
-    private static WeakReference<TestChatActivity> testChatActivity;
-    private long clientStartedTime;
-    public int counterValue;
 
-    public static void updateTestChatActivity(TestChatActivity activity) {
-          testChatActivity = new WeakReference<>(activity);
-        }
-*/
-    public AppClient(KeyPair keyPair, SSLContext sslContext, int port, long clientStartedTime, int counterValue){
+    public AppClient(KeyPair keyPair, SSLContext sslContext, int port){
         this.keyPair = keyPair;
         this.sslContext = sslContext;
         this.inet6Address = MainActivity.getPeerIpv6();
         this.port = port;
-        this.clientStartedTime = clientStartedTime;
-        this.counterValue = counterValue;
-
-
     }
 
 
@@ -95,7 +74,6 @@ public class AppClient implements Runnable{
             ignored.printStackTrace();
             userCertificateCorrect =false;
             Log.d(LOG, "Cert not valid");
-
         }
         return null;
     }
@@ -107,16 +85,12 @@ public class AppClient implements Runnable{
             Log.d(LOG, "outputstream is null");
             return false;
         }
-                Runnable sendMessageRunnable = () -> {
+        Runnable sendMessageRunnable = () -> {
             try {
-                Log.d(LOG, "outputstream " + message);
                 outputStream.writeUTF(message);
                 outputStream.flush();
-
             } catch (IOException e) {
                 e.printStackTrace();
-                //if (e.ge)
-                Log.d(LOG, "Exception in Appclient  in sendMessage()");
                 running = false;
             }
         };
@@ -131,16 +105,6 @@ public class AppClient implements Runnable{
         certSelfSigned(IdentityHandler.getCertificate());
         running = true;
         sslSocket = null;
-        String [] tlsVersion = new String[1];
-        tlsVersion [0] = "TLSv1.2";
-
-        String[] protocolGCM = new String[1];
-        protocolGCM[0]= Constants.SUPPORTED_CIPHER_GCM;
-
-        String[] protocolCHACHA = new String[1];
-        protocolCHACHA[0]= Constants.SUPPORTED_CIPHER_CHACHA;
-
-        //this.port = Constants.SERVER_PORT;
 
         SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         try {
@@ -153,23 +117,12 @@ public class AppClient implements Runnable{
                     sslSocket = (SSLSocket) socketFactory.createSocket(inet6Address, port);
                 }
 
-
-                //sslSocket.setEnabledProtocols(tlsVersion);
-                sslSocket.setEnabledCipherSuites(protocolCHACHA);
-
-                sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListener() {
-                    @Override
-                    public void handshakeCompleted(HandshakeCompletedEvent event) {
-
-                        long handshakeCompletedClient = currentTimeMillis();
-                        //Log.d("TESTING-LOG-TIME-TLS-HANDSHAKE-COMPLETED-CLIENT",  String.valueOf(handshakeCompletedClient));
-
-                        if(event.getSession().isValid()){
-                            Log.d(LOG, "Handshake completed");
-                            X509Certificate peerCert = getServerIdentity();
-                            if(userCertificateCorrect && !certSelfSigned && peerCert != null) {
-                                addPeerAuthInfo(peerCert);
-                            }
+                sslSocket.addHandshakeCompletedListener(event -> {
+                    if(event.getSession().isValid()){
+                        Log.d(LOG, "Handshake completed");
+                        X509Certificate peerCert = getServerIdentity();
+                        if(userCertificateCorrect && !certSelfSigned && peerCert != null) {
+                            addPeerAuthInfo(peerCert);
                         }
                     }
                 });
@@ -181,8 +134,6 @@ public class AppClient implements Runnable{
                 while(running){
                     if (inputStream != null){
                         String message =  inputStream.readUTF();
-                        long readinMessageAtClient = currentTimeMillis();
-                        Log.d("TESTING-LOG-TIME-TLS-MESSAGE-INPUTSTREAM-CLIENT",  String.valueOf(readinMessageAtClient));
                         new Handler(Looper.getMainLooper()).post(()-> {
                             ChatActivity.setChat(message);
                         });
@@ -202,7 +153,7 @@ public class AppClient implements Runnable{
             }
         }
     }
-    private X509Certificate getPeerIdentity()  {
+/*    private X509Certificate getPeerIdentity()  {
         Certificate[] certificates = new Certificate[0];
         try {
             certificates = sslSocket.getSession().getPeerCertificates();
@@ -213,35 +164,14 @@ public class AppClient implements Runnable{
             return (X509Certificate) certificates[0];
         }
         return null;
-    }
+    }*/
 
     private void addPeerAuthInfo(X509Certificate peerCert){
         PublicKey peerPubKey = peerCert.getPublicKey();
         VerifyUser.setValidatedAuthenticator(peerPubKey);
         PeerSigner.deleteTmpFile();
-       // ArrayList<String> listOfSingedStrings = PeerSigner.getTmpPeerAuthInfo(true);
-        // ArrayList<String> listOfTrustedAuthenticators = PeerSigner.getTmpPeerAuthInfo(false);
-      //  if (listOfSingedStrings != null) {
-        //    for (int i = 0; i < listOfSingedStrings.size(); i++) {
-        //        PeerSigner.saveSignedKeyToFile(listOfSingedStrings.get(i));
-        //    }
-      //  }
-       /* if(listOfTrustedAuthenticators != null){
-            for (int i = 0; i < listOfTrustedAuthenticators.size(); i++) {
-                PublicKey pubKeyDecoded = Decoder.getPubKeyGenerated(listOfTrustedAuthenticators.get(i));
-                VerifyUser.setValidatedAuthenticator(pubKeyDecoded);
-            }
-            PeerSigner.deleteTmpFile();
-        }
-        */
-
-      //  else{
-
-      //      Log.d(LOG, "PeerCert is null");
-      //  }
-      //  PeerSigner.deleteTmpFile();
-
     }
+
 
     public boolean certSelfSigned(X509Certificate cert){
         certSelfSigned=false;
@@ -252,7 +182,6 @@ public class AppClient implements Runnable{
         }
         return certSelfSigned;
     }
-
 }
 
 

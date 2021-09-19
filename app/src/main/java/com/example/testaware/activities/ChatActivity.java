@@ -31,38 +31,34 @@ import java.util.ArrayList;
 import javax.net.ssl.SSLContext;
 
 import lombok.Getter;
-import lombok.Setter;
 
-import static java.lang.System.currentTimeMillis;
 
 public class ChatActivity extends AppCompatActivity {
 
-    private String LOG = "LOG-Test-Aware-Test-Chat-Activity";
+    private final String LOG = "LOG-Test-Aware-Test-Chat-Activity";
     public static MessageListAdapter mMessageAdapter;
 
-   public static ArrayList<MessageListItem> messageList;
-   @Getter
-   private Context context;
+    public static ArrayList<MessageListItem> messageList;
+    @Getter
+    private Context context;
 
     @Getter
     private AppClient appClient;
 
     private AppServer appServer;
     private PeerAuthServer peerAuthServer;
+    private String role;
 
-
-
-    private static WeakReference<MainActivity> mainActivity;
-    public static void updateActivityMain(MainActivity activity) {
-        mainActivity = new WeakReference<>(activity);
-    }
 
     private static WeakReference<ClientHandler> clientHandlerWeakReference;
     public static void updateActivityClientHandler(ClientHandler activity) {
         clientHandlerWeakReference = new WeakReference<>(activity);
     }
 
-    private String role;
+    private static WeakReference<MainActivity> mainActivity;
+    public static void updateActivityMain(MainActivity activity) {
+        mainActivity = new WeakReference<>(activity);
+    }
 
 
     @Override
@@ -72,11 +68,9 @@ public class ChatActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         this.context = this;
 
-       // myIpvAddr = getLocalIp();
         int port = getIntent().getIntExtra("port", 1025);
 
         role = getIntent().getStringExtra("Role");
-        int counterValue = getIntent().getIntExtra("counter", 0);
         TextView textView = findViewById(R.id.tvRole);
         textView.setText(role);
 
@@ -85,17 +79,9 @@ public class ChatActivity extends AppCompatActivity {
 
 
         KeyPair keyPair = mainActivity.get().getKeyPair();
-//        peerIpv6 = MainActivity.getPeerIpv6();
 
         if(role.equals("Client")){
-
-            long clientStarted = currentTimeMillis();
-            Log.d("TESTING-LOG-TIME-TLS-CLIENT-STARTED",  String.valueOf(clientStarted));
-            //20.05        appClient = new AppClient(keyPair, sslContext, port, clientStarted, counterValue);
-            appClient = new AppClient(keyPair, sslContext, 1025, clientStarted, counterValue);
-
-
-            Log.d(LOG, "Port: " + port);
+            appClient = new AppClient(keyPair, sslContext, 1025);
 
             Thread thread = new Thread(appClient);
             thread.start();
@@ -103,17 +89,12 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         this.appServer  = mainActivity.get().getAppServer();
-        this.peerAuthServer = mainActivity.get().getPeerAuthServer(); //TODO:
+        this.peerAuthServer = mainActivity.get().getPeerAuthServer();
 
-
-
-        //contact = (Contact) intent.getSerializableExtra("contact");
         setupUI();
 
         TextView username = findViewById(R.id.tvName);
         username.setText("User2");
-
-
     }
 
     private void setupUI(){
@@ -127,7 +108,6 @@ public class ChatActivity extends AppCompatActivity {
 
         Button sendChatMsgbtn = findViewById(R.id.btnSendChatMsg);
         sendChatMsgbtn.setOnClickListener(v -> {
-            long sendButtonPressed = currentTimeMillis();
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 EditText messageText = findViewById(R.id.eTChatMsg);
@@ -149,10 +129,6 @@ public class ChatActivity extends AppCompatActivity {
 
 
     private void sendMessage(String msg) {
-
-        long sendingMessage = currentTimeMillis();
-        Log.d("TESTING-LOG-TIME-TLS-SEND-MESSAGE-PRESSED",  String.valueOf(sendingMessage));
-
         Log.d(LOG, "Sending message: " + msg);
         MessageListItem chatMsg = new MessageListItem(msg, "Deg");    //TODO: GET USERNAME FROM CHATLISTITEM
         messageList.add(chatMsg);
@@ -164,7 +140,7 @@ public class ChatActivity extends AppCompatActivity {
             if(mainActivity.get().getPeerAuthenticated().equals("true") ) {
                 Log.d(LOG, "Sending message from peerAuthServer" + msg);
                 if(peerAuthServer != null){
-                    peerAuthServer.sendMessage(msg,sendingMessage );
+                    peerAuthServer.sendMessage(msg);
                 }
                 else{
                     Log.d(LOG, "Peer auth server obj null");
@@ -172,7 +148,7 @@ public class ChatActivity extends AppCompatActivity {
             }
             else {
                 if(appServer != null) {
-                    appServer.sendMessage(msg, sendingMessage);
+                    appServer.sendMessage(msg);
                     Log.d(LOG, "No client connected");
                 }
             }

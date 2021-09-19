@@ -8,7 +8,6 @@ import androidx.annotation.RequiresApi;
 
 import com.example.testaware.ClientHandler;
 import com.example.testaware.Constants;
-import com.example.testaware.activities.ChatActivity;
 import com.example.testaware.activities.MainActivity;
 
 import java.io.BufferedInputStream;
@@ -25,7 +24,8 @@ import javax.net.ssl.SSLSocket;
 
 import lombok.Getter;
 
-//this class start server on diff port than other server, so one server that accepts connections to clients who dont have certificates (but are authenticated by peer)
+/**this class start server on diff port than other server, so one server that accepts connections to
+ * clients who dont have certificates (but are authenticated by peer)**/
 public class PeerAuthServer {
 
     private String LOG = "Log-Test-Aware-No-Auth-App-Server";
@@ -35,24 +35,18 @@ public class PeerAuthServer {
     private ClientHandler noAuthClient;
     private SSLSocket sslClientSocket;
     private boolean userPeerAuth=false;
-    private int counterValue = 0;
     private final String [] tlsVersion;
 
     @Getter
     private static WeakReference<MainActivity> mainActivity;
 
-    @Getter
-    private static WeakReference<ChatActivity> testChatActivity;
-
     public static void updateActivity(MainActivity activity) {
         mainActivity = new WeakReference<>(activity);
     }
-    public static void updateTestChatActivity(ChatActivity activity) {
-        testChatActivity = new WeakReference<>(activity);
-    }
+
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    public PeerAuthServer(SSLContext serverSSLContext,  PublicKey requestingClientKey){  //use SERVER_PORT_NO_AUTH
+    public PeerAuthServer(SSLContext serverSSLContext,  PublicKey requestingClientKey){
         running = true;
         int serverPort= Constants.SERVER_PORT_NO_AUTH;
 
@@ -64,7 +58,6 @@ public class PeerAuthServer {
 
         tlsVersion = new String[1];
         tlsVersion [0] = "TLSv1.2";
-        counterValue = mainActivity.get().getCountervalue();
 
         Runnable serverTask = () -> {
             running  = true;
@@ -74,26 +67,19 @@ public class PeerAuthServer {
                 serverSocket.setEnabledCipherSuites(protocolCHACHA);
 
                 while (running) {
-                 //   Log.d(LOG, "Starting peer aut server");
                     sslClientSocket = (SSLSocket) serverSocket.accept();
 
-
-
-                  //  Log.d(LOG, "clientSocket" +sslClientSocket);
                     if (VerifyUser.isAuthenticatedUser(requestingClientKey)) {
                         Log.d(LOG, "User is PA. Accepting connection ");
-                      //  Log.d(LOG, "setting peer auth true---------------");
                         userPeerAuth = true;
                     }
                     if(userPeerAuth) {
-                    //    Log.d(LOG, "Peer auth client accepted");
                         inputStream = new DataInputStream(new BufferedInputStream(sslClientSocket.getInputStream()));
                         outputStream = new DataOutputStream(new BufferedOutputStream(sslClientSocket.getOutputStream()));
 
-                        noAuthClient = new ClientHandler(inputStream, outputStream, sslClientSocket, counterValue);
+                        noAuthClient = new ClientHandler(inputStream, outputStream);
                         Thread t = new Thread(noAuthClient);
                         t.start();
-                       // Log.d(LOG, "Starting new peer auth client Thread -");
                         outputStream.flush();
                     }
                     else{
@@ -103,24 +89,17 @@ public class PeerAuthServer {
                      }
                 }
             }catch (IOException e) {
-             //   Log.d(LOG, Objects.requireNonNull(e.getMessage()));
                 e.printStackTrace();
-             //   Log.d(LOG, "Exception in PeerAuthAppServer in constructor");
-
             }
-
             };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
     }
 
 
-
-    public void sendMessage(String message, long sendingMessageTime){
+    public void sendMessage(String message){
         if(noAuthClient != null){
-            noAuthClient.sendMessage(message, sendingMessageTime);
+            noAuthClient.sendMessage(message);
         }
     }
 }
-
-

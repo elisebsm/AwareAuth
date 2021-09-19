@@ -12,7 +12,6 @@ public class VerifyCredentials {
        public static boolean verifyCredentials(String sigPeerKey,PublicKey signerPubKey, PublicKey peerPubKey){
 
         if (verifySignature(sigPeerKey, signerPubKey, peerPubKey) ) {
-
             return true;
         }
         else{
@@ -32,20 +31,16 @@ public class VerifyCredentials {
                    byte[] bytes = peerPubKey.toString().getBytes();  //public key of m--> message
                    ecdsaSign.update(bytes);
 
-
                    if (ecdsaSign.verify(decodedSignature)) {
                        Log.i(LOG, "valid");
                        valid = true;
                    } else {
-                     //  Log.i(LOG, "invalid");
                        valid = false;
                    }
 
                } catch (Exception e) {
-                   // TODO: handle exception
                    e.printStackTrace();
                }
-
            }
         return valid;
     }
@@ -63,19 +58,13 @@ public class VerifyCredentials {
                 if (ecdsaSign.verify(decodedSignature)) {
                     Log.i(LOG, "Signed string is valid!");
                     valid = true;
-                } else {
-                 //   Log.i(LOG, "Signed string isnot valid");
                 }
-
             } catch (Exception e) {
-                // TODO: handle exception
                 e.printStackTrace();
             }
         }
         return valid;
-
     }
-
 
 
 }
