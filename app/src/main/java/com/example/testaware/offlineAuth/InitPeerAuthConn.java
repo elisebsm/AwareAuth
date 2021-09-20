@@ -13,7 +13,7 @@ public class InitPeerAuthConn {
         PublicKey pubKeySelf = IdentityHandler.getCertificate().getPublicKey();
         ArrayList<PublicKey> verifiedAuthenticatorList;
 
-        //Verify signature of user
+        
         if(VerifyCredentials.verifyString(receivedString, signature, clientPubKey)){
             verifiedAuthenticatorList = VerifyUser.getValidatedAuthenticator();
 
